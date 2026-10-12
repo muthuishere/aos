@@ -186,12 +186,26 @@ func runDraw(c *cli.Ctx, args []string) error {
 		return emitDraw(c, set, res, out)
 	}
 
-	// Detached drawings and `draw stop` live in windowctl's CLI (a child
-	// process per drawing plus a pid registry), not its library. Delegating
-	// to the windowctl binary keeps one registry: `aos draw stop` and
-	// `windowctl draw stop` clear the same drawings, and new ones avoid both.
+	// --detach re-runs this command as a detached child that registers in
+	// windowctl's shared drawing registry, so `aos draw stop` (and
+	// windowctl's) can end it and new drawings keep clear of its sign.
 	if set.Has("detach") {
-		return runWindowctl(c, append([]string{"draw"}, args...))
+		child := append([]string{"draw"}, withoutDetach(args)...)
+		if !set.Has("duration") {
+			child = append(child, "--duration", "300")
+		}
+		res, err := windowctl.SpawnDetachedDraw(child)
+		if err != nil {
+			return &cli.ExitError{Code: 1, Message: err.Error()}
+		}
+		if set.Has("json") {
+			return json.NewEncoder(c.Stdout).Encode(res)
+		}
+		c.Println("drawing until it times out or `aos draw stop`")
+		return nil
+	}
+	if opts.Avoid == nil {
+		opts.Avoid = windowctl.LiveDrawingSigns()
 	}
 
 	// AppKit only draws from the main goroutine. A terminal invocation is on
@@ -212,13 +226,16 @@ func runDraw(c *cli.Ctx, args []string) error {
 	go func() { <-sig; close(stop) }()
 	opts.Stop = stop
 
-	if set.Has("json") {
+	if set.Has("json") || windowctl.IsDrawChild() {
 		// Place first, so the caller learns where it lands before it shows.
 		res, err := windowctl.RenderDraw(opts, os.DevNull)
 		if err != nil {
 			return notFoundExit(err)
 		}
-		if err := emitDraw(c, set, res, ""); err != nil {
+		if windowctl.IsDrawChild() {
+			windowctl.RegisterDrawing(res)
+			defer windowctl.UnregisterDrawing()
+		} else if err := emitDraw(c, set, res, ""); err != nil {
 			return err
 		}
 	}
@@ -246,17 +263,12 @@ func runDrawStop(c *cli.Ctx, args []string) error {
 	if err := set.Reject("json"); err != nil {
 		return err
 	}
-	return runWindowctl(c, append([]string{"draw", "stop"}, args...))
-}
-
-// runWindowctl hands a command to the windowctl binary, for the few things
-// windowctl implements only in its CLI.
-func runWindowctl(c *cli.Ctx, args []string) error {
-	bin, err := exec.LookPath("windowctl")
-	if err != nil {
-		return &cli.ExitError{Code: 1, Message: "`draw --detach` and `draw stop` use the windowctl binary, which is not on PATH; install it with `npm i -g @muthuishere/windowctl` (or `go install github.com/muthuishere/windowctl/cmd/windowctl@latest`), or draw in the foreground with --duration"}
+	n := windowctl.StopDrawings()
+	if set.Has("json") {
+		return json.NewEncoder(c.Stdout).Encode(map[string]int{"Stopped": n})
 	}
-	return runChild(c, bin, args)
+	c.Println(fmt.Sprintf("stopped %d drawing(s)", n))
+	return nil
 }
 
 // runChild runs a command with this invocation's streams and keeps its exit code.
@@ -306,4 +318,15 @@ func runDrawFonts(c *cli.Ctx, args []string) error {
 		c.Println(f)
 	}
 	return nil
+}
+
+func withoutDetach(args []string) []string {
+	var out []string
+	for _, a := range args {
+		if a == "--detach" || a == "-detach" || strings.HasPrefix(a, "--detach=") || strings.HasPrefix(a, "-detach=") {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
 }
