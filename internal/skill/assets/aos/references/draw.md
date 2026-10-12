@@ -47,9 +47,8 @@ Defaults: `~/.config/windowctl/fontconfig.json` (shared with windowctl).
 `aos draw config` shows it, `aos draw config --init` creates it,
 `aos draw fonts` lists font names.
 
-`--detach` and `draw stop` are delegated to the `windowctl` binary (it owns the
-drawing registry), so it must be on PATH for those two; everything else is
-built in.
+`--detach` returns at once (default 300 s, or `--duration`); `aos draw stop`
+ends every detached drawing. Nothing else needs to be installed.
 
 ## Recipe: verified pointing
 

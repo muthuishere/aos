@@ -23,8 +23,7 @@ description: >
 > **Supersedes `window-ctl-skill`.** aos runs windowctl as its engine library,
 > so everything that skill did (window layout, zones, pointing, find, draw, the
 > visual loop) is here as `aos …` commands. If both skills are installed, use
-> this one; `windowctl` remains only as the library (and the binary behind
-> `draw --detach` / `draw stop`).
+> this one; `windowctl` remains only as the library aos is built on.
 
 One command surface over the machine, identical on macOS, Windows and Linux.
 You already have a shell, so just run these commands — there is nothing to start
