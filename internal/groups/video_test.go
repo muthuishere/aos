@@ -403,7 +403,15 @@ func TestSimplifyAndExpressions(t *testing.T) {
 			t.Errorf("filter missing %q: %s", want, f)
 		}
 	}
-	args := strings.Join(renderArgs("in.mp4", "s.txt", "out.mp4", true), " ")
+	if a := strings.Join(renderArgsFor(9, "in.mp4", "s.txt", "out.mp4", false), " "); !strings.Contains(a, "-/filter_complex s.txt") {
+		t.Errorf("ffmpeg 9 needs -/filter_complex: %s", a)
+	}
+	for v, want := range map[string]int{"ffmpeg version 8.1.1 Copyright": 8, "ffmpeg version n9.0.2-full_build": 9, "ffmpeg version 2026-10-01-git-abc": 2026, "ffmpeg version N-1234-g": 0} {
+		if got := parseFFmpegMajor(v); got != want {
+			t.Errorf("parseFFmpegMajor(%q) = %d, want %d", v, got, want)
+		}
+	}
+	args := strings.Join(renderArgsFor(6, "in.mp4", "s.txt", "out.mp4", true), " ")
 	if !strings.Contains(args, "-filter_complex_script s.txt") || !strings.Contains(args, "-map 0:a -c:a copy") {
 		t.Errorf("render args %s", args)
 	}

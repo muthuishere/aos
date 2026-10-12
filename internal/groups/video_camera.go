@@ -3,9 +3,11 @@ package groups
 import (
 	"fmt"
 	"math"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/muthuishere/aos/internal/engine"
 )
@@ -421,22 +423,25 @@ func visibleEvents(evs []videoEvent, capture engine.Rect) []videoEvent {
 	}
 	out := evs[:0:0]
 	for _, ev := range evs {
-		if ev.Rect == nil || ev.Kind == "cursor" {
+		if ev.Rect == nil || ev.Kind == "cursor" || onCapture(ev.Kind, *ev.Rect, capture) {
 			out = append(out, ev)
-			continue
 		}
-		r := *ev.Rect
-		if ev.Kind == "window" && (r.W < 120 || r.H < 80) {
-			continue
-		}
-		ix := math.Min(float64(r.X+r.W), float64(capture.X+capture.W)) - math.Max(float64(r.X), float64(capture.X))
-		iy := math.Min(float64(r.Y+r.H), float64(capture.Y+capture.H)) - math.Max(float64(r.Y), float64(capture.Y))
-		if ix <= 0 || iy <= 0 || ix*iy < 0.5*float64(r.W*r.H) {
-			continue
-		}
-		out = append(out, ev)
 	}
 	return out
+}
+
+// onCapture reports whether a rect is mostly inside the recorded area (and,
+// for windows, big enough to be one).
+func onCapture(kind string, r, capture engine.Rect) bool {
+	if capture.W <= 0 || capture.H <= 0 {
+		return true
+	}
+	if kind == "window" && (r.W < 120 || r.H < 80) {
+		return false
+	}
+	ix := math.Min(float64(r.X+r.W), float64(capture.X+capture.W)) - math.Max(float64(r.X), float64(capture.X))
+	iy := math.Min(float64(r.Y+r.H), float64(capture.Y+capture.H)) - math.Max(float64(r.Y), float64(capture.Y))
+	return ix > 0 && iy > 0 && ix*iy >= 0.5*float64(r.W*r.H)
 }
 
 // planCamera simulates the camera over [0, dur] at o.Rate samples per second.
@@ -628,12 +633,57 @@ func clickRings(doc videoDoc, g camGeom) ([]frect, []float64) {
 }
 
 // renderArgs is the ffmpeg argv that renders the camera from a filter script.
+//
+// ffmpeg 7 added `-/filter_complex <file>` and ffmpeg 9 removed the older
+// -filter_complex_script (Windows' winget build is 9.x), so the flag follows
+// the installed major version.
 func renderArgs(in, script, out string, hasAudio bool) []string {
+	return renderArgsFor(ffmpegMajor(), in, script, out, hasAudio)
+}
+
+func renderArgsFor(major int, in, script, out string, hasAudio bool) []string {
+	scriptFlag := "-filter_complex_script"
+	if major >= 7 {
+		scriptFlag = "-/filter_complex"
+	}
 	args := []string{"-hide_banner", "-loglevel", "error", "-y", "-i", in,
-		"-filter_complex_script", script, "-map", "[v]",
+		scriptFlag, script, "-map", "[v]",
 		"-c:v", "libx264", "-preset", "medium", "-crf", "20"}
 	if hasAudio {
 		args = append(args, "-map", "0:a", "-c:a", "copy")
 	}
 	return append(args, "-movflags", "+faststart", out)
+}
+
+var (
+	ffmpegMajorOnce sync.Once
+	ffmpegMajorVal  int
+)
+
+// ffmpegMajor is the installed ffmpeg's major version, 0 when unknown (e.g.
+// a git build reporting "N-12345-g…"), which keeps the older flag.
+func ffmpegMajor() int {
+	ffmpegMajorOnce.Do(func() {
+		out, err := exec.Command("ffmpeg", "-hide_banner", "-version").Output()
+		if err == nil {
+			ffmpegMajorVal = parseFFmpegMajor(string(out))
+		}
+	})
+	return ffmpegMajorVal
+}
+
+func parseFFmpegMajor(version string) int {
+	f := strings.Fields(version)
+	if len(f) < 3 || f[0] != "ffmpeg" || f[1] != "version" {
+		return 0
+	}
+	v := strings.TrimPrefix(f[2], "n")
+	n := 0
+	for _, r := range v {
+		if r < '0' || r > '9' {
+			break
+		}
+		n = n*10 + int(r-'0')
+	}
+	return n
 }

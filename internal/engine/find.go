@@ -223,8 +223,13 @@ func menuBarOnWindowMonitor(a Adapter, items []TextItem, wb Rect) []TextItem {
 	return items
 }
 
+// bidiMarks are invisible direction marks some apps put in labels (macOS
+// Calculator shows "\u200e42"); a search for "42" must still match.
+var bidiMarks = strings.NewReplacer("\u200e", "", "\u200f", "", "\u202a", "", "\u202b", "",
+	"\u202c", "", "\u202d", "", "\u202e", "", "\u2066", "", "\u2067", "", "\u2068", "", "\u2069", "")
+
 func norm(s string) string {
-	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
+	return strings.Join(strings.Fields(strings.ToLower(bidiMarks.Replace(s))), " ")
 }
 
 // matchTier: 0 exact, 1 whole-word substring, 2 prefix, 3 substring, -1 none.

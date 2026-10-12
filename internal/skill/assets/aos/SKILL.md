@@ -72,7 +72,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
 | point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
-| click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=Chrome` · `key press cmd+shift+s` |
+| click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=TextEdit --verify` (focus-free; `--focus` to force focus) · `key press enter --app=TextEdit` · `mouse click --app=Calculator --find=7` |
 | files | `file read P --lines=10:40` · `file write P text` · `file list D --json` · `file stat P` · `file delete P --recursive` |
 | run something | `exec capture -- <cmd>` (JSON: stdout, stderr, exit) · `exec run` (streams) · `exec shell "a \| b"` |
 | running processes | `process list --json` · `process find X` · `process kill <pid\|name>` — kill by name refuses when ambiguous |

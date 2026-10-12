@@ -8,18 +8,44 @@ aos capture screenshot --monitor=2 --out=/tmp/m2.png
 aos capture screenshot --region=100,100,800,600 --out=/tmp/r.png
 aos mouse move 400 300 · aos mouse click 400 300 --double · aos mouse click --button=right
 aos mouse position                                      # x y
-aos key type "hello" --app=Chrome                       # focus guard: see below
-aos key press cmd+shift+s --app=Chrome
+aos key type "hello" --app=TextEdit --verify           # focus-free + read back: see below
+aos key press enter --app=TextEdit                      # posted to the app, no focus change
+aos mouse click --app=Calculator --find=7 --role=button # AXPress / UIA Invoke: no pointer, no focus
 aos launch Terminal --wait                              # start an app and wait for its window
 aos window wait Chrome --timeout=5000                   # ms
 ```
 
 - **Point normalization:** every capture is resampled so 1 image pixel = 1
   global point (retina-safe). Global click point = capture origin + pixel.
-- **Focus guard:** always pass `--app`/`--title` to `key type` / `key press`.
-  aos focuses the window and waits until it reports focused before sending a
-  single key, so keystrokes cannot land in whatever had focus before (a real
-  data-corruption risk right after `launch`).
+- **Always name the target:** pass `--app`/`--title` to `key type` / `key press`.
+  The person may be typing on another monitor while you work, so input to a
+  named window never goes through OS focus: macOS posts the keys to that
+  app's process (CGEventPostToPid, after making the window the app's key
+  window without activating it); Windows posts WM_CHAR / WM_KEYDOWN to the
+  window's focused text control. Their focus, keyboard and pointer are not
+  touched. Without a target, keys go to whatever is frontmost — avoid.
+- **`--verify`** reads the target's focused text field afterwards (AX value
+  on macOS, WM_GETTEXT on Windows) and exits 1 unless the text arrived; it
+  refuses to type at all when the window has no readable text field. Use it
+  when the outcome matters — it is the check, not a screenshot.
+- **`--focus`** forces the old path: focus the window, wait until it reports
+  focused, type real keystrokes, then hand focus back. aos takes it on its
+  own only where posting is known not to work, and says so (`focus (reason)`
+  / `--json` `Route`/`Reason`):
+  - macOS Chromium-family browsers (Chrome, Edge, Brave, Arc, Vivaldi,
+    Opera) ignore posted keys; Electron apps may too — use `--verify`, and
+    `--focus` if it fails.
+  - Windows: UWP/WinUI apps (Calculator, apps hosted in
+    ApplicationFrameHost) have no Win32 control to post to; chords with
+    ctrl/alt/shift/win cannot be posted (the app reads modifiers from the real
+    keyboard). Typing posts only to text controls (Edit, RichEdit, Notepad,
+    Scintilla); other windows fail loud with a `--focus` hint.
+  - Posted keys go to the app's key window: on macOS aos makes the matched
+    window key inside its app first and refuses if it cannot.
+- **`mouse click --app --find`** presses the found element through
+  accessibility (AXPress / UI Automation Invoke): no pointer move, no focus.
+  It searches the accessibility tree only (OCR would raise the window); add
+  `--focus` to fall back to raising the window and clicking with the pointer.
 - Prefer `aos find` over reading pixels when the target has a name (a button,
   a menu, a phrase): it returns exact bounds and a Center to click.
 

@@ -22,7 +22,11 @@ func takeScreenshot(req captureRequest) error {
 	if req.Copy {
 		target = "[System.Windows.Forms.Clipboard]::SetImage($bmp)"
 	}
+	// PowerShell is not DPI-aware, so without SetProcessDPIAware a 250%-scaled
+	// 3456x1844 screen reports as 1382x738 and the capture is a scaled corner.
 	_, err := sys.PowerShell(`
+Add-Type -TypeDefinition 'using System.Runtime.InteropServices; public static class AosDpi { [DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }'
+[AosDpi]::SetProcessDPIAware() | Out-Null
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
 $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height

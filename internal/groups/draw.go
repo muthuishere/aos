@@ -56,7 +56,7 @@ func init() {
 					`aos draw text "Step 2: pick a file" --app=Finder --position=top --color=amber`,
 					`aos draw text "Done ✓" --monitor=2 --position=center --size=XL --color=green`,
 					`aos draw text "Line one\nLine two" --rect=100,100,800,500 --position=bottom-right --bg=none`,
-					"# default: bottom-center of the focused monitor, subtitle safe area (8% bottom, 5% sides)",
+					"# default: bottom-center of the focused monitor (the recording's monitor while `capture video` runs), subtitle safe area (8% bottom, 5% sides)",
 				},
 				Run: runDrawText,
 			},
@@ -234,6 +234,7 @@ func runDrawText(c *cli.Ctx, args []string) error {
 // showDraw previews, detaches or shows a drawing; prefix is the command
 // line a detached / MCP child re-runs (e.g. ["draw", "text"]).
 func showDraw(c *cli.Ctx, prefix, args []string, opts engine.DrawOptions, set *argSet) error {
+	opts = applyRecordingMonitor(c, opts)
 	if opts.Match != nil {
 		if resolved, err := resolveMatch(*opts.Match); err == nil {
 			opts.Match = &resolved
@@ -296,6 +297,7 @@ func showDraw(c *cli.Ctx, prefix, args []string, opts engine.DrawOptions, set *a
 			return notFoundExit(err)
 		}
 		placed = true
+		noteVideoMatchTarget(c, "draw", opts.Match)
 		noteVideoDraw(c, res, opts.Text)
 		if engine.IsDrawChild() {
 			engine.RegisterDrawing(res)
@@ -307,6 +309,7 @@ func showDraw(c *cli.Ctx, prefix, args []string, opts engine.DrawOptions, set *a
 	if !placed && activeRecording(c) != nil {
 		// Only while recording: place it once more to log where it lands.
 		if res, err := engine.RenderDraw(opts, os.DevNull); err == nil {
+			noteVideoMatchTarget(c, "draw", opts.Match)
 			noteVideoDraw(c, res, opts.Text)
 		}
 	}
