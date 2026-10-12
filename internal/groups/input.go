@@ -143,7 +143,11 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 	opts.Monitor = monitor
-	return engine.MouseClick(opts)
+	if err := engine.MouseClick(opts); err != nil {
+		return err
+	}
+	noteVideoClick(c)
+	return nil
 }
 
 func runKeyType(c *cli.Ctx, args []string) error {
@@ -161,7 +165,11 @@ func runKeyType(c *cli.Ctx, args []string) error {
 	// With a window named, the engine focuses and verifies before typing, so
 	// keystrokes cannot land in whatever happened to be frontmost.
 	if match, ok := optionalMatch(set); ok {
-		return engine.TypeInto(match, text)
+		if err := engine.TypeInto(match, text); err != nil {
+			return err
+		}
+		noteVideoWindow(c, "key type", match)
+		return nil
 	}
 	return engine.TypeText(text)
 }
@@ -179,7 +187,11 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 	}
 	combo := set.Rest[0]
 	if match, ok := optionalMatch(set); ok {
-		return engine.PressKeyInto(match, combo)
+		if err := engine.PressKeyInto(match, combo); err != nil {
+			return err
+		}
+		noteVideoWindow(c, "key press", match)
+		return nil
 	}
 	return engine.PressKey(combo)
 }

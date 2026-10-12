@@ -292,10 +292,10 @@ func TestFocusReturnsErrNoMatchWhenFilterMatchesNothing(t *testing.T) {
 // mandates instructing the user to grant Accessibility access).
 func TestErrAccessibilityDeniedSentinelExists(t *testing.T) {
 	if ErrAccessibilityDenied == nil {
-		t.Fatal("windowctl.ErrAccessibilityDenied is nil; expected a typed sentinel re-exported from core")
+		t.Fatal("engine.ErrAccessibilityDenied is nil; expected a typed sentinel re-exported from core")
 	}
 	if !errors.Is(ErrAccessibilityDenied, core.ErrAccessibilityDenied) {
-		t.Fatalf("windowctl.ErrAccessibilityDenied must alias core.ErrAccessibilityDenied; got %v vs %v",
+		t.Fatalf("engine.ErrAccessibilityDenied must alias core.ErrAccessibilityDenied; got %v vs %v",
 			ErrAccessibilityDenied, core.ErrAccessibilityDenied)
 	}
 }

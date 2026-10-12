@@ -1,0 +1,112 @@
+---
+title: Recording a demo
+description: capture video records the screen with ffmpeg, logs what happened, and renders a cut where the camera follows the action.
+---
+
+You run the demo and talk. aos renders the zoomed video.
+
+```sh
+aos capture video start smart --audio=mic --out=~/Movies/demo.mp4
+# ... talk through the demo ...
+aos capture video stop
+```
+
+```console
+raw:    /Users/you/Movies/demo.mp4 (63.1s)
+final:  /Users/you/Movies/demo.final.mp4
+events: /Users/you/Movies/demo.events.json
+```
+
+`demo.final.mp4` is the one to share. It is 1920x1080. It starts wide, moves in
+on whatever you or your agent are working on, and pulls back out when nothing
+is happening. `demo.mp4` is the untouched recording, and stop never deletes it.
+If rendering fails, it reports the error and keeps the raw file.
+
+## Events become camera moves
+
+During a recording, aos commands log what they touched to `demo.events.jsonl`:
+
+| command | what it logs |
+|---|---|
+| `find` | the bounds of the match |
+| `draw` | the sign and the thing it points at, together |
+| `window focus`, `window move` | the window bounds afterwards |
+| `key type`, `key press` with `--app` | that window |
+| `mouse click` | a small box around the pointer |
+| `capture screenshot --app` | that window |
+
+The recorder also samples the cursor about 12 times a second and the active
+window about 3 times a second. On stop, a director picks the camera target at
+each instant, in this order:
+
+1. **explicit focus** (`capture video focus …` until `unfocus`)
+2. **pointing**: `draw` and `find` (in monitor mode, every logged action)
+3. **the cursor**, when it moves inside a large window
+4. **the active window**
+5. **wide**
+
+Fixed targets are framed with padding, widened to 16:9 and capped at
+`--max-zoom`, with smoothstep easing between them. Targets that move (the
+cursor, a window being dragged) go through a critically damped spring with a
+dead zone. The camera lags by about 0.3 s, never overshoots, and ignores hand
+jitter. Actions less than 3 s apart chain without going back to wide. Clicks
+add a short 1.1x zoom pulse and a highlight ring.
+
+The camera path becomes a set of linear keyframes, which become ffmpeg
+expressions in `t` for `scale` (with `eval=frame`) and `crop`. The output is
+deterministic: the same events give the same video.
+
+## Modes
+
+```sh
+aos capture video start smart                 # recommended: window + cursor + pointing
+aos capture video start monitor --monitor=2   # wide, zooms to each aos action
+aos capture video start app --app=Chrome      # follow one app's window
+aos capture video start mouse --zoom=2        # follow the cursor
+aos capture video start window --app=Terminal # record just that window
+aos capture video start region --region=0,0,1280,720
+```
+
+## Steering it yourself
+
+```sh
+aos capture video focus --app=Chrome --find="Sign in" --zoom=2
+aos capture video focus --rect=100,100,800,450 --hold=4s
+aos capture video unfocus
+aos capture video follow mouse        # or app --app=…, smart, off
+aos capture video mark "checkout works"
+```
+
+## Sound
+
+`--audio=mic|system|both`. Pick a microphone with `--mic` (list them with
+`aos capture video devices`). System audio uses wasapi loopback or Stereo Mix
+on Windows and the PulseAudio monitor source on Linux. macOS needs a loopback
+device you install yourself, such as BlackHole. Without one, aos says so and
+exits 2. It never installs anything.
+
+## Safety
+
+Recording never starts on its own. The agent skill tells agents to ask before
+`start` and to `stop` when the demo is done. `--max` (default 10 minutes) is a
+hard cap enforced by ffmpeg. A `● REC` caption shows when a recording starts.
+Only one recording runs at a time.
+
+## The events file is yours
+
+`demo.events.json` is an open, versioned format: the capture rect, the start
+offset, and every event with its time and global screen rect. Use it in your
+own editor, or re-render with different settings:
+
+```sh
+aos capture video zoom ~/Movies/demo.mp4 --max-zoom=2 --ease=0.8
+```
+
+aos does not edit video. It records the screen and renders the camera, and you
+can edit the result in any tool.
+
+## Requirements
+
+ffmpeg on `PATH`: `brew install ffmpeg`, `winget install Gyan.FFmpeg` or
+`sudo apt install ffmpeg`. On macOS the terminal needs Screen Recording
+(`aos permission request screen`). `aos doctor` checks all of it.

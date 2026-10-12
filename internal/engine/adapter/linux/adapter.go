@@ -1,6 +1,6 @@
 //go:build linux
 
-// Package linux is the Linux platform adapter for windowctl.
+// Package linux is the Linux platform adapter for engine.
 //
 // For the os-spikes tracer bullet this implementation shells out to wmctrl
 // (and xdotool for focus); native X11 via Xlib is a planned follow-up.

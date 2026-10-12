@@ -83,6 +83,10 @@ func runFind(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return notFoundExit(err)
 	}
+	if len(hits) > 0 {
+		r := hits[0].Bounds
+		noteVideo(c, "action", "find", &r, hits[0].Label)
+	}
 	if !set.Has("all") && len(hits) > 1 {
 		hits = hits[:1]
 	}

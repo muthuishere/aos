@@ -1,6 +1,6 @@
 //go:build windows
 
-// Package windows is the Windows platform adapter for windowctl.
+// Package windows is the Windows platform adapter for engine.
 //
 // Implemented against user32.dll via golang.org/x/sys/windows. ListWindows
 // enumerates top-level windows via EnumWindows; ListMonitors enumerates

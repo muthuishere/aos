@@ -138,7 +138,7 @@ func (a *Adapter) Launch(app string) error {
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("launch %q: %w", app, err)
 	}
-	// Detach: don't hold a zombie; the process outlives windowctl.
+	// Detach: don't hold a zombie; the process outlives engine.
 	go func() { _ = cmd.Wait() }()
 	return nil
 }

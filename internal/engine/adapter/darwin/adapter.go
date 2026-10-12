@@ -1,6 +1,6 @@
 //go:build darwin
 
-// Package darwin is the macOS platform adapter for windowctl.
+// Package darwin is the macOS platform adapter for engine.
 //
 // ListWindows and ListMonitors are implemented against CoreGraphics; they
 // require no special permissions beyond the Screen Recording prompt
