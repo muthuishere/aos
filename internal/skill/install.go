@@ -2,7 +2,7 @@
 // coding agents look for skills.
 //
 // Bundling rather than publishing separately means the skill can never describe
-// a version of the CLI that is not the one installed: `go install` and
+// a version of the CLI that is not the one installed: the installed binary and
 // `aos skill install` always agree.
 package skill
 
