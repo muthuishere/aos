@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/muthuishere/toolnexus/golang v0.16.0
-	github.com/muthuishere/windowctl v0.5.2-0.20261012055517-96c1dcf8e6b8
+	github.com/muthuishere/windowctl v0.5.2-0.20261012061457-1b7bb67df794
 )
 
 require (

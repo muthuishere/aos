@@ -182,6 +182,7 @@ func resolveRemoteOptions(set *argSet, cfg remoteConfig, env func(string) string
 		Port:    port,
 		FPS:     fps,
 		Key:     key,
+		Title:   "aos remote",
 	}, generated, nil
 }
 
