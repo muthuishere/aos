@@ -8,11 +8,19 @@ const raw = 'https://raw.githubusercontent.com/muthuishere/aos/main';
 const installSh = `curl -fsSL ${raw}/install.sh | sh`;
 const installCmd = `curl -fsSL -o install.cmd ${raw}/install.cmd && install.cmd`;
 
+const usps = [
+	{ t: 'Finds buttons by name, not pixels', d: 'aos reads the accessibility tree, so an agent presses "Equals" instead of guessing coordinates from a screenshot. No vision model, no brittle pixel loop.', c: 'aos mouse click --app=Calculator --find=Equals' },
+	{ t: 'Works beside you, not instead of you', d: 'Input goes to the app you name, even while you keep typing somewhere else. When you should act, it draws an arrow, a label or a subtitle that your clicks pass through.', c: 'aos draw --app=Calculator --find=7 --text="Press 7"' },
+	{ t: 'One binary, every OS, every agent', d: 'The same commands on macOS, Windows and Linux. The skill installs itself, so Claude Code or any CLI agent knows every command on first run, and MCP is there too.', c: 'aos window move Safari --zone=1A --monitor=2' },
+];
+
 const features = [
 	{ t: 'Windows & layout', d: 'List, focus, move and resize any window. Snap to halves, quarters or N-way splits on any monitor.', c: 'aos window move Safari --zone=1A --monitor=2' },
 	{ t: 'Find on screen', d: 'Locate a button, menu item or text inside a window via accessibility or OCR, and get its exact center.', c: 'aos find --app=Calculator --text=7' },
 	{ t: 'Point for humans', d: 'Draw a big click-through arrow, ring or box with a sign, so a person knows exactly where to click.', c: 'aos draw --app=Calculator --find=7 --text="Press 7"' },
-	{ t: 'Keyboard & mouse', d: 'Type text and press key combos into a named window, or move and click the pointer.', c: 'aos key press cmd+s --app=TextEdit' },
+	{ t: 'Focus-free input', d: 'Type and press key combos into a named app while you keep working in another window. --verify reads the text back.', c: 'aos key type --app=TextEdit --verify "hello"' },
+	{ t: 'Labels & subtitles', d: 'Put a styled text label or a film-style caption on screen so the agent can narrate what it is doing.', c: 'aos subtitle show "Saving the report…"' },
+	{ t: 'Capture video', d: 'Record the screen and get a .final.mp4 where a smart camera has already zoomed in on every action.', c: 'aos capture video start smart' },
 	{ t: 'Screenshots', d: 'Capture a monitor, a region or one app window so the agent can see what it did.', c: 'aos capture screenshot window --app=Safari' },
 	{ t: 'Shell & packages', d: 'Run commands with JSON-captured output, and one package verb set over brew, winget, apt and more.', c: 'aos exec capture -- git status' },
 	{ t: 'Remote screen share', d: 'Hand this screen and its input to a browser on the LAN, and watch the agent work from your phone.', c: 'aos remote share' },
@@ -24,7 +32,7 @@ const features = [
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>aos — your agent can finally use your computer</title>
+		<title>aos — let your AI use your computer, without taking it over</title>
 		<meta name="description" content={`One CLI that lets AI agents and people control the desktop on macOS, Windows and Linux. ${registry.commands} commands across ${registry.groups} groups.`} />
 		<link rel="icon" href={`${base}/favicon.svg`} />
 	</head>
@@ -55,8 +63,8 @@ const features = [
 					<path class="arrow head" d="M922 414 L903 428 L924 440" />
 				</svg>
 				<p class="eyebrow">macOS · Windows · Linux · one binary</p>
-				<h1>Your agent can finally use your computer.</h1>
-				<p class="sub">aos is one CLI for windows, keyboard, mouse, screenshots and on-screen pointers that Claude Code and other agents drive exactly the way you do.</p>
+				<h1>Let your AI use your computer, without taking it over.</h1>
+				<p class="sub">aos is a CLI and an agent skill. Install it once, and your agent can arrange your windows, open apps, click, type, show you where to click, and record what it did, on macOS, Windows and Linux.</p>
 
 				<div class="install" data-tabs>
 					<div class="tabs" role="tablist">
@@ -65,7 +73,7 @@ const features = [
 					</div>
 					<div class="cmdline" data-panel="sh"><code>{installSh}</code><button class="copy" data-copy={installSh}>Copy</button></div>
 					<div class="cmdline" data-panel="cmd" hidden><code>{installCmd}</code><button class="copy" data-copy={installCmd}>Copy</button></div>
-					<p class="note">No Go, no root. The agent skill installs itself on first run. Then run <code>aos doctor</code>.</p>
+					<p class="note">No Go, no root. The agent skill installs itself on first run (opt out: <code>AOS_NO_SKILL_AUTOINSTALL=1</code>). Then run <code>aos doctor</code>. <a href={`${base}/install/`}>More install options</a>.</p>
 				</div>
 
 				<div class="cta">
@@ -79,8 +87,21 @@ const features = [
 					<video src={`${base}/demo/aos-demo.mp4`} poster={`${base}/demo/aos-demo-poster.jpg`} controls playsinline preload="metadata">
 						<track kind="captions" src={`${base}/demo/aos-demo.vtt`} srclang="en" label="English" default />
 					</video>
-					<figcaption>Recorded live on macOS with the real binary. Captions show each exact command.</figcaption>
+					<figcaption>Recorded live on macOS and Windows 11 with the real binary, every clip shot with <code>aos capture video start smart</code>. Captions show each exact command.</figcaption>
 				</figure>
+			</section>
+
+			<section class="wrap block">
+				<h2>Why aos</h2>
+				<div class="grid usp">
+					{usps.map((u) => (
+						<article class="card">
+							<h3>{u.t}</h3>
+							<p>{u.d}</p>
+							<code class="ex">{u.c}</code>
+						</article>
+					))}
+				</div>
 			</section>
 
 			<section class="wrap block">

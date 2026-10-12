@@ -1,0 +1,67 @@
+---
+title: Installing
+description: One line on macOS, Linux and Windows. Install from GitHub, a local folder, a mirror URL, a single release archive or a bare executable. The agent skill installs itself.
+---
+
+aos is one executable. There is no Go toolchain, no runtime and no administrator step.
+
+## macOS and Linux
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
+```
+
+This puts `aos` in `~/.local/bin`. Options go after `sh -s --`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --version v0.5.0
+sh install.sh --dir ~/bin
+```
+
+## Windows
+
+```bat
+curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
+```
+
+This puts `aos.exe` in `%LOCALAPPDATA%\Programs\aos` and adds it to your user `PATH`.
+It is a `.cmd` on purpose: PowerShell's execution policy blocks unsigned script files by default, but a `.cmd` runs everywhere.
+Both `/from` and `--from` styles work (`/version`, `/dir` likewise).
+
+## Installing without GitHub: `--from`
+
+Every installer takes `--from`, so you can install on an air-gapped machine, from a mirror, or from your own build.
+
+| `--from` value | what happens |
+|---|---|
+| a folder (`./dist/`) | goreleaser archives plus `checksums.txt`; the right archive for this OS/arch is picked and verified |
+| an `http(s)` URL | the same, from a mirror (`https://mirror.example/aos/v0.6.0/`) |
+| one archive (`aos_0.5.0_darwin_arm64.tar.gz`, `.zip`) | unpacked and installed |
+| an executable (`./aos`, `aos.exe`) | copied in as-is |
+
+```sh
+sh install.sh --from ./aos_0.5.0_darwin_arm64.tar.gz
+```
+
+```bat
+install.cmd /from .\aos_0.5.0_windows_arm64.zip
+install.cmd /from .\aos.exe
+```
+
+Environment equivalents: `AOS_FROM`, `AOS_VERSION`, `AOS_INSTALL_DIR`.
+
+## The agent skill installs itself
+
+You do not run a second command for your agent. The first time you run any `aos` command, the bundled skill is written to
+`~/.claude/skills/` and `~/.agents/skills/`, and it is refreshed whenever the binary changes, so the skill never describes
+flags your build does not have.
+
+To opt out, set `AOS_NO_SKILL_AUTOINSTALL=1`, or remove it with `aos skill uninstall`. See [the agent skill](/aos/agent-skill/).
+
+## Check the machine
+
+```sh
+aos doctor
+```
+
+`doctor` says what this machine can and cannot do (permissions, display, ffmpeg for `capture video`) and how to fix each gap.

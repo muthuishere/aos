@@ -49,6 +49,7 @@ export default defineConfig({
 						{ label: 'What it is', slug: 'what-it-is' },
 						{ label: "What it's not", slug: 'what-it-is-not' },
 						{ label: 'Quickstart', slug: 'quickstart' },
+						{ label: 'Installing', slug: 'install' },
 					],
 				},
 				{
@@ -61,6 +62,7 @@ export default defineConfig({
 						{ label: 'Headless machines', slug: 'headless' },
 						{ label: 'Extending it', slug: 'extending' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
+						{ label: 'Showing where to click', slug: 'draw' },
 						{ label: 'Recording a demo', slug: 'capture-video' },
 						{ label: 'Observability', slug: 'observability' },
 					],

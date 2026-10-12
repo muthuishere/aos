@@ -1,0 +1,44 @@
+---
+title: Showing a human where to click
+description: draw puts a click-through arrow, ring or box with a sign on the real screen; draw text adds a styled label; subtitle shows a film-style caption. Nothing takes focus.
+---
+
+Sometimes the agent should not click; the person should. aos draws on the real screen instead, and every drawing is
+click-through, so the person's clicks land on the app underneath.
+
+## An arrow at a button
+
+```sh
+aos draw --app=Calculator --find=Equals --text="Click here"
+aos draw --app=Safari --find="Reload this page" --style=ring --text="This one"
+aos draw --rect=100,200,300,80 --style=box --text="Fill these in" --color=green
+```
+
+`--find` resolves the target through the accessibility tree (OCR as a fallback), so the arrow follows the button, not a
+guessed coordinate. `--style=arrow|ring|box`, `--shape=bend|straight|zigzag|spiral`, `--size=S|M|L`.
+Add `--detach --duration=10` to return immediately and let it fade on its own; `aos draw stop` clears every drawing.
+
+## A text label
+
+```sh
+aos draw text "Your notes live here" --app=TextEdit --position=center --size=L --duration=7 --detach
+aos draw text "Step 2 of 3" --monitor=1 --position=top-right
+```
+
+Place it inside a window, a monitor, a rect or beside a point, with `--position`, `--margin`, `--offset`, `--font`, `--bg`
+and `--max-width`.
+
+## A subtitle
+
+```sh
+aos subtitle show "Opening the export dialog…" --seconds=4
+aos subtitle show "Arrows, labels and subtitles" --monitor=1 --detach
+```
+
+Subtitles are how an agent narrates what it is doing without taking focus. They pair well with
+[capture video](/aos/capture-video/): the narration ends up in the recording.
+
+## Previewing
+
+Every draw command takes `--preview=out.png` to render the overlay to a file instead of the screen, which is handy in
+tests and on headless machines.
