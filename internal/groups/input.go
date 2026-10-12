@@ -143,7 +143,11 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 	opts.Monitor = monitor
-	return windowctl.MouseClick(opts)
+	if err := windowctl.MouseClick(opts); err != nil {
+		return err
+	}
+	noteVideoClick(c)
+	return nil
 }
 
 func runKeyType(c *cli.Ctx, args []string) error {
@@ -161,7 +165,11 @@ func runKeyType(c *cli.Ctx, args []string) error {
 	// With a window named, windowctl focuses and verifies before typing, so
 	// keystrokes cannot land in whatever happened to be frontmost.
 	if match, ok := optionalMatch(set); ok {
-		return windowctl.TypeInto(match, text)
+		if err := windowctl.TypeInto(match, text); err != nil {
+			return err
+		}
+		noteVideoWindow(c, "key type", match)
+		return nil
 	}
 	return windowctl.TypeText(text)
 }
@@ -179,7 +187,11 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 	}
 	combo := set.Rest[0]
 	if match, ok := optionalMatch(set); ok {
-		return windowctl.PressKeyInto(match, combo)
+		if err := windowctl.PressKeyInto(match, combo); err != nil {
+			return err
+		}
+		noteVideoWindow(c, "key press", match)
+		return nil
 	}
 	return windowctl.PressKey(combo)
 }

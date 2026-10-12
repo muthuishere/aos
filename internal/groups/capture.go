@@ -140,6 +140,9 @@ func targetedScreenshot(c *cli.Ctx, set *argSet, outPath string) error {
 	if err != nil {
 		return err
 	}
+	if opts.Match != nil {
+		noteVideo(c, "action", "capture screenshot", &rect, describeMatch(*opts.Match))
+	}
 	c.Printf("%s  %dx%d%s%s\n", outPath, rect.W, rect.H, signed(rect.X), signed(rect.Y))
 	return nil
 }

@@ -38,6 +38,8 @@ display, and on Linux `headless start` provides one when something does.
 $ aos system info
 $ aos window move Chrome --zone=1B
 $ aos capture screenshot --app=Chrome --out=/tmp/shot.png
+$ aos capture video start smart --audio=mic   # talk through a demo, then:
+$ aos capture video stop                     # demo.final.mp4, auto-zoomed
 $ aos pkg install ripgrep          # brew / winget / pacman / apt, same verb
 $ aos obs audit --since=24h        # what an agent did on this machine
 $ aos skill install             # now an agent runs all of the above

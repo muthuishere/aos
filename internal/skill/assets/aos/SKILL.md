@@ -15,7 +15,8 @@ description: >
   apply / save a window layout, which monitor is active, find a button / menu /
   text on screen, where is the Allow button, point at it, draw an arrow, show me
   where to click, highlight / circle / box this, open a terminal and run a command,
-  is this machine set up correctly, expose this machine to an agent over MCP.
+  is this machine set up correctly, expose this machine to an agent over MCP,
+  record my screen, capture video, record a demo, screen recording with zoom.
 ---
 
 # aos
@@ -79,6 +80,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | keep it running | `service create NAME --autostart --now -- <cmd>` · `start` · `status` · `stop` · `remove` · `list` |
 | tell the human | `subtitle show "what I am doing" --seconds=10` — a caption that never steals focus |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
+| record a demo | ASK FIRST, then `capture video start smart --audio=mic` … `capture video stop` → `<out>.final.mp4` with an auto-zoom camera; see `references/capture-video.md` |
 | react to changes | `watch clipboard --max=1` · `watch window --max=1` · `watch file P --recursive --max=1` — one JSON line per event |
 
 `--app` and `--title` both select a window; a bare word is treated as an app name
@@ -94,6 +96,7 @@ Load the one that matches the intent:
   run a command, screen sharing and the public-tunnel confirmation rule
 - `references/find.md` — `aos find`: sources, ranking, roles, exit 3
 - `references/draw.md` — `aos draw`: targets, look, `--find`, detach/stop, verified pointing
+- `references/capture-video.md` — `aos capture video`: record the screen (ask first!), smart/mouse/app camera, mark/focus, auto-zoomed `.final.mp4`, events format
 - `references/permissions.md` — macOS Accessibility + Screen Recording
 
 ## Screenshots are for looking, not just saving

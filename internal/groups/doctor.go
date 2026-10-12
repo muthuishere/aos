@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -68,6 +69,7 @@ func runDoctor(c *cli.Ctx, args []string) error {
 		checkPermissions(c),
 		checkWindowBackend(c),
 		checkScreenshot(c),
+		checkVideo(c),
 		checkClipboard(c),
 		checkPackageManager(c),
 		checkPlugins(c),
@@ -228,6 +230,32 @@ func checkScreenshot(c *cli.Ctx) checkResult {
 		return checkResult{"screenshot", statusFail, "captured an empty image", screenshotRemedy(c.GOOS)}
 	}
 	return checkResult{"screenshot", statusOK, fmt.Sprintf("captured %d bytes", info.Size()), ""}
+}
+
+// checkVideo reports whether `capture video` can record here: ffmpeg on PATH,
+// Screen Recording on macOS, and which audio sources exist.
+func checkVideo(c *cli.Ctx) checkResult {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		return checkResult{"video", statusWarn, "ffmpeg not found; `capture video` is unavailable", "install ffmpeg: " + ffmpegInstallHint(c.GOOS)}
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		return checkResult{"video", statusWarn, "ffprobe not found; recordings cannot be rendered", "install ffmpeg (it ships ffprobe): " + ffmpegInstallHint(c.GOOS)}
+	}
+	if c.GOOS != "darwin" {
+		return checkResult{"video", statusOK, "ffmpeg " + ffmpeg, ""}
+	}
+	if !windowctl.CheckScreenCapture() {
+		return checkResult{"video", statusFail, "Screen Recording not granted; ffmpeg cannot see the screen",
+			"grant Screen Recording: `aos permission request screen`"}
+	}
+	_, audio := parseAVFDevices(listAVFDevices(ffmpeg))
+	loopback := "no loopback device (system audio needs one, e.g. BlackHole)"
+	if d, ok := pickAudioDevice(audio, "", true); ok {
+		loopback = "system audio via " + d.Name
+	}
+	detail := fmt.Sprintf("ffmpeg ok; %d audio input(s); %s; macOS asks for Microphone access on the first --audio=mic recording", len(audio), loopback)
+	return checkResult{"video", statusOK, detail, ""}
 }
 
 func screenshotRemedy(goos string) string {

@@ -226,17 +226,26 @@ func runDraw(c *cli.Ctx, args []string) error {
 	go func() { <-sig; close(stop) }()
 	opts.Stop = stop
 
+	placed := false
 	if set.Has("json") || windowctl.IsDrawChild() {
 		// Place first, so the caller learns where it lands before it shows.
 		res, err := windowctl.RenderDraw(opts, os.DevNull)
 		if err != nil {
 			return notFoundExit(err)
 		}
+		placed = true
+		noteVideoDraw(c, res, opts.Text)
 		if windowctl.IsDrawChild() {
 			windowctl.RegisterDrawing(res)
 			defer windowctl.UnregisterDrawing()
 		} else if err := emitDraw(c, set, res, ""); err != nil {
 			return err
+		}
+	}
+	if !placed && activeRecording(c) != nil {
+		// Only while recording: place it once more to log where it lands.
+		if res, err := windowctl.RenderDraw(opts, os.DevNull); err == nil {
+			noteVideoDraw(c, res, opts.Text)
 		}
 	}
 	if _, err := windowctl.Draw(opts); err != nil {

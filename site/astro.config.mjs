@@ -61,6 +61,7 @@ export default defineConfig({
 						{ label: 'Headless machines', slug: 'headless' },
 						{ label: 'Extending it', slug: 'extending' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
+						{ label: 'Recording a demo', slug: 'capture-video' },
 						{ label: 'Observability', slug: 'observability' },
 					],
 				},

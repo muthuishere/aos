@@ -278,7 +278,11 @@ func runWindowFocus(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return windowctl.Focus(resolved)
+	if err := windowctl.Focus(resolved); err != nil {
+		return err
+	}
+	noteVideoWindow(c, "window focus", resolved)
+	return nil
 }
 
 func runWindowMove(c *cli.Ctx, args []string) error {
@@ -302,7 +306,14 @@ func runWindowMove(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	zone, at := set.String("zone", ""), set.String("at", "")
+	if err := moveWindow(match, monitor, set.String("zone", ""), set.String("at", "")); err != nil {
+		return err
+	}
+	noteVideoWindow(c, "window move", match)
+	return nil
+}
+
+func moveWindow(match windowctl.Match, monitor *int, zone, at string) error {
 	switch {
 	case zone != "" && at != "":
 		return fmt.Errorf("give either --zone or --at, not both")
