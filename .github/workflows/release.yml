@@ -9,75 +9,21 @@ permissions:
   contents: write
 
 jobs:
-  # The macOS window backend is CoreGraphics through cgo, so darwin binaries
-  # have to be built on a macOS runner. Everything else is pure Go and
-  # cross-compiles from Linux.
-  darwin:
+  # One goreleaser run on macOS: darwin needs cgo (system clang), and linux /
+  # windows are pure Go, so they cross-compile from the same runner. Produces
+  # aos_<version>_<os>_<arch>.tar.gz (zip on windows) + checksums.txt, which is
+  # what install.sh / install.cmd download.
+  release:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        arch: [arm64, amd64]
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - name: Build
-        env:
-          CGO_ENABLED: '1'
-          GOOS: darwin
-          GOARCH: ${{ matrix.arch }}
-        run: |
-          go build -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
-            -o "dist/aos-darwin-${{ matrix.arch }}" ./cmd/aos
-      - uses: actions/upload-artifact@v4
+      - uses: goreleaser/goreleaser-action@v6
         with:
-          name: aos-darwin-${{ matrix.arch }}
-          path: dist/*
-
-  cross:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - { goos: linux,   arch: amd64, ext: '' }
-          - { goos: linux,   arch: arm64, ext: '' }
-          - { goos: windows, arch: amd64, ext: '.exe' }
-          - { goos: windows, arch: arm64, ext: '.exe' }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: { go-version: stable }
-      - name: Build
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
         env:
-          CGO_ENABLED: '0'
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.arch }}
-        run: |
-          go build -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
-            -o "dist/aos-${{ matrix.goos }}-${{ matrix.arch }}${{ matrix.ext }}" ./cmd/aos
-      - uses: actions/upload-artifact@v4
-        with:
-          name: aos-${{ matrix.goos }}-${{ matrix.arch }}
-          path: dist/*
-
-  publish:
-    needs: [darwin, cross]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: staging
-          merge-multiple: true
-      - name: Checksums
-        run: |
-          cd staging
-          sha256sum aos-* > checksums.txt
-          ls -l
-      - name: Publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" staging/* \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "${GITHUB_REF_NAME}" \
-            --generate-notes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

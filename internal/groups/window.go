@@ -3,6 +3,7 @@ package groups
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,9 +73,10 @@ func init() {
 			&cli.Command{
 				Group: "window", Name: "arrange",
 				Summary: "Apply a saved layout of many windows in one pass",
-				Args:    "<layout.json>",
+				Args:    "<layout.json | ->",
 				Examples: []string{
 					"aos window arrange ~/.config/aos/layouts/work.json",
+					`echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos window arrange -`,
 				},
 				Run: runWindowArrange,
 			},
@@ -422,9 +424,15 @@ func describeWindow(w windowctl.Window) string {
 
 func runWindowArrange(c *cli.Ctx, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("`window arrange` takes one layout file")
+		return fmt.Errorf("`window arrange` takes one layout file (or - for stdin)")
 	}
-	data, err := os.ReadFile(expandHome(args[0]))
+	var data []byte
+	var err error
+	if args[0] == "-" {
+		data, err = io.ReadAll(c.Stdin)
+	} else {
+		data, err = os.ReadFile(expandHome(args[0]))
+	}
 	if err != nil {
 		return err
 	}
