@@ -2,10 +2,15 @@ package groups
 
 import (
 	"fmt"
+	"math"
+	"os"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
+	"github.com/muthuishere/windowctl"
 )
 
 // subtitleRequest is one caption: what to say, for how long, and where on
@@ -23,21 +28,41 @@ const (
 	subtitleSize    = 48
 )
 
+// subtitleTag marks subtitle drawings in windowctl's shared registry, so
+// `subtitle stop` and a new caption end only subtitles, never arrows.
+const subtitleTag = "subtitle"
+
+var subtitleValueFlags = []string{
+	"seconds", "position", "size", "color", "bg", "font", "font-scale", "align", "weight",
+	"margin", "max-width", "offset", "app", "title", "monitor", "rect", "at", "preview",
+}
+
 func init() {
 	register(func(r *cli.Registry) {
 		r.Describe("subtitle", "Narrate what an agent is doing, on screen, without taking focus")
 		r.Add(
 			&cli.Command{
 				Group: "subtitle", Name: "show",
-				Summary: "Show large text over everything for a few seconds",
-				Args:    "<text...> [--seconds=<n>] [--position=bottom|top|center] [--size=<px>] [--wait]",
+				Summary: "Show a film-style caption over everything (or over one app's window) for a few seconds",
+				Args: "<text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] " +
+					"[--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] " +
+					"[--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] " +
+					"[--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>]",
 				Examples: []string{
 					`aos subtitle show "installing dependencies"`,
+					`aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom`,
 					`aos subtitle show "running the migration" --seconds=30 --position=top`,
 					`aos subtitle show "step 1 of 3" --seconds=4 --wait`,
-					"# prints which backend was used: an overlay, or a notification it fell back to",
+					"aos subtitle stop",
+					"# white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last",
 				},
 				Run: runSubtitleShow,
+			},
+			&cli.Command{
+				Group: "subtitle", Name: "stop",
+				Summary:  "Remove the caption on screen",
+				Examples: []string{"aos subtitle stop"},
+				Run:      runSubtitleStop,
 			},
 			&cli.Command{
 				Group: "subtitle", Name: "test",
@@ -49,57 +74,187 @@ func init() {
 	})
 }
 
+// subtitleOptions turns `subtitle show` flags into a windowctl text drawing.
+func subtitleOptions(args []string) (windowctl.DrawOptions, *argSet, float64, error) {
+	var opts windowctl.DrawOptions
+	// --wait / --detach take no value, so they stay out of the value flags:
+	// `--wait "text"` must not swallow the caption.
+	set, err := parseArgs(args, subtitleValueFlags...)
+	if err != nil {
+		return opts, nil, 0, err
+	}
+	if err := set.Reject(append([]string{"wait", "detach", "json", "no-config"}, subtitleValueFlags...)...); err != nil {
+		return opts, nil, 0, err
+	}
+	opts.Text = strings.ReplaceAll(strings.Join(set.Rest, " "), `\n`, "\n")
+	opts.Text = strings.ReplaceAll(opts.Text, "\r", "")
+	if strings.TrimSpace(opts.Text) == "" {
+		return opts, nil, 0, fmt.Errorf("`subtitle show` needs some text to show")
+	}
+	opts.Style, opts.Subtitle = windowctl.DrawText, true
+	opts.Position = windowctl.DrawPosition(set.String("position", ""))
+	opts.Margin = set.String("margin", "")
+	opts.Background = set.String("bg", "")
+	opts.Align = set.String("align", "")
+	opts.MaxWidth = set.String("max-width", "")
+	opts.Weight = set.String("weight", "")
+	opts.Font = set.String("font", "")
+	opts.NoConfig = set.Has("no-config")
+	if raw := set.String("color", ""); raw != "" {
+		col, err := windowctl.ParseColor(raw)
+		if err != nil {
+			return opts, nil, 0, fmt.Errorf("--color: %w", err)
+		}
+		opts.Color = &col
+	}
+	if raw := set.String("font-scale", ""); raw != "" {
+		if opts.FontScale, err = strconv.ParseFloat(raw, 64); err != nil || opts.FontScale <= 0 {
+			return opts, nil, 0, fmt.Errorf("--font-scale must be a positive number, got %q", raw)
+		}
+	}
+	// --size: S/M/L/XL, or (as before) a text height in pixels.
+	if raw := set.String("size", ""); raw != "" {
+		if px, err := strconv.Atoi(raw); err == nil {
+			if px < 8 || px > 400 {
+				return opts, nil, 0, fmt.Errorf("--size must be S, M, L, XL or 8..400 pixels")
+			}
+			opts.FontSize = float64(px)
+		} else {
+			opts.Size = windowctl.DrawSize(strings.ToUpper(raw))
+		}
+	}
+	if opts.Monitor, err = set.IntPtr("monitor"); err != nil {
+		return opts, nil, 0, err
+	}
+	if raw := set.String("rect", ""); raw != "" {
+		n, err := drawInts(raw, 4, "--rect=x,y,w,h")
+		if err != nil {
+			return opts, nil, 0, err
+		}
+		opts.Region = &windowctl.Rect{X: n[0], Y: n[1], W: n[2], H: n[3]}
+	}
+	if raw := set.String("at", ""); raw != "" {
+		n, err := drawInts(raw, 2, "--at=x,y")
+		if err != nil {
+			return opts, nil, 0, err
+		}
+		opts.Point = &windowctl.Point{X: n[0], Y: n[1]}
+	}
+	if raw := set.String("offset", ""); raw != "" {
+		n, err := drawInts(raw, 2, "--offset=dx,dy")
+		if err != nil {
+			return opts, nil, 0, err
+		}
+		opts.Offset = &windowctl.Point{X: n[0], Y: n[1]}
+	}
+	if app, title := set.String("app", ""), set.String("title", ""); app != "" || title != "" {
+		m := windowctl.Match{App: app, Title: title}
+		if resolved, err := resolveMatch(m); err == nil {
+			m = resolved
+		}
+		opts.Match = &m
+	}
+	secs := float64(subtitleSeconds)
+	if raw := set.String("seconds", ""); raw != "" {
+		if secs, err = strconv.ParseFloat(raw, 64); err != nil || secs < 1 {
+			return opts, nil, 0, fmt.Errorf("--seconds must be at least 1")
+		}
+	}
+	opts.Duration = time.Duration(secs * float64(time.Second))
+	return opts, set, secs, nil
+}
+
 func runSubtitleShow(c *cli.Ctx, args []string) error {
-	// --wait takes no value, so it stays out of valueFlags: `--wait "text"`
-	// must not swallow the caption.
-	set, err := parseArgs(args, "seconds", "position", "size")
+	opts, set, secs, err := subtitleOptions(args)
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("seconds", "position", "size", "wait"); err != nil {
-		return err
+	if out := set.String("preview", ""); out != "" {
+		res, err := windowctl.RenderDraw(opts, expandHome(out))
+		if err != nil {
+			return notFoundExit(err)
+		}
+		return emitDraw(c, set, res, out)
+	}
+	// The detached child: show it here until it times out or is stopped.
+	if windowctl.IsDrawChild() {
+		return showDraw(c, []string{"subtitle", "show"}, args, opts, set)
 	}
 
-	req := subtitleRequest{
-		// A caption is one line. Folding newlines here means no backend has to
-		// decide what a line break means inside its own script literal.
-		Text:     strings.NewReplacer("\n", " ", "\r", " ").Replace(strings.Join(set.Rest, " ")),
-		Position: set.String("position", "bottom"),
+	// One caption at a time, like film subtitles: the new one replaces the last.
+	windowctl.StopDrawingsTagged(subtitleTag)
+	mode := "overlay"
+	if runtime.GOOS == "linux" {
+		// windowctl has no linux overlay yet; keep the original backend there.
+		mode, err = showSubtitle(legacySubtitle(opts, secs))
+	} else if _, derr := windowctl.SpawnDetachedDrawTagged(
+		append([]string{"subtitle", "show"}, withoutFlag(withoutDetach(args), "wait")...), subtitleTag); derr != nil {
+		// Be loud about the downgrade: the original backend may only manage
+		// a notification, and the caller must know what is on screen.
+		fmt.Fprintf(os.Stderr, "aos subtitle: overlay failed (%v); using the fallback\n", derr)
+		mode, err = showSubtitle(legacySubtitle(opts, secs))
 	}
-	if strings.TrimSpace(req.Text) == "" {
-		return fmt.Errorf("`subtitle show` needs some text to show")
-	}
-	switch req.Position {
-	case "bottom", "top", "center":
-	default:
-		return fmt.Errorf("--position must be bottom, top, or center, got %q", req.Position)
-	}
-	if req.Seconds, err = set.Int("seconds", subtitleSeconds); err != nil {
-		return err
-	}
-	if req.Seconds < 1 {
-		return fmt.Errorf("--seconds must be at least 1")
-	}
-	if req.Size, err = set.Int("size", subtitleSize); err != nil {
-		return err
-	}
-	if req.Size < 8 || req.Size > 400 {
-		return fmt.Errorf("--size must be between 8 and 400 pixels")
-	}
-
-	// The backend names what it actually did. A caption that quietly became a
-	// desktop notification looks like a success from here, so it has to say so.
-	mode, err := showSubtitle(req)
 	if err != nil {
 		return err
 	}
-	c.Printf("%s  %ds  %s\n", mode, req.Seconds, req.Position)
+	c.Printf("%s  %gs  %s\n", mode, secs, positionName(opts.Position))
 
 	// Showing a subtitle returns immediately so it can sit over other work.
 	// --wait is for the script that wants the next step to follow this one.
 	if set.Has("wait") {
-		time.Sleep(time.Duration(req.Seconds) * time.Second)
+		time.Sleep(opts.Duration)
 	}
+	return nil
+}
+
+func positionName(p windowctl.DrawPosition) string {
+	if p == "" {
+		return "bottom-center"
+	}
+	return string(p)
+}
+
+// legacySubtitle maps the options onto the original one-line backend.
+func legacySubtitle(o windowctl.DrawOptions, secs float64) subtitleRequest {
+	req := subtitleRequest{
+		Text:    strings.NewReplacer("\n", " ", "\r", " ").Replace(o.Text),
+		Seconds: int(math.Ceil(secs)), Position: "bottom", Size: subtitleSize,
+	}
+	switch p := string(o.Position); {
+	case strings.HasPrefix(p, "top"):
+		req.Position = "top"
+	case p == "center" || p == "left" || p == "right":
+		req.Position = "center"
+	}
+	switch {
+	case o.FontSize > 0:
+		req.Size = int(o.FontSize)
+	case o.Size == windowctl.SizeS:
+		req.Size = 24
+	case o.Size == windowctl.SizeM:
+		req.Size = 34
+	case o.Size == windowctl.SizeXL:
+		req.Size = 72
+	}
+	return req
+}
+
+func withoutFlag(args []string, name string) []string {
+	var out []string
+	for _, a := range args {
+		if a == "--"+name || strings.HasPrefix(a, "--"+name+"=") {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+func runSubtitleStop(c *cli.Ctx, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("`subtitle stop` takes no arguments")
+	}
+	c.Println(fmt.Sprintf("stopped %d subtitle(s)", windowctl.StopDrawingsTagged(subtitleTag)))
 	return nil
 }
 

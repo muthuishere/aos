@@ -77,7 +77,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | running processes | `process list --json` · `process find X` · `process kill <pid\|name>` — kill by name refuses when ambiguous |
 | packages | `pkg install X` · `search` · `list` · `upgrade` — one verb set over brew, winget, scoop, choco, apt, pacman, yay, dnf |
 | keep it running | `service create NAME --autostart --now -- <cmd>` · `start` · `status` · `stop` · `remove` · `list` |
-| tell the human | `subtitle show "what I am doing" --seconds=10` — a caption that never steals focus |
+| tell the human | `subtitle show "what I am doing" --seconds=10 [--app=Safari]` — a film-style caption that never steals focus; `draw text "..." --position=top` for a label |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
 | react to changes | `watch clipboard --max=1` · `watch window --max=1` · `watch file P --recursive --max=1` — one JSON line per event |
 
