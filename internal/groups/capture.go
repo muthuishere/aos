@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // captureMode is what part of the screen a screenshot covers.
@@ -117,7 +117,7 @@ func targeted(set *argSet) bool {
 // through windowctl, and prints the captured rect so image coordinates can be
 // translated back to global click coordinates.
 func targetedScreenshot(c *cli.Ctx, set *argSet, outPath string) error {
-	opts := windowctl.ScreenshotOptions{OutPath: outPath}
+	opts := engine.ScreenshotOptions{OutPath: outPath}
 
 	monitor, err := set.IntPtr("monitor")
 	if err != nil {
@@ -136,7 +136,7 @@ func targetedScreenshot(c *cli.Ctx, set *argSet, outPath string) error {
 		opts.Match = &match
 	}
 
-	rect, err := windowctl.Screenshot(opts)
+	rect, err := engine.Screenshot(opts)
 	if err != nil {
 		return err
 	}

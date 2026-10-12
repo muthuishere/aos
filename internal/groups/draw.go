@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // drawValueFlags are the `draw` flags that take a value.
@@ -70,8 +70,8 @@ func init() {
 
 // drawOptionsFrom turns `draw` flags into windowctl's options. Every rule about
 // targets, enums and defaults stays in windowctl; this only translates.
-func drawOptionsFrom(args []string) (windowctl.DrawOptions, *argSet, error) {
-	var opts windowctl.DrawOptions
+func drawOptionsFrom(args []string) (engine.DrawOptions, *argSet, error) {
+	var opts engine.DrawOptions
 	set, err := parseArgs(args, drawValueFlags...)
 	if err != nil {
 		return opts, nil, err
@@ -82,16 +82,16 @@ func drawOptionsFrom(args []string) (windowctl.DrawOptions, *argSet, error) {
 
 	opts.Text = set.String("text", "")
 	opts.Mouse = set.Has("mouse")
-	opts.Style = windowctl.DrawStyle(set.String("style", ""))
-	opts.Shape = windowctl.DrawShape(set.String("shape", ""))
-	opts.Size = windowctl.DrawSize(strings.ToUpper(set.String("size", "")))
-	opts.Border = windowctl.DrawBorder(set.String("border", ""))
-	opts.Corners = windowctl.DrawCorners(set.String("corners", ""))
-	opts.From = windowctl.DrawFrom(set.String("from", ""))
+	opts.Style = engine.DrawStyle(set.String("style", ""))
+	opts.Shape = engine.DrawShape(set.String("shape", ""))
+	opts.Size = engine.DrawSize(strings.ToUpper(set.String("size", "")))
+	opts.Border = engine.DrawBorder(set.String("border", ""))
+	opts.Corners = engine.DrawCorners(set.String("corners", ""))
+	opts.From = engine.DrawFrom(set.String("from", ""))
 	opts.Font = set.String("font", "")
 	opts.NoConfig = set.Has("no-config")
 	opts.Find = set.String("find", "")
-	opts.FindSource = windowctl.FindSource(set.String("source", ""))
+	opts.FindSource = engine.FindSource(set.String("source", ""))
 	opts.FindRole = set.String("role", "")
 	opts.FindExact = set.Has("exact")
 	if opts.FindNth, err = set.Int("nth", 0); err != nil {
@@ -106,16 +106,16 @@ func drawOptionsFrom(args []string) (windowctl.DrawOptions, *argSet, error) {
 		if err != nil {
 			return opts, nil, err
 		}
-		opts.Point = &windowctl.Point{X: n[0], Y: n[1]}
+		opts.Point = &engine.Point{X: n[0], Y: n[1]}
 	}
 	if raw := set.String("rect", ""); raw != "" {
 		n, err := drawInts(raw, 4, "--rect=x,y,w,h")
 		if err != nil {
 			return opts, nil, err
 		}
-		opts.Region = &windowctl.Rect{X: n[0], Y: n[1], W: n[2], H: n[3]}
+		opts.Region = &engine.Rect{X: n[0], Y: n[1], W: n[2], H: n[3]}
 	}
-	match := windowctl.Match{App: set.String("app", ""), Title: set.String("title", "")}
+	match := engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	if match.App == "" && match.Title == "" && len(set.Rest) > 0 {
 		match.App = strings.Join(set.Rest, " ")
 	}
@@ -125,13 +125,13 @@ func drawOptionsFrom(args []string) (windowctl.DrawOptions, *argSet, error) {
 
 	for _, c := range []struct {
 		flag string
-		dst  **windowctl.Color
+		dst  **engine.Color
 	}{{"color", &opts.Color}, {"text-color", &opts.TextColor}} {
 		raw := set.String(c.flag, "")
 		if raw == "" {
 			continue
 		}
-		col, err := windowctl.ParseColor(raw)
+		col, err := engine.ParseColor(raw)
 		if err != nil {
 			return opts, nil, fmt.Errorf("--%s: %w", c.flag, err)
 		}
@@ -179,7 +179,7 @@ func runDraw(c *cli.Ctx, args []string) error {
 	}
 
 	if out := set.String("preview", ""); out != "" {
-		res, err := windowctl.RenderDraw(opts, expandHome(out))
+		res, err := engine.RenderDraw(opts, expandHome(out))
 		if err != nil {
 			return notFoundExit(err)
 		}
@@ -194,7 +194,7 @@ func runDraw(c *cli.Ctx, args []string) error {
 		if !set.Has("duration") {
 			child = append(child, "--duration", "300")
 		}
-		res, err := windowctl.SpawnDetachedDraw(child)
+		res, err := engine.SpawnDetachedDraw(child)
 		if err != nil {
 			return &cli.ExitError{Code: 1, Message: err.Error()}
 		}
@@ -205,7 +205,7 @@ func runDraw(c *cli.Ctx, args []string) error {
 		return nil
 	}
 	if opts.Avoid == nil {
-		opts.Avoid = windowctl.LiveDrawingSigns()
+		opts.Avoid = engine.LiveDrawingSigns()
 	}
 
 	// AppKit only draws from the main goroutine. A terminal invocation is on
@@ -226,26 +226,26 @@ func runDraw(c *cli.Ctx, args []string) error {
 	go func() { <-sig; close(stop) }()
 	opts.Stop = stop
 
-	if set.Has("json") || windowctl.IsDrawChild() {
+	if set.Has("json") || engine.IsDrawChild() {
 		// Place first, so the caller learns where it lands before it shows.
-		res, err := windowctl.RenderDraw(opts, os.DevNull)
+		res, err := engine.RenderDraw(opts, os.DevNull)
 		if err != nil {
 			return notFoundExit(err)
 		}
-		if windowctl.IsDrawChild() {
-			windowctl.RegisterDrawing(res)
-			defer windowctl.UnregisterDrawing()
+		if engine.IsDrawChild() {
+			engine.RegisterDrawing(res)
+			defer engine.UnregisterDrawing()
 		} else if err := emitDraw(c, set, res, ""); err != nil {
 			return err
 		}
 	}
-	if _, err := windowctl.Draw(opts); err != nil {
+	if _, err := engine.Draw(opts); err != nil {
 		return notFoundExit(err)
 	}
 	return nil
 }
 
-func emitDraw(c *cli.Ctx, set *argSet, res windowctl.DrawResult, preview string) error {
+func emitDraw(c *cli.Ctx, set *argSet, res engine.DrawResult, preview string) error {
 	if set.Has("json") {
 		return json.NewEncoder(c.Stdout).Encode(res)
 	}
@@ -263,7 +263,7 @@ func runDrawStop(c *cli.Ctx, args []string) error {
 	if err := set.Reject("json"); err != nil {
 		return err
 	}
-	n := windowctl.StopDrawings()
+	n := engine.StopDrawings()
 	if set.Has("json") {
 		return json.NewEncoder(c.Stdout).Encode(map[string]int{"Stopped": n})
 	}
@@ -293,18 +293,18 @@ func runDrawConfig(c *cli.Ctx, args []string) error {
 		return err
 	}
 	if set.Has("init") {
-		path, err := windowctl.InitDrawConfig(set.Has("force"))
+		path, err := engine.InitDrawConfig(set.Has("force"))
 		if err != nil {
 			return err
 		}
 		c.Println(path)
 		return nil
 	}
-	cfg, err := windowctl.LoadDrawConfig()
+	cfg, err := engine.LoadDrawConfig()
 	if err != nil {
 		return err
 	}
-	c.Printf("# %s\n", windowctl.DrawConfigPath())
+	c.Printf("# %s\n", engine.DrawConfigPath())
 	enc := json.NewEncoder(c.Stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(cfg)
@@ -314,7 +314,7 @@ func runDrawFonts(c *cli.Ctx, args []string) error {
 	if len(args) > 0 {
 		return fmt.Errorf("`draw fonts` takes no arguments")
 	}
-	for _, f := range windowctl.ListFonts() {
+	for _, f := range engine.ListFonts() {
 		c.Println(f)
 	}
 	return nil

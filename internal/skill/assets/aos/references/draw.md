@@ -43,7 +43,9 @@ zigzag = urgent; spiral = impossible to miss; green = "yes, this one". Several
 `--detach` drawings make numbered steps ("1. ...", "2. ..."); each new sign
 keeps clear of the live ones.
 
-Defaults: `~/.config/windowctl/fontconfig.json` (shared with windowctl).
+Defaults: `~/.config/aos/draw.json` (`$AOS_CONFIG` overrides). If that file is
+absent, the legacy `$WINDOWCTL_CONFIG` / `~/.config/windowctl/fontconfig.json`
+is read instead.
 `aos draw config` shows it, `aos draw config --init` creates it,
 `aos draw fonts` lists font names.
 

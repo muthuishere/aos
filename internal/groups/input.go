@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func init() {
 				Summary:  "Print the pointer position as `x y`",
 				Examples: []string{"aos mouse position     # 784 539"},
 				Run: func(c *cli.Ctx, _ []string) error {
-					x, y, err := windowctl.CursorPosition()
+					x, y, err := engine.CursorPosition()
 					if err != nil {
 						return err
 					}
@@ -97,7 +97,7 @@ func runMouseMove(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return windowctl.MouseMove(monitor, x, y)
+	return engine.MouseMove(monitor, x, y)
 }
 
 func runMouseClick(c *cli.Ctx, args []string) error {
@@ -109,14 +109,14 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	opts := windowctl.ClickOptions{Double: set.Has("double")}
+	opts := engine.ClickOptions{Double: set.Has("double")}
 	switch button := set.String("button", "left"); button {
 	case "left":
-		opts.Button = windowctl.MouseLeft
+		opts.Button = engine.MouseLeft
 	case "right":
-		opts.Button = windowctl.MouseRight
+		opts.Button = engine.MouseRight
 	case "middle":
-		opts.Button = windowctl.MouseMiddle
+		opts.Button = engine.MouseMiddle
 	default:
 		return fmt.Errorf("--button must be left, right, or middle, got %q", button)
 	}
@@ -143,7 +143,7 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 	opts.Monitor = monitor
-	return windowctl.MouseClick(opts)
+	return engine.MouseClick(opts)
 }
 
 func runKeyType(c *cli.Ctx, args []string) error {
@@ -161,9 +161,9 @@ func runKeyType(c *cli.Ctx, args []string) error {
 	// With a window named, windowctl focuses and verifies before typing, so
 	// keystrokes cannot land in whatever happened to be frontmost.
 	if match, ok := optionalMatch(set); ok {
-		return windowctl.TypeInto(match, text)
+		return engine.TypeInto(match, text)
 	}
-	return windowctl.TypeText(text)
+	return engine.TypeText(text)
 }
 
 func runKeyPress(c *cli.Ctx, args []string) error {
@@ -179,9 +179,9 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 	}
 	combo := set.Rest[0]
 	if match, ok := optionalMatch(set); ok {
-		return windowctl.PressKeyInto(match, combo)
+		return engine.PressKeyInto(match, combo)
 	}
-	return windowctl.PressKey(combo)
+	return engine.PressKey(combo)
 }
 
 // optionalMatch reads --app / --title when the command's positionals are its
@@ -192,8 +192,8 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 // `key press --app=`, all of which are documented with `--app=Chrome` — which
 // matched nothing on macOS, where the app is named "Google Chrome", until the
 // resolution moved in here.
-func optionalMatch(set *argSet) (windowctl.Match, bool) {
-	match := windowctl.Match{App: set.String("app", ""), Title: set.String("title", "")}
+func optionalMatch(set *argSet) (engine.Match, bool) {
+	match := engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	if match.App != "" && match.Title == "" {
 		if app, ok := resolveAppName(match.App); ok {
 			match.App = app

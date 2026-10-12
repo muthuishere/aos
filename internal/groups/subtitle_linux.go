@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/muthuishere/aos/internal/engine"
 	"github.com/muthuishere/aos/internal/sys"
-	"github.com/muthuishere/windowctl"
 )
 
 // showSubtitle picks the highest-fidelity tool installed. There is no single
@@ -65,7 +65,7 @@ func subtitleYad(req subtitleRequest) error {
 // against, so the box is estimated from the glyph count — close enough to sit
 // where it was asked to, and clamped so long text cannot run off the screen.
 func subtitleGeometry(req subtitleRequest) (string, bool) {
-	monitors, err := windowctl.ListMonitors()
+	monitors, err := engine.ListMonitors()
 	if err != nil || len(monitors) == 0 {
 		return "", false
 	}

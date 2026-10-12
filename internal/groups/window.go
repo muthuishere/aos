@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -98,8 +98,8 @@ func init() {
 
 // matchFrom reads the --app / --title pair every window command accepts. A bare
 // positional is treated as an application name, which is the common intent.
-func matchFrom(set *argSet) (windowctl.Match, error) {
-	match := windowctl.Match{
+func matchFrom(set *argSet) (engine.Match, error) {
+	match := engine.Match{
 		App:   set.String("app", ""),
 		Title: set.String("title", ""),
 	}
@@ -121,7 +121,7 @@ func runWindowList(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	filter := windowctl.Filter{
+	filter := engine.Filter{
 		App:   set.String("app", ""),
 		Title: set.String("title", ""),
 	}
@@ -137,7 +137,7 @@ func runWindowList(c *cli.Ctx, args []string) error {
 		}
 	}
 
-	windows, err := windowctl.ListWindows(filter)
+	windows, err := engine.ListWindows(filter)
 	if err != nil {
 		return err
 	}
@@ -172,10 +172,10 @@ func runWindowList(c *cli.Ctx, args []string) error {
 }
 
 // findWindow returns the first window a match selects.
-func findWindow(match windowctl.Match) (windowctl.Window, bool) {
-	windows, err := windowctl.ListWindows(windowctl.Filter(match))
+func findWindow(match engine.Match) (engine.Window, bool) {
+	windows, err := engine.ListWindows(engine.Filter(match))
 	if err != nil || len(windows) == 0 {
-		return windowctl.Window{}, false
+		return engine.Window{}, false
 	}
 	return windows[0], true
 }
@@ -188,15 +188,15 @@ func findWindow(match windowctl.Match) (windowctl.Window, bool) {
 // client's hostname instead. A bare `aos window focus xterm` therefore
 // has to fall back to matching the title, or it would work on macOS and never
 // on Linux.
-func resolveMatch(match windowctl.Match) (windowctl.Match, error) {
+func resolveMatch(match engine.Match) (engine.Match, error) {
 	if _, ok := findWindow(match); ok {
 		return match, nil
 	}
 	if match.App != "" && match.Title == "" {
 		if app, ok := resolveAppName(match.App); ok {
-			return windowctl.Match{App: app}, nil
+			return engine.Match{App: app}, nil
 		}
-		byTitle := windowctl.Match{Title: match.App}
+		byTitle := engine.Match{Title: match.App}
 		if _, ok := findWindow(byTitle); ok {
 			return byTitle, nil
 		}
@@ -220,7 +220,7 @@ func resolveAppName(query string) (string, bool) {
 	if strings.TrimSpace(query) == "" {
 		return "", false
 	}
-	windows, err := windowctl.ListWindows(windowctl.Filter{})
+	windows, err := engine.ListWindows(engine.Filter{})
 	if err != nil {
 		return "", false
 	}
@@ -251,7 +251,7 @@ func pickAppName(names []string, query string) (string, bool) {
 	return "", false
 }
 
-func describeMatch(match windowctl.Match) string {
+func describeMatch(match engine.Match) string {
 	var parts []string
 	if match.App != "" {
 		parts = append(parts, "app "+match.App)
@@ -278,7 +278,7 @@ func runWindowFocus(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return windowctl.Focus(resolved)
+	return engine.Focus(resolved)
 }
 
 func runWindowMove(c *cli.Ctx, args []string) error {
@@ -307,19 +307,19 @@ func runWindowMove(c *cli.Ctx, args []string) error {
 	case zone != "" && at != "":
 		return fmt.Errorf("give either --zone or --at, not both")
 	case zone != "":
-		return windowctl.MoveZone(match, monitor, zone)
+		return engine.MoveZone(match, monitor, zone)
 	case at != "":
 		bounds, err := parseRect(at)
 		if err != nil {
 			return err
 		}
-		return windowctl.MoveCoords(match, monitor, bounds)
+		return engine.MoveCoords(match, monitor, bounds)
 	case monitor != nil:
 		// Monitor alone means "send it there and fill the screen", spelled 1:1
 		// because there is no "full" zone. Filling the screen always trips the
 		// clamp check — every OS reserves a menu bar or taskbar — and the caller
 		// asked for a monitor, not for exact bounds, so that is not a failure.
-		if err := windowctl.MoveZone(match, monitor, "1:1"); err != nil &&
+		if err := engine.MoveZone(match, monitor, "1:1"); err != nil &&
 			!strings.Contains(err.Error(), "OS clamped") {
 			return err
 		}
@@ -329,20 +329,20 @@ func runWindowMove(c *cli.Ctx, args []string) error {
 }
 
 // parseRect reads the `x,y,w,h` form used by --at and --region.
-func parseRect(value string) (windowctl.Rect, error) {
+func parseRect(value string) (engine.Rect, error) {
 	parts := strings.Split(value, ",")
 	if len(parts) != 4 {
-		return windowctl.Rect{}, fmt.Errorf("expected x,y,w,h — got %q", value)
+		return engine.Rect{}, fmt.Errorf("expected x,y,w,h — got %q", value)
 	}
 	numbers := make([]int, 4)
 	for i, part := range parts {
 		n, err := parseInt(strings.TrimSpace(part))
 		if err != nil {
-			return windowctl.Rect{}, fmt.Errorf("bad number %q in %q", part, value)
+			return engine.Rect{}, fmt.Errorf("bad number %q in %q", part, value)
 		}
 		numbers[i] = n
 	}
-	return windowctl.Rect{X: numbers[0], Y: numbers[1], W: numbers[2], H: numbers[3]}, nil
+	return engine.Rect{X: numbers[0], Y: numbers[1], W: numbers[2], H: numbers[3]}, nil
 }
 
 func runWindowResize(c *cli.Ctx, args []string) error {
@@ -372,7 +372,7 @@ func runWindowResize(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return windowctl.Resize(resolved, width, height)
+	return engine.Resize(resolved, width, height)
 }
 
 func runWindowWait(c *cli.Ctx, args []string) error {
@@ -401,7 +401,7 @@ func runWindowWait(c *cli.Ctx, args []string) error {
 
 // waitForMatch polls until a window matches, trying the title fallback on each
 // pass so a window that only ever appears under its title is still caught.
-func waitForMatch(match windowctl.Match, timeoutMS int) (windowctl.Window, error) {
+func waitForMatch(match engine.Match, timeoutMS int) (engine.Window, error) {
 	deadline := time.Now().Add(time.Duration(timeoutMS) * time.Millisecond)
 	for {
 		if resolved, err := resolveMatch(match); err == nil {
@@ -410,14 +410,14 @@ func waitForMatch(match windowctl.Match, timeoutMS int) (windowctl.Window, error
 			}
 		}
 		if time.Now().After(deadline) {
-			return windowctl.Window{}, fmt.Errorf("no window matched %s within %dms",
+			return engine.Window{}, fmt.Errorf("no window matched %s within %dms",
 				describeMatch(match), timeoutMS)
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
 }
 
-func describeWindow(w windowctl.Window) string {
+func describeWindow(w engine.Window) string {
 	return fmt.Sprintf("%s  mon %d  %dx%d%s%s  %s",
 		w.App, w.Monitor, w.Bounds.W, w.Bounds.H, signed(w.Bounds.X), signed(w.Bounds.Y), w.Title)
 }
@@ -444,7 +444,7 @@ func runWindowArrange(c *cli.Ctx, args []string) error {
 	// Batch never aborts on a failing entry, so report per-entry and fail at
 	// the end only if something actually went wrong.
 	failed := 0
-	for _, result := range windowctl.Batch(entries) {
+	for _, result := range engine.Batch(entries) {
 		name := result.Entry.App
 		if name == "" {
 			name = result.Entry.Title
@@ -465,8 +465,8 @@ func runWindowArrange(c *cli.Ctx, args []string) error {
 // parseLayout reads a layout file into the entries `window arrange` applies.
 // `window save` writes through layoutFrom, so this is the other half of the
 // round trip and both sides stay honest about the shape.
-func parseLayout(data []byte) ([]windowctl.BatchEntry, error) {
-	var entries []windowctl.BatchEntry
+func parseLayout(data []byte) ([]engine.BatchEntry, error) {
+	var entries []engine.BatchEntry
 	if err := json.Unmarshal(data, &entries); err != nil {
 		return nil, fmt.Errorf("parse layout: %w", err)
 	}
@@ -484,20 +484,20 @@ func parseLayout(data []byte) ([]windowctl.BatchEntry, error) {
 // The title is only written when the app name alone would be ambiguous. Titles
 // drift — a browser retitles itself with every tab — so pinning one costs a
 // match later, and it is only worth paying when two saved windows share an app.
-func layoutFrom(windows []windowctl.Window) []windowctl.BatchEntry {
+func layoutFrom(windows []engine.Window) []engine.BatchEntry {
 	perApp := map[string]int{}
 	for _, w := range windows {
 		perApp[w.App]++
 	}
 
-	entries := make([]windowctl.BatchEntry, 0, len(windows))
+	entries := make([]engine.BatchEntry, 0, len(windows))
 	for _, w := range windows {
 		// Arrange rejects a zero-sized entry, so a window that reports no
 		// size is dropped here rather than saved as a guaranteed failure.
 		if w.Bounds.W <= 0 || w.Bounds.H <= 0 {
 			continue
 		}
-		entry := windowctl.BatchEntry{
+		entry := engine.BatchEntry{
 			App: w.App,
 			X:   intPtr(w.Bounds.X),
 			Y:   intPtr(w.Bounds.Y),
@@ -536,18 +536,18 @@ func runWindowSave(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	filter := windowctl.Filter{App: set.String("app", "")}
+	filter := engine.Filter{App: set.String("app", "")}
 	if filter.App != "" {
 		if app, ok := resolveAppName(filter.App); ok {
 			filter.App = app
 		}
 	}
-	windows, err := windowctl.ListWindows(filter)
+	windows, err := engine.ListWindows(filter)
 	if err != nil {
 		return err
 	}
 	if monitor != nil {
-		kept := make([]windowctl.Window, 0, len(windows))
+		kept := make([]engine.Window, 0, len(windows))
 		for _, w := range windows {
 			if w.Monitor == *monitor {
 				kept = append(kept, w)
@@ -602,7 +602,7 @@ func runWindowZones(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	monitors, err := windowctl.ListMonitors()
+	monitors, err := engine.ListMonitors()
 	if err != nil {
 		return err
 	}
@@ -620,7 +620,7 @@ func runWindowZones(c *cli.Ctx, args []string) error {
 		target.Width, target.Height, signed(target.X), signed(target.Y))
 
 	for _, name := range append(append([]string{}, namedZones...), exampleSplits...) {
-		zone, err := windowctl.ParseZone(name)
+		zone, err := engine.ParseZone(name)
 		if err != nil {
 			continue
 		}
@@ -646,7 +646,7 @@ func runWindowZones(c *cli.Ctx, args []string) error {
 		return err
 	}
 	for _, name := range namedZones {
-		if err := windowctl.MoveZone(resolved, &target.ID, name); err != nil {
+		if err := engine.MoveZone(resolved, &target.ID, name); err != nil {
 			c.Warnf("%s: %v\n", name, err)
 			continue
 		}

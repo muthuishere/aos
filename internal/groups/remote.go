@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -109,7 +109,7 @@ const (
 )
 
 // resolveRemoteOptions folds flags, the config file, the environment, and the
-// built-in defaults into one windowctl.RemoteOptions. Precedence is
+// built-in defaults into one engine.RemoteOptions. Precedence is
 // flags > config file > built-in, with AOS_REMOTE_KEY sitting between
 // the flag and the file for the key alone: an env var is how a launcher or a
 // service unit injects a secret, so it must beat a file on disk, while an
@@ -119,7 +119,7 @@ const (
 // a fresh one, which the caller must say out loud — a per-run key means
 // yesterday's link is dead, and someone expecting a stable link should learn
 // that from the output rather than from a broken bookmark.
-func resolveRemoteOptions(set *argSet, cfg remoteConfig, env func(string) string) (opts windowctl.RemoteOptions, generated bool, err error) {
+func resolveRemoteOptions(set *argSet, cfg remoteConfig, env func(string) string) (opts engine.RemoteOptions, generated bool, err error) {
 	// --- key ---
 	key := set.String("key", "")
 	if key == "" {
@@ -177,7 +177,7 @@ func resolveRemoteOptions(set *argSet, cfg remoteConfig, env func(string) string
 		return opts, false, fmt.Errorf("--monitor must be 1 or higher (omit it to share the focused screen)")
 	}
 
-	return windowctl.RemoteOptions{
+	return engine.RemoteOptions{
 		Monitor: monitor,
 		Port:    port,
 		FPS:     fps,
@@ -204,7 +204,7 @@ func runRemoteShare(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	handle, err := windowctl.Remote(opts)
+	handle, err := engine.Remote(opts)
 	if err != nil {
 		return &cli.ExitError{Code: 1, Message: err.Error()}
 	}

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
+	"github.com/muthuishere/aos/internal/engine"
 	"github.com/muthuishere/aos/internal/sys"
-	"github.com/muthuishere/windowctl"
 )
 
 func isLinux() bool { return true }
@@ -104,7 +104,7 @@ func runHeadlessStart(c *cli.Ctx, args []string) error {
 func waitForWindowManager(timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if _, err := windowctl.ListWindows(windowctl.Filter{}); err == nil {
+		if _, err := engine.ListWindows(engine.Filter{}); err == nil {
 			return true
 		}
 		time.Sleep(100 * time.Millisecond)
