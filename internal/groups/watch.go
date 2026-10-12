@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -158,7 +158,7 @@ func clipboardEvent(at time.Time, text string, withContent bool) watchEvent {
 // windowEvent describes a focus change. It carries what identifies the window
 // to a person and to a follow-up command — app, title, monitor — not its
 // geometry, which changes for reasons that are not a focus change.
-func windowEvent(at time.Time, w windowctl.Window) watchEvent {
+func windowEvent(at time.Time, w engine.Window) watchEvent {
 	monitor := w.Monitor
 	return watchEvent{
 		Event:    "window",
@@ -182,7 +182,7 @@ func digest(text string) string {
 // focusKey is the identity a focus change is measured against. The window id is
 // not enough on its own: a browser tab switch keeps the id and changes only the
 // title, and that is a change worth reporting.
-func focusKey(w windowctl.Window) string {
+func focusKey(w engine.Window) string {
 	return strings.Join([]string{w.ID, w.App, w.Title, strconv.Itoa(w.Monitor)}, "\x00")
 }
 
@@ -233,17 +233,17 @@ func runWatchWindow(c *cli.Ctx, args []string) error {
 }
 
 // focusedWindow returns the window the desktop currently considers frontmost.
-func focusedWindow() (windowctl.Window, error) {
-	windows, err := windowctl.ListWindows(windowctl.Filter{})
+func focusedWindow() (engine.Window, error) {
+	windows, err := engine.ListWindows(engine.Filter{})
 	if err != nil {
-		return windowctl.Window{}, err
+		return engine.Window{}, err
 	}
 	for _, w := range windows {
 		if w.Focused {
 			return w, nil
 		}
 	}
-	return windowctl.Window{}, fmt.Errorf("no focused window")
+	return engine.Window{}, fmt.Errorf("no focused window")
 }
 
 // watchOptions reads the two flags every watcher shares.

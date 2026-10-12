@@ -78,7 +78,7 @@ func (a *argSet) Int(name string, fallback int) (int, error) {
 }
 
 // IntPtr returns a pointer to a flag's int value, or nil when it was not given.
-// windowctl uses *int for "unspecified" throughout, so this maps straight onto
+// the engine uses *int for "unspecified" throughout, so this maps straight onto
 // its option structs.
 func (a *argSet) IntPtr(name string) (*int, error) {
 	if !a.Has(name) {
