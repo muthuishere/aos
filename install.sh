@@ -6,6 +6,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --version v0.6.0
 #   sh install.sh --from /path/to/release-folder     # goreleaser archives + checksums.txt (e.g. a copied dist/)
 #   sh install.sh --from https://mirror.example/aos/v0.6.0/
+#   sh install.sh --from ./aos_0.5.0_darwin_arm64.tar.gz   # one release archive: unpacked
 #   sh install.sh --from ./aos                       # an already-extracted executable: copied in as-is
 #   sh install.sh --dir ~/bin
 #
@@ -83,8 +84,16 @@ install_binary() { # $1 = path of an aos executable
     fi
 }
 
+# --- a single release archive: unpack it and install the aos inside.
+if [ -n "$FROM" ] && [ -f "$FROM" ] && case "$FROM" in *.tar.gz|*.tgz) true ;; *) false ;; esac; then
+    step "Installing from the archive $FROM"
+    tmpa=$(mktemp -d)
+    tar -xzf "$FROM" -C "$tmpa" || die "could not unpack $FROM"
+    [ -f "$tmpa/aos" ] || die "$FROM does not contain an aos executable"
+    install_binary "$tmpa/aos"
+    rm -rf "$tmpa"
 # --- a single executable: copy it in, nothing to verify against.
-if [ -n "$FROM" ] && [ -f "$FROM" ]; then
+elif [ -n "$FROM" ] && [ -f "$FROM" ]; then
     step "Installing the executable $FROM"
     install_binary "$FROM"
 else
