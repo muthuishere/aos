@@ -1,0 +1,24 @@
+WEBVTT
+
+00:00:00.300 --> 00:00:06.078
+Which brings us to the fun part. Just... ask.
+
+00:00:06.428 --> 00:00:27.158
+I'll say it like I'd say it to a friend. TextEdit top right, Calculator bottom right.
+you: put TextEdit in the top-right quarter and Calculator in the bottom-right quarter of my second monitor
+
+00:00:27.508 --> 00:00:41.868
+Point at the seven, with a green arrow.
+you: point at the 7 button on Calculator with a green arrow saying press 7
+
+00:00:42.218 --> 00:01:04.548
+Find the Format menu, box it — and tell me when you're done.
+you: find the Format menu in TextEdit and box it, then show a subtitle saying done
+
+00:01:04.898 --> 00:01:14.698
+And clean up after yourself.
+you: clean up the drawings
+
+00:01:15.048 --> 00:01:44.464
+And it works from a script, or CI, too. One line, no chat window — and the desktop just follows along.
+$ claude -p "put TextEdit on the left half of monitor 2 and point at its Format menu" --dangerously-skip-permissions
