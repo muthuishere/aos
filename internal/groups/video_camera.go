@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // This file is the automatic camera behind `capture video zoom` and the
@@ -39,14 +39,14 @@ type cam struct{ CX, CY, Z float64 }
 
 // camGeom maps global screen coordinates into the canvas.
 type camGeom struct {
-	W, H    float64        // output canvas
-	VW, VH  float64        // source video
-	Capture windowctl.Rect // global rect the video shows; zero = video pixels
-	s       float64        // video -> canvas fit scale
-	ox, oy  float64        // letterbox offset
+	W, H    float64     // output canvas
+	VW, VH  float64     // source video
+	Capture engine.Rect // global rect the video shows; zero = video pixels
+	s       float64     // video -> canvas fit scale
+	ox, oy  float64     // letterbox offset
 }
 
-func newCamGeom(outW, outH, vw, vh int, capture windowctl.Rect) camGeom {
+func newCamGeom(outW, outH, vw, vh int, capture engine.Rect) camGeom {
 	g := camGeom{W: float64(outW), H: float64(outH), VW: float64(vw), VH: float64(vh), Capture: capture}
 	g.s = math.Min(g.W/g.VW, g.H/g.VH)
 	g.ox = (g.W - g.VW*g.s) / 2
@@ -57,7 +57,7 @@ func newCamGeom(outW, outH, vw, vh int, capture windowctl.Rect) camGeom {
 // videoRect converts a global rect into source-video pixels. The scale comes
 // from the video's real size over the captured rect's logical size, so a 2x
 // Retina capture (3024 px wide video of a 1512 pt monitor) maps correctly.
-func (g camGeom) videoRect(r windowctl.Rect) frect {
+func (g camGeom) videoRect(r engine.Rect) frect {
 	if g.Capture.W <= 0 || g.Capture.H <= 0 {
 		return frect{float64(r.X), float64(r.Y), float64(r.W), float64(r.H)}
 	}
@@ -66,13 +66,13 @@ func (g camGeom) videoRect(r windowctl.Rect) frect {
 }
 
 // canvasRect converts a global rect into canvas pixels.
-func (g camGeom) canvasRect(r windowctl.Rect) frect {
+func (g camGeom) canvasRect(r engine.Rect) frect {
 	v := g.videoRect(r)
 	return frect{g.ox + v.X*g.s, g.oy + v.Y*g.s, v.W * g.s, v.H * g.s}
 }
 
-func (g camGeom) canvasPoint(p windowctl.Point) (float64, float64) {
-	r := g.canvasRect(windowctl.Rect{X: p.X, Y: p.Y})
+func (g camGeom) canvasPoint(p engine.Point) (float64, float64) {
+	r := g.canvasRect(engine.Rect{X: p.X, Y: p.Y})
 	return r.X, r.Y
 }
 

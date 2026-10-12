@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // exitNotFound is what `find` (and `draw --find`) exit with when the window or
-// the text is not there. It matches windowctl's own CLI, so an agent reading
+// the text is not there. It matches the old windowctl CLI, so an agent reading
 // exit codes gets the same answer from either tool, and it stays distinct from
 // 1 (ran and failed) and 2 (refused before doing anything).
 const exitNotFound = 3
@@ -34,38 +34,38 @@ func init() {
 	})
 }
 
-// findOptionsFrom turns `find` flags into windowctl's options. Kept apart from
+// findOptionsFrom turns `find` flags into the engine's options. Kept apart from
 // the runner so flag handling is testable without a screen.
-func findOptionsFrom(args []string) (windowctl.FindOptions, *argSet, error) {
+func findOptionsFrom(args []string) (engine.FindOptions, *argSet, error) {
 	set, err := parseArgs(args, "app", "title", "text", "source", "role")
 	if err != nil {
-		return windowctl.FindOptions{}, nil, err
+		return engine.FindOptions{}, nil, err
 	}
 	if err := set.Reject("app", "title", "text", "source", "role", "exact", "all", "no-raise", "json"); err != nil {
-		return windowctl.FindOptions{}, nil, err
+		return engine.FindOptions{}, nil, err
 	}
 	match, err := matchFrom(set)
 	if err != nil {
-		return windowctl.FindOptions{}, nil, err
+		return engine.FindOptions{}, nil, err
 	}
 	text := set.String("text", "")
 	if strings.TrimSpace(text) == "" {
-		return windowctl.FindOptions{}, nil, fmt.Errorf("--text is required: the text to find")
+		return engine.FindOptions{}, nil, fmt.Errorf("--text is required: the text to find")
 	}
-	return windowctl.FindOptions{
+	return engine.FindOptions{
 		Match:   match,
 		Text:    text,
-		Source:  windowctl.FindSource(set.String("source", "")),
+		Source:  engine.FindSource(set.String("source", "")),
 		Role:    set.String("role", ""),
 		Exact:   set.Has("exact"),
 		NoRaise: set.Has("no-raise"),
 	}, set, nil
 }
 
-// notFoundExit maps windowctl's ErrNoMatch onto exit 3 with its message (which
+// notFoundExit maps the engine's ErrNoMatch onto exit 3 with its message (which
 // lists the closest labels it did see); anything else passes through as exit 1.
 func notFoundExit(err error) error {
-	if errors.Is(err, windowctl.ErrNoMatch) {
+	if errors.Is(err, engine.ErrNoMatch) {
 		return &cli.ExitError{Code: exitNotFound, Message: err.Error()}
 	}
 	return err
@@ -79,7 +79,7 @@ func runFind(c *cli.Ctx, args []string) error {
 	if resolved, err := resolveMatch(opts.Match); err == nil {
 		opts.Match = resolved
 	}
-	hits, err := windowctl.FindText(opts)
+	hits, err := engine.FindText(opts)
 	if err != nil {
 		return notFoundExit(err)
 	}

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
+	"github.com/muthuishere/aos/internal/engine"
 	"github.com/muthuishere/aos/internal/obs"
 	"github.com/muthuishere/aos/internal/sys"
-	"github.com/muthuishere/windowctl"
 )
 
 // checkStatus is a check's verdict. warn means degraded but usable; fail means
@@ -174,7 +174,7 @@ func checkPermissions(c *cli.Ctx) checkResult {
 	if c.GOOS != "darwin" {
 		return checkResult{"permissions", statusOK, "not gated on " + c.GOOS, ""}
 	}
-	accessibility, screen := windowctl.CheckAccessibility(), windowctl.CheckScreenCapture()
+	accessibility, screen := engine.CheckAccessibility(), engine.CheckScreenCapture()
 	switch {
 	case accessibility && screen:
 		return checkResult{"permissions", statusOK, "accessibility and screen capture granted", ""}
@@ -204,7 +204,7 @@ func checkWindowBackend(c *cli.Ctx) checkResult {
 				"install them: `aos pkg install " + strings.Join(missing, " ") + "`"}
 		}
 	}
-	windows, err := windowctl.ListWindows(windowctl.Filter{})
+	windows, err := engine.ListWindows(engine.Filter{})
 	if err != nil {
 		return checkResult{"windows", statusFail, "cannot list windows: " + err.Error(),
 			"check that a window manager is running"}
@@ -222,7 +222,7 @@ func checkScreenshot(c *cli.Ctx) checkResult {
 	defer os.Remove(path)
 
 	monitor := 1
-	if _, err := windowctl.Screenshot(windowctl.ScreenshotOptions{Monitor: &monitor, OutPath: path}); err != nil {
+	if _, err := engine.Screenshot(engine.ScreenshotOptions{Monitor: &monitor, OutPath: path}); err != nil {
 		return checkResult{"screenshot", statusFail, err.Error(), screenshotRemedy(c.GOOS)}
 	}
 	info, err := os.Stat(path)
@@ -245,7 +245,7 @@ func checkVideo(c *cli.Ctx) checkResult {
 	if c.GOOS != "darwin" {
 		return checkResult{"video", statusOK, "ffmpeg " + ffmpeg, ""}
 	}
-	if !windowctl.CheckScreenCapture() {
+	if !engine.CheckScreenCapture() {
 		return checkResult{"video", statusFail, "Screen Recording not granted; ffmpeg cannot see the screen",
 			"grant Screen Recording: `aos permission request screen`"}
 	}

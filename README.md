@@ -241,9 +241,9 @@ not offering it — it will try, fail, and try again.
 | **Watch** | `watch` — long-running monitors (clipboard, focused window, files and directories) that print one JSON line per change |
 | **Agents** | `serve` — expose all of the above over MCP; `service` — keep any of it running as a per-user OS service; `headless` — run the desktop commands with no screen; `completion` — shell completions generated from the registry |
 
-Windows, monitors, input and screenshots are handled by
-[windowctl](https://github.com/muthuishere/windowctl); MCP serving by
-[toolnexus](https://github.com/muthuishere/toolnexus). Both are libraries this
+Windows, monitors, input, screenshots and drawing are handled by aos's own
+engine in `internal/engine` (absorbed from the now-deprecated windowctl); MCP
+serving by [toolnexus](https://github.com/muthuishere/toolnexus), a library this
 depends on — aos is the front door.
 
 ## Reacting to what happens

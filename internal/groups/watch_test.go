@@ -5,19 +5,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // testWindow is a focused window as windowctl would report it, so the event
 // shaping can be checked without a desktop.
-func testWindow() windowctl.Window {
-	return windowctl.Window{
+func testWindow() engine.Window {
+	return engine.Window{
 		ID:      "w-1",
 		App:     "Chrome",
 		Title:   "aos — GitHub",
 		PID:     4242,
 		Monitor: 2,
-		Bounds:  windowctl.Rect{X: 0, Y: 25, W: 1920, H: 1055},
+		Bounds:  engine.Rect{X: 0, Y: 25, W: 1920, H: 1055},
 	}
 }
 

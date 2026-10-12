@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func TestParseVideoStartModes(t *testing.T) {
@@ -87,7 +87,7 @@ func TestParseVideoFocus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *f.Rect != (windowctl.Rect{X: 600, Y: 300, W: 800, H: 400}) || f.Hold != 3 || f.Zoom != 2 {
+	if *f.Rect != (engine.Rect{X: 600, Y: 300, W: 800, H: 400}) || f.Hold != 3 || f.Zoom != 2 {
 		t.Errorf("got %+v %+v", f, *f.Rect)
 	}
 	f, err = parseVideoFocus([]string{"--app=Chrome", "--find=Sign in", "--role=button"})
@@ -103,7 +103,7 @@ func TestParseVideoFocus(t *testing.T) {
 
 func TestFFmpegArgsDarwinCropsAsFractions(t *testing.T) {
 	p := ffPlan{GOOS: "darwin", FPS: 30, MaxSec: 600, Out: "/tmp/o.mp4", DarwinScreen: "3",
-		Monitor: windowctl.Rect{X: 0, Y: 0, W: 1512, H: 982}, Capture: windowctl.Rect{X: 100, Y: 50, W: 800, H: 600},
+		Monitor: engine.Rect{X: 0, Y: 0, W: 1512, H: 982}, Capture: engine.Rect{X: 100, Y: 50, W: 800, H: 600},
 		Audio: []audioInput{{"avfoundation", "none:3"}}}
 	args, err := ffmpegRecordArgs(p)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestFFmpegArgsDarwinCropsAsFractions(t *testing.T) {
 }
 
 func TestFFmpegArgsWindowsAndLinux(t *testing.T) {
-	r := windowctl.Rect{X: -1920, Y: 0, W: 1281, H: 721}
+	r := engine.Rect{X: -1920, Y: 0, W: 1281, H: 721}
 	w, _ := ffmpegRecordArgs(ffPlan{GOOS: "windows", FPS: 15, Out: "o.mp4", Monitor: r, Capture: r,
 		Audio: []audioInput{{"dshow", "audio=Mic"}, {"wasapi", "loopback"}}})
 	wl := strings.Join(w, " ")
@@ -138,7 +138,7 @@ func TestFFmpegArgsWindowsAndLinux(t *testing.T) {
 	if !strings.Contains(strings.Join(w, " "), "-i title=Notepad") {
 		t.Errorf("windows title capture: %v", w)
 	}
-	l, _ := ffmpegRecordArgs(ffPlan{GOOS: "linux", Out: "o.mp4", Display: ":1", Monitor: r, Capture: windowctl.Rect{X: 10, Y: 20, W: 640, H: 480}})
+	l, _ := ffmpegRecordArgs(ffPlan{GOOS: "linux", Out: "o.mp4", Display: ":1", Monitor: r, Capture: engine.Rect{X: 10, Y: 20, W: 640, H: 480}})
 	if ll := strings.Join(l, " "); !strings.Contains(ll, "-f x11grab") || !strings.Contains(ll, "-i :1+10,20") || !strings.Contains(ll, "-video_size 640x480") {
 		t.Errorf("linux: %s", ll)
 	}
@@ -181,13 +181,13 @@ func TestAVFoundationDevicesAndAudio(t *testing.T) {
 }
 
 func TestAVFScreenNumberPutsPrimaryFirst(t *testing.T) {
-	monitors := []windowctl.Monitor{{ID: 1, X: -1728}, {ID: 2, X: 0, Primary: true}, {ID: 3, X: 1920}}
+	monitors := []engine.Monitor{{ID: 1, X: -1728}, {ID: 2, X: 0, Primary: true}, {ID: 3, X: 1920}}
 	for id, want := range map[int]int{2: 0, 1: 1, 3: 2} {
 		if got := avfScreenNumber(monitors, id); got != want {
 			t.Errorf("monitor %d -> screen %d, want %d", id, got, want)
 		}
 	}
-	if !aspectMatches(3456, 2234, windowctl.Rect{W: 1728, H: 1117}) || aspectMatches(1920, 1080, windowctl.Rect{W: 1728, H: 1117}) {
+	if !aspectMatches(3456, 2234, engine.Rect{W: 1728, H: 1117}) || aspectMatches(1920, 1080, engine.Rect{W: 1728, H: 1117}) {
 		t.Error("aspect check")
 	}
 }
@@ -217,25 +217,25 @@ func TestDshowAndLinuxAudio(t *testing.T) {
 
 func TestEventCoordinatesRetina(t *testing.T) {
 	// A 1512x982 pt monitor at x=1920 recorded at 2x into 3024x1964 pixels.
-	capture := windowctl.Rect{X: 1920, Y: 0, W: 1512, H: 982}
+	capture := engine.Rect{X: 1920, Y: 0, W: 1512, H: 982}
 	g := newCamGeom(1920, 1080, 3024, 1964, capture)
-	v := g.videoRect(windowctl.Rect{X: 1920 + 100, Y: 50, W: 200, H: 100})
+	v := g.videoRect(engine.Rect{X: 1920 + 100, Y: 50, W: 200, H: 100})
 	if v != (frect{200, 100, 400, 200}) {
 		t.Errorf("video rect %+v", v)
 	}
-	c := g.canvasRect(windowctl.Rect{X: 1920, Y: 0, W: 1512, H: 982})
+	c := g.canvasRect(engine.Rect{X: 1920, Y: 0, W: 1512, H: 982})
 	if math.Abs(c.H-1080) > 0.01 || math.Abs(c.X+c.W/2-960) > 0.01 {
 		t.Errorf("full capture should fill the canvas height, centred: %+v", c)
 	}
 	// Unknown capture: rects are already video pixels.
-	g2 := newCamGeom(1920, 1080, 1920, 1080, windowctl.Rect{})
-	if r := g2.canvasRect(windowctl.Rect{X: 10, Y: 20, W: 30, H: 40}); r != (frect{10, 20, 30, 40}) {
+	g2 := newCamGeom(1920, 1080, 1920, 1080, engine.Rect{})
+	if r := g2.canvasRect(engine.Rect{X: 10, Y: 20, W: 30, H: 40}); r != (frect{10, 20, 30, 40}) {
 		t.Errorf("identity %+v", r)
 	}
 }
 
 func TestFitAndClamp(t *testing.T) {
-	g := newCamGeom(1920, 1080, 1920, 1080, windowctl.Rect{})
+	g := newCamGeom(1920, 1080, 1920, 1080, engine.Rect{})
 	c := g.fit(frect{0, 0, 100, 100}, 0.15, 2.5)
 	if c.Z != 2.5 {
 		t.Errorf("small target should cap at max zoom, got %v", c.Z)
@@ -285,7 +285,7 @@ func TestSpringAndDeadZone(t *testing.T) {
 	}
 }
 
-func evRect(t float64, kind, cmd string, r windowctl.Rect) videoEvent {
+func evRect(t float64, kind, cmd string, r engine.Rect) videoEvent {
 	return videoEvent{T: t, Kind: kind, Cmd: cmd, Rect: &r}
 }
 
@@ -300,11 +300,11 @@ func camAt(keys []camKey, t float64) cam {
 }
 
 func TestPlanCameraActionEvents(t *testing.T) {
-	g := newCamGeom(1920, 1080, 1920, 1080, windowctl.Rect{X: 0, Y: 0, W: 1920, H: 1080})
+	g := newCamGeom(1920, 1080, 1920, 1080, engine.Rect{X: 0, Y: 0, W: 1920, H: 1080})
 	doc := videoDoc{Events: []videoEvent{
-		evRect(3, "action", "find", windowctl.Rect{X: 100, Y: 100, W: 200, H: 100}),
-		evRect(4, "action", "draw", windowctl.Rect{X: 1500, Y: 800, W: 200, H: 100}),
-		evRect(12, "action", "window focus", windowctl.Rect{X: 800, Y: 400, W: 300, H: 200}),
+		evRect(3, "action", "find", engine.Rect{X: 100, Y: 100, W: 200, H: 100}),
+		evRect(4, "action", "draw", engine.Rect{X: 1500, Y: 800, W: 200, H: 100}),
+		evRect(12, "action", "window focus", engine.Rect{X: 800, Y: 400, W: 300, H: 200}),
 	}}
 	keys := planCamera(doc, g, zoomOptions{}, 20)
 	if c := camAt(keys, 0.5); c.Z != 1 {
@@ -333,12 +333,12 @@ func TestPlanCameraActionEvents(t *testing.T) {
 }
 
 func TestPlanCameraFocusBeatsActionsAndFollow(t *testing.T) {
-	g := newCamGeom(1920, 1080, 1920, 1080, windowctl.Rect{W: 1920, H: 1080})
-	focus := evRect(2, "focus", "capture video focus", windowctl.Rect{X: 1600, Y: 900, W: 200, H: 100})
+	g := newCamGeom(1920, 1080, 1920, 1080, engine.Rect{W: 1920, H: 1080})
+	focus := evRect(2, "focus", "capture video focus", engine.Rect{X: 1600, Y: 900, W: 200, H: 100})
 	doc := videoDoc{Follow: "mouse", Events: []videoEvent{
-		{T: 0.1, Kind: "cursor", At: &windowctl.Point{X: 200, Y: 200}},
+		{T: 0.1, Kind: "cursor", At: &engine.Point{X: 200, Y: 200}},
 		focus,
-		evRect(3, "action", "draw", windowctl.Rect{X: 0, Y: 0, W: 100, H: 100}),
+		evRect(3, "action", "draw", engine.Rect{X: 0, Y: 0, W: 100, H: 100}),
 		{T: 6, Kind: "unfocus"},
 	}}
 	keys := planCamera(doc, g, zoomOptions{}, 10)
@@ -353,12 +353,12 @@ func TestPlanCameraFocusBeatsActionsAndFollow(t *testing.T) {
 }
 
 func TestSmartModeLeansToCursorThenWindow(t *testing.T) {
-	g := newCamGeom(1920, 1080, 1920, 1080, windowctl.Rect{W: 1920, H: 1080})
-	win := windowctl.Rect{X: 0, Y: 0, W: 1920, H: 1000}
+	g := newCamGeom(1920, 1080, 1920, 1080, engine.Rect{W: 1920, H: 1080})
+	win := engine.Rect{X: 0, Y: 0, W: 1920, H: 1000}
 	doc := videoDoc{Follow: "smart", Events: []videoEvent{evRect(0, "window", "", win)}}
 	for i := 0; i < 20; i++ {
 		x := 300 + i*5
-		doc.Events = append(doc.Events, videoEvent{T: 1 + float64(i)*0.05, Kind: "cursor", At: &windowctl.Point{X: x, Y: 300}})
+		doc.Events = append(doc.Events, videoEvent{T: 1 + float64(i)*0.05, Kind: "cursor", At: &engine.Point{X: x, Y: 300}})
 	}
 	keys := planCamera(doc, g, zoomOptions{}, 8)
 	if c := camAt(keys, 2.3); c.Z < 1.6 {
@@ -377,8 +377,8 @@ func TestSmartModeLeansToCursorThenWindow(t *testing.T) {
 }
 
 func TestDrawEventIsUnionOfSignAndTarget(t *testing.T) {
-	u := unionRect(windowctl.Rect{X: 100, Y: 100, W: 50, H: 50}, windowctl.Rect{X: 300, Y: 20, W: 10, H: 10})
-	if u != (windowctl.Rect{X: 100, Y: 20, W: 210, H: 130}) {
+	u := unionRect(engine.Rect{X: 100, Y: 100, W: 50, H: 50}, engine.Rect{X: 300, Y: 20, W: 10, H: 10})
+	if u != (engine.Rect{X: 100, Y: 20, W: 210, H: 130}) {
 		t.Errorf("union %+v", u)
 	}
 }
@@ -400,7 +400,7 @@ func TestSimplifyAndExpressions(t *testing.T) {
 	if keyExpr([]camKey{{0, cam{1, 2, 1}}}, func(c cam) float64 { return c.CY }) != "2" {
 		t.Error("single key is a constant")
 	}
-	g := newCamGeom(1920, 1080, 3024, 1964, windowctl.Rect{})
+	g := newCamGeom(1920, 1080, 3024, 1964, engine.Rect{})
 	f := cameraFilter(s, g, []frect{{10, 10, 44, 44}}, []float64{1})
 	for _, want := range []string{"force_original_aspect_ratio=decrease", "pad=1920:1080", "drawbox=", "eval=frame", "crop=w=1920:h=1080", "[v]"} {
 		if !strings.Contains(f, want) {
@@ -420,7 +420,7 @@ func TestVideoStateAndEventsFiles(t *testing.T) {
 	}
 	out := filepath.Join(dir, "demo.mp4")
 	st := &videoState{PID: 42, Out: out, Events: filepath.Join(dir, "demo.events.jsonl"), Started: time.Now().Add(-5 * time.Second),
-		Mode: "smart", Follow: "smart", Capture: windowctl.Rect{W: 100, H: 100}}
+		Mode: "smart", Follow: "smart", Capture: engine.Rect{W: 100, H: 100}}
 	if err := writeVideoState(dir, st); err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +428,7 @@ func TestVideoStateAndEventsFiles(t *testing.T) {
 	if err != nil || got.PID != 42 || got.Mode != "smart" {
 		t.Fatalf("round trip: %+v %v", got, err)
 	}
-	r := windowctl.Rect{X: 1, Y: 2, W: 3, H: 4}
+	r := engine.Rect{X: 1, Y: 2, W: 3, H: 4}
 	for i := 0; i < 3; i++ {
 		if err := appendVideoEvent(st.Events, videoEvent{T: float64(i), Kind: "mark", Rect: &r, Label: "x"}); err != nil {
 			t.Fatal(err)

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func init() {
 				Summary:  "Print the pointer position as `x y`",
 				Examples: []string{"aos mouse position     # 784 539"},
 				Run: func(c *cli.Ctx, _ []string) error {
-					x, y, err := windowctl.CursorPosition()
+					x, y, err := engine.CursorPosition()
 					if err != nil {
 						return err
 					}
@@ -97,7 +97,7 @@ func runMouseMove(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return windowctl.MouseMove(monitor, x, y)
+	return engine.MouseMove(monitor, x, y)
 }
 
 func runMouseClick(c *cli.Ctx, args []string) error {
@@ -109,14 +109,14 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 
-	opts := windowctl.ClickOptions{Double: set.Has("double")}
+	opts := engine.ClickOptions{Double: set.Has("double")}
 	switch button := set.String("button", "left"); button {
 	case "left":
-		opts.Button = windowctl.MouseLeft
+		opts.Button = engine.MouseLeft
 	case "right":
-		opts.Button = windowctl.MouseRight
+		opts.Button = engine.MouseRight
 	case "middle":
-		opts.Button = windowctl.MouseMiddle
+		opts.Button = engine.MouseMiddle
 	default:
 		return fmt.Errorf("--button must be left, right, or middle, got %q", button)
 	}
@@ -143,7 +143,7 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 		return err
 	}
 	opts.Monitor = monitor
-	if err := windowctl.MouseClick(opts); err != nil {
+	if err := engine.MouseClick(opts); err != nil {
 		return err
 	}
 	noteVideoClick(c)
@@ -162,16 +162,16 @@ func runKeyType(c *cli.Ctx, args []string) error {
 	if text == "" {
 		return fmt.Errorf("`key type` needs some text")
 	}
-	// With a window named, windowctl focuses and verifies before typing, so
+	// With a window named, the engine focuses and verifies before typing, so
 	// keystrokes cannot land in whatever happened to be frontmost.
 	if match, ok := optionalMatch(set); ok {
-		if err := windowctl.TypeInto(match, text); err != nil {
+		if err := engine.TypeInto(match, text); err != nil {
 			return err
 		}
 		noteVideoWindow(c, "key type", match)
 		return nil
 	}
-	return windowctl.TypeText(text)
+	return engine.TypeText(text)
 }
 
 func runKeyPress(c *cli.Ctx, args []string) error {
@@ -187,13 +187,13 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 	}
 	combo := set.Rest[0]
 	if match, ok := optionalMatch(set); ok {
-		if err := windowctl.PressKeyInto(match, combo); err != nil {
+		if err := engine.PressKeyInto(match, combo); err != nil {
 			return err
 		}
 		noteVideoWindow(c, "key press", match)
 		return nil
 	}
-	return windowctl.PressKey(combo)
+	return engine.PressKey(combo)
 }
 
 // optionalMatch reads --app / --title when the command's positionals are its
@@ -204,8 +204,8 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 // `key press --app=`, all of which are documented with `--app=Chrome` — which
 // matched nothing on macOS, where the app is named "Google Chrome", until the
 // resolution moved in here.
-func optionalMatch(set *argSet) (windowctl.Match, bool) {
-	match := windowctl.Match{App: set.String("app", ""), Title: set.String("title", "")}
+func optionalMatch(set *argSet) (engine.Match, bool) {
+	match := engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	if match.App != "" && match.Title == "" {
 		if app, ok := resolveAppName(match.App); ok {
 			match.App = app

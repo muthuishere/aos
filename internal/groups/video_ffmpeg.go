@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // This file holds the pure half of `capture video`: turning a recording plan
@@ -47,8 +47,8 @@ type ffPlan struct {
 	FPS     int
 	MaxSec  float64
 	Out     string
-	Monitor windowctl.Rect // the monitor being recorded
-	Capture windowctl.Rect // the part of it that ends up in the video
+	Monitor engine.Rect // the monitor being recorded
+	Capture engine.Rect // the part of it that ends up in the video
 	// DarwinScreen is the avfoundation video device index of the monitor.
 	DarwinScreen string
 	// WinTitle records one window by title through gdigrab (Windows only).
@@ -178,7 +178,7 @@ func parseAVFDevices(out string) (video, audio []avfDevice) {
 // (primary) display; aos numbers monitors by position. So the primary is
 // screen 0 and the rest follow in aos order. The caller verifies the guess
 // against the real frame size, since the tail of that order is not promised.
-func avfScreenNumber(monitors []windowctl.Monitor, id int) int {
+func avfScreenNumber(monitors []engine.Monitor, id int) int {
 	n := 1
 	for _, m := range monitors {
 		if m.Primary {
@@ -196,7 +196,7 @@ func avfScreenNumber(monitors []windowctl.Monitor, id int) int {
 }
 
 // aspectMatches reports whether a frame size has the monitor's shape.
-func aspectMatches(w, h int, m windowctl.Rect) bool {
+func aspectMatches(w, h int, m engine.Rect) bool {
 	if w <= 0 || h <= 0 || m.W <= 0 || m.H <= 0 {
 		return false
 	}

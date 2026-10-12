@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 // `aos capture video` records the screen with ffmpeg and, when it stops,
@@ -31,51 +31,51 @@ import (
 // videoEvent is one line of the events log. Rects and points are global screen
 // coordinates; `t` is seconds since the recording started.
 type videoEvent struct {
-	T     float64          `json:"t"`
-	Kind  string           `json:"kind"` // action, click, mark, focus, unfocus, follow, cursor, window
-	Cmd   string           `json:"cmd,omitempty"`
-	Rect  *windowctl.Rect  `json:"rect,omitempty"`
-	At    *windowctl.Point `json:"at,omitempty"`
-	Label string           `json:"label,omitempty"`
-	Hold  float64          `json:"hold,omitempty"`
-	Zoom  float64          `json:"zoom,omitempty"`
+	T     float64       `json:"t"`
+	Kind  string        `json:"kind"` // action, click, mark, focus, unfocus, follow, cursor, window
+	Cmd   string        `json:"cmd,omitempty"`
+	Rect  *engine.Rect  `json:"rect,omitempty"`
+	At    *engine.Point `json:"at,omitempty"`
+	Label string        `json:"label,omitempty"`
+	Hold  float64       `json:"hold,omitempty"`
+	Zoom  float64       `json:"zoom,omitempty"`
 }
 
 // videoState is the live recording, as the supervisor and CLI share it.
 type videoState struct {
-	PID       int              `json:"PID"`
-	FFmpegPID int              `json:"FFmpegPID"`
-	Out       string           `json:"Out"`
-	Events    string           `json:"Events"` // the append-only .events.jsonl
-	Started   time.Time        `json:"Started"`
-	Ended     time.Time        `json:"Ended,omitempty"`
-	Mode      string           `json:"Mode"`
-	Follow    string           `json:"Follow,omitempty"`
-	Match     *windowctl.Match `json:"Match,omitempty"`
-	Monitor   windowctl.Rect   `json:"Monitor"`
-	Capture   windowctl.Rect   `json:"Capture"`
-	Zoom      float64          `json:"Zoom,omitempty"`
-	Max       float64          `json:"Max"`
-	FFArgs    []string         `json:"FFArgs"`
-	Log       string           `json:"Log"`
-	Finished  bool             `json:"Finished,omitempty"`
-	Error     string           `json:"Error,omitempty"`
+	PID       int           `json:"PID"`
+	FFmpegPID int           `json:"FFmpegPID"`
+	Out       string        `json:"Out"`
+	Events    string        `json:"Events"` // the append-only .events.jsonl
+	Started   time.Time     `json:"Started"`
+	Ended     time.Time     `json:"Ended,omitempty"`
+	Mode      string        `json:"Mode"`
+	Follow    string        `json:"Follow,omitempty"`
+	Match     *engine.Match `json:"Match,omitempty"`
+	Monitor   engine.Rect   `json:"Monitor"`
+	Capture   engine.Rect   `json:"Capture"`
+	Zoom      float64       `json:"Zoom,omitempty"`
+	Max       float64       `json:"Max"`
+	FFArgs    []string      `json:"FFArgs"`
+	Log       string        `json:"Log"`
+	Finished  bool          `json:"Finished,omitempty"`
+	Error     string        `json:"Error,omitempty"`
 }
 
 // videoDoc is the finished <out>.events.json: an open format, documented in
 // the skill reference, that other tools can read.
 type videoDoc struct {
-	Version  int            `json:"version"`
-	Out      string         `json:"out"`
-	Started  time.Time      `json:"started"`
-	Mode     string         `json:"mode"`
-	Follow   string         `json:"follow,omitempty"`
-	Monitor  windowctl.Rect `json:"monitor"`
-	Capture  windowctl.Rect `json:"capture"`
-	Zoom     float64        `json:"zoom,omitempty"`
-	Offset   float64        `json:"offset"` // seconds the video started after `started`
-	Duration float64        `json:"duration"`
-	Events   []videoEvent   `json:"events"`
+	Version  int          `json:"version"`
+	Out      string       `json:"out"`
+	Started  time.Time    `json:"started"`
+	Mode     string       `json:"mode"`
+	Follow   string       `json:"follow,omitempty"`
+	Monitor  engine.Rect  `json:"monitor"`
+	Capture  engine.Rect  `json:"capture"`
+	Zoom     float64      `json:"zoom,omitempty"`
+	Offset   float64      `json:"offset"` // seconds the video started after `started`
+	Duration float64      `json:"duration"`
+	Events   []videoEvent `json:"events"`
 }
 
 func init() {
@@ -181,8 +181,8 @@ type videoStartOptions struct {
 	Mode      string // monitor, window, region, app, mouse, smart
 	Follow    string // "", mouse, window, smart
 	Monitor   *int
-	Match     windowctl.Match
-	Region    *windowctl.Rect
+	Match     engine.Match
+	Region    *engine.Rect
 	FPS       int
 	Audio     audioMode
 	Mic       string
@@ -221,7 +221,7 @@ func parseVideoStart(args []string) (videoStartOptions, error) {
 			return o, fmt.Errorf("unknown mode %q: use smart, monitor, window, region, app or mouse", set.Rest[0])
 		}
 	}
-	o.Match = windowctl.Match{App: set.String("app", ""), Title: set.String("title", "")}
+	o.Match = engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	hasMatch := o.Match.App != "" || o.Match.Title != ""
 	switch o.Mode {
 	case "window", "app":
@@ -384,7 +384,7 @@ func activeRecording(c *cli.Ctx) *videoState {
 
 // noteVideo is the one hook other commands call: it appends an event to the
 // active recording and is a silent no-op when nothing is recording.
-func noteVideo(c *cli.Ctx, kind, cmd string, rect *windowctl.Rect, label string) {
+func noteVideo(c *cli.Ctx, kind, cmd string, rect *engine.Rect, label string) {
 	st := activeRecording(c)
 	if st == nil {
 		return
@@ -393,7 +393,7 @@ func noteVideo(c *cli.Ctx, kind, cmd string, rect *windowctl.Rect, label string)
 }
 
 // noteVideoWindow logs the bounds of a window a command just touched.
-func noteVideoWindow(c *cli.Ctx, cmd string, match windowctl.Match) {
+func noteVideoWindow(c *cli.Ctx, cmd string, match engine.Match) {
 	if activeRecording(c) == nil {
 		return
 	}
@@ -405,8 +405,8 @@ func noteVideoWindow(c *cli.Ctx, cmd string, match windowctl.Match) {
 
 // noteVideoDraw logs a drawing as the union of its sign and what it points at,
 // so the camera keeps both the arrow and the target in frame.
-func noteVideoDraw(c *cli.Ctx, res windowctl.DrawResult, text string) {
-	target := windowctl.Rect{X: res.Tip.X - 20, Y: res.Tip.Y - 20, W: 40, H: 40}
+func noteVideoDraw(c *cli.Ctx, res engine.DrawResult, text string) {
+	target := engine.Rect{X: res.Tip.X - 20, Y: res.Tip.Y - 20, W: 40, H: 40}
 	if res.Found != nil {
 		target = res.Found.Bounds
 	}
@@ -419,13 +419,13 @@ func noteVideoClick(c *cli.Ctx) {
 	if activeRecording(c) == nil {
 		return
 	}
-	if x, y, err := windowctl.CursorPosition(); err == nil {
-		r := windowctl.Rect{X: x - 20, Y: y - 20, W: 40, H: 40}
+	if x, y, err := engine.CursorPosition(); err == nil {
+		r := engine.Rect{X: x - 20, Y: y - 20, W: 40, H: 40}
 		noteVideo(c, "click", "mouse click", &r, "")
 	}
 }
 
-func unionRect(a, b windowctl.Rect) windowctl.Rect {
+func unionRect(a, b engine.Rect) engine.Rect {
 	if a.W <= 0 || a.H <= 0 {
 		return b
 	}
@@ -434,7 +434,7 @@ func unionRect(a, b windowctl.Rect) windowctl.Rect {
 	}
 	x0, y0 := min(a.X, b.X), min(a.Y, b.Y)
 	x1, y1 := max(a.X+a.W, b.X+b.W), max(a.Y+a.H, b.Y+b.H)
-	return windowctl.Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0}
+	return engine.Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0}
 }
 
 func since(t time.Time) float64 { return math.Round(time.Since(t).Seconds()*1000) / 1000 }
@@ -519,7 +519,7 @@ func runVideoStart(c *cli.Ctx, args []string) error {
 	}
 
 	res := map[string]any{"Out": st.Out, "PID": st.PID, "Started": st.Started, "Mode": st.Mode,
-		"Origin": windowctl.Point{X: st.Capture.X, Y: st.Capture.Y}, "Capture": st.Capture, "Events": st.Events}
+		"Origin": engine.Point{X: st.Capture.X, Y: st.Capture.Y}, "Capture": st.Capture, "Events": st.Events}
 	if o.JSON {
 		return json.NewEncoder(c.Stdout).Encode(res)
 	}
@@ -529,17 +529,17 @@ func runVideoStart(c *cli.Ctx, args []string) error {
 
 type monitorPick struct {
 	id   int
-	rect windowctl.Rect
+	rect engine.Rect
 }
 
 // videoGeometry picks the monitor to record and the rect the video shows.
-func videoGeometry(o videoStartOptions) (monitorPick, windowctl.Rect, *windowctl.Match, error) {
-	monitors, err := windowctl.ListMonitors()
+func videoGeometry(o videoStartOptions) (monitorPick, engine.Rect, *engine.Match, error) {
+	monitors, err := engine.ListMonitors()
 	if err != nil || len(monitors) == 0 {
-		return monitorPick{}, windowctl.Rect{}, nil, fmt.Errorf("cannot list monitors: %v", err)
+		return monitorPick{}, engine.Rect{}, nil, fmt.Errorf("cannot list monitors: %v", err)
 	}
-	rectOf := func(m windowctl.Monitor) windowctl.Rect {
-		return windowctl.Rect{X: m.X, Y: m.Y, W: m.Width, H: m.Height}
+	rectOf := func(m engine.Monitor) engine.Rect {
+		return engine.Rect{X: m.X, Y: m.Y, W: m.Width, H: m.Height}
 	}
 	byID := func(id int) (monitorPick, bool) {
 		for _, m := range monitors {
@@ -550,16 +550,16 @@ func videoGeometry(o videoStartOptions) (monitorPick, windowctl.Rect, *windowctl
 		return monitorPick{}, false
 	}
 	var pick monitorPick
-	var match *windowctl.Match
-	var win *windowctl.Window
+	var match *engine.Match
+	var win *engine.Window
 	if o.Mode == "window" || o.Mode == "app" {
 		resolved, err := resolveMatch(o.Match)
 		if err != nil {
-			return pick, windowctl.Rect{}, nil, err
+			return pick, engine.Rect{}, nil, err
 		}
 		w, ok := findWindow(resolved)
 		if !ok {
-			return pick, windowctl.Rect{}, nil, &cli.ExitError{Code: exitNotFound, Message: "no window matches " + describeMatch(resolved)}
+			return pick, engine.Rect{}, nil, &cli.ExitError{Code: exitNotFound, Message: "no window matches " + describeMatch(resolved)}
 		}
 		match, win = &resolved, &w
 	}
@@ -567,7 +567,7 @@ func videoGeometry(o videoStartOptions) (monitorPick, windowctl.Rect, *windowctl
 	case o.Monitor != nil:
 		p, ok := byID(*o.Monitor)
 		if !ok {
-			return pick, windowctl.Rect{}, nil, fmt.Errorf("no monitor %d", *o.Monitor)
+			return pick, engine.Rect{}, nil, fmt.Errorf("no monitor %d", *o.Monitor)
 		}
 		pick = p
 	case win != nil && win.Monitor > 0:
@@ -603,31 +603,31 @@ func videoGeometry(o videoStartOptions) (monitorPick, windowctl.Rect, *windowctl
 		capture = intersectRect(*o.Region, pick.rect)
 	}
 	if capture.W < 16 || capture.H < 16 {
-		return pick, windowctl.Rect{}, nil, fmt.Errorf("the area to record (%s) is off monitor %d", describeRect(capture), pick.id)
+		return pick, engine.Rect{}, nil, fmt.Errorf("the area to record (%s) is off monitor %d", describeRect(capture), pick.id)
 	}
 	return pick, capture, match, nil
 }
 
-func intersectRect(a, b windowctl.Rect) windowctl.Rect {
+func intersectRect(a, b engine.Rect) engine.Rect {
 	x0, y0 := max(a.X, b.X), max(a.Y, b.Y)
 	x1, y1 := min(a.X+a.W, b.X+b.W), min(a.Y+a.H, b.Y+b.H)
 	if x1 <= x0 || y1 <= y0 {
-		return windowctl.Rect{}
+		return engine.Rect{}
 	}
-	return windowctl.Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0}
+	return engine.Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0}
 }
 
-func describeRect(r windowctl.Rect) string {
+func describeRect(r engine.Rect) string {
 	return fmt.Sprintf("%dx%d%s%s", r.W, r.H, signed(r.X), signed(r.Y))
 }
 
 // resolvePlatformInputs fills in what only this machine knows: the macOS screen
 // device index, the window title for gdigrab, and the audio sources.
-func resolvePlatformInputs(ffmpeg string, p *ffPlan, o videoStartOptions, monitor int, match *windowctl.Match) error {
+func resolvePlatformInputs(ffmpeg string, p *ffPlan, o videoStartOptions, monitor int, match *engine.Match) error {
 	switch p.GOOS {
 	case "darwin":
 		video, audio := parseAVFDevices(listAVFDevices(ffmpeg))
-		monitors, _ := windowctl.ListMonitors()
+		monitors, _ := engine.ListMonitors()
 		guess := avfScreenNumber(monitors, monitor)
 		idx, err := avfScreenIndex(video, guess)
 		if err != nil {
@@ -895,10 +895,10 @@ finished:
 type videoSampler struct {
 	st       *videoState
 	follow   string
-	match    *windowctl.Match
+	match    *engine.Match
 	lastX    int
 	lastY    int
-	lastWin  windowctl.Rect
+	lastWin  engine.Rect
 	hasPoint bool
 }
 
@@ -908,21 +908,21 @@ func newVideoSampler(st *videoState) *videoSampler {
 
 func (s *videoSampler) sample(n int) {
 	if s.follow == "mouse" || s.follow == "smart" {
-		if x, y, err := windowctl.CursorPosition(); err == nil && (!s.hasPoint || x != s.lastX || y != s.lastY) {
+		if x, y, err := engine.CursorPosition(); err == nil && (!s.hasPoint || x != s.lastX || y != s.lastY) {
 			s.lastX, s.lastY, s.hasPoint = x, y, true
-			_ = appendVideoEvent(s.st.Events, videoEvent{T: since(s.st.Started), Kind: "cursor", At: &windowctl.Point{X: x, Y: y}})
+			_ = appendVideoEvent(s.st.Events, videoEvent{T: since(s.st.Started), Kind: "cursor", At: &engine.Point{X: x, Y: y}})
 		}
 	}
 	if n%4 != 0 {
 		return
 	}
-	var win windowctl.Window
+	var win engine.Window
 	var ok bool
 	switch {
 	case s.follow == "window" && s.match != nil:
 		win, ok = findWindow(*s.match)
 	case s.follow == "smart":
-		if windows, err := windowctl.ListWindows(windowctl.Filter{}); err == nil {
+		if windows, err := engine.ListWindows(engine.Filter{}); err == nil {
 			for _, w := range windows {
 				if w.Focused {
 					win, ok = w, true
@@ -1132,9 +1132,9 @@ func runVideoMark(c *cli.Ctx, args []string) error {
 
 // videoFocusSpec is `capture video focus` after parsing.
 type videoFocusSpec struct {
-	Rect  *windowctl.Rect
-	Match windowctl.Match
-	Find  windowctl.FindOptions
+	Rect  *engine.Rect
+	Match engine.Match
+	Find  engine.FindOptions
 	Hold  float64
 	Zoom  float64
 }
@@ -1170,12 +1170,12 @@ func parseVideoFocus(args []string) (videoFocusSpec, error) {
 		if err != nil {
 			return f, err
 		}
-		f.Rect = &windowctl.Rect{X: p[0] - size[0]/2, Y: p[1] - size[1]/2, W: size[0], H: size[1]}
+		f.Rect = &engine.Rect{X: p[0] - size[0]/2, Y: p[1] - size[1]/2, W: size[0], H: size[1]}
 		targets++
 	} else if set.Has("size") {
 		return f, fmt.Errorf("--size goes with --at")
 	}
-	f.Match = windowctl.Match{App: set.String("app", ""), Title: set.String("title", "")}
+	f.Match = engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	if f.Match.App != "" || f.Match.Title != "" {
 		targets++
 	}
@@ -1183,8 +1183,8 @@ func parseVideoFocus(args []string) (videoFocusSpec, error) {
 		if f.Match.App == "" && f.Match.Title == "" {
 			return f, fmt.Errorf("--find needs --app or --title: the window to search")
 		}
-		f.Find = windowctl.FindOptions{Text: text, Role: set.String("role", ""),
-			Source: windowctl.FindSource(set.String("source", "")), Exact: set.Has("exact")}
+		f.Find = engine.FindOptions{Text: text, Role: set.String("role", ""),
+			Source: engine.FindSource(set.String("source", "")), Exact: set.Has("exact")}
 	}
 	if targets != 1 {
 		return f, fmt.Errorf("give exactly one of --rect, --at, or --app/--title")
@@ -1222,7 +1222,7 @@ func runVideoFocus(c *cli.Ctx, args []string) error {
 		if f.Find.Text != "" {
 			// The same path as `aos find`.
 			f.Find.Match = match
-			hits, err := windowctl.FindText(f.Find)
+			hits, err := engine.FindText(f.Find)
 			if err != nil {
 				return notFoundExit(err)
 			}

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -69,7 +69,7 @@ func runLaunch(c *cli.Ctx, args []string) error {
 
 	// Launching is asynchronous everywhere, so --wait is what makes `launch`
 	// composable: the next command can assume the window is really there.
-	window, err := waitForMatch(windowctl.Match{App: app}, timeout)
+	window, err := waitForMatch(engine.Match{App: app}, timeout)
 	if err != nil {
 		return err
 	}

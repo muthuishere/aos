@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 				Summary:  "Print the ID of the monitor the pointer is on",
 				Examples: []string{"aos capture screenshot --monitor=$(aos display active)"},
 				Run: func(c *cli.Ctx, _ []string) error {
-					return printMonitorID(c, func(m windowctl.Monitor) bool { return m.Active })
+					return printMonitorID(c, func(m engine.Monitor) bool { return m.Active })
 				},
 			},
 			&cli.Command{
@@ -32,7 +32,7 @@ func init() {
 				Summary:  "Print the ID of the monitor holding the frontmost window",
 				Examples: []string{"aos window move Chrome --monitor=$(aos display focused)"},
 				Run: func(c *cli.Ctx, _ []string) error {
-					return printMonitorID(c, func(m windowctl.Monitor) bool { return m.Focused })
+					return printMonitorID(c, func(m engine.Monitor) bool { return m.Focused })
 				},
 			},
 		)
@@ -40,7 +40,7 @@ func init() {
 }
 
 func runDisplayList(c *cli.Ctx, _ []string) error {
-	monitors, err := windowctl.ListMonitors()
+	monitors, err := engine.ListMonitors()
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func signed(value int) string {
 
 // monitorTags renders the flags that distinguish otherwise identical monitors:
 // where the pointer is (active) versus where the frontmost window is (focused).
-func monitorTags(m windowctl.Monitor) string {
+func monitorTags(m engine.Monitor) string {
 	var tags []string
 	if m.Primary {
 		tags = append(tags, "primary")
@@ -83,8 +83,8 @@ func monitorTags(m windowctl.Monitor) string {
 	return "  " + fmt.Sprint(tags)
 }
 
-func printMonitorID(c *cli.Ctx, want func(windowctl.Monitor) bool) error {
-	monitors, err := windowctl.ListMonitors()
+func printMonitorID(c *cli.Ctx, want func(engine.Monitor) bool) error {
+	monitors, err := engine.ListMonitors()
 	if err != nil {
 		return err
 	}

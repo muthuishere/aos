@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func TestFindOptionsFromFlags(t *testing.T) {
@@ -20,7 +20,7 @@ func TestFindOptionsFromFlags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opts.Match.App != "Calculator" || opts.Text != "7" || opts.Source != windowctl.FindOCR ||
+	if opts.Match.App != "Calculator" || opts.Text != "7" || opts.Source != engine.FindOCR ||
 		opts.Role != "button" || !opts.Exact || !opts.NoRaise || !set.Has("all") {
 		t.Fatalf("got %+v", opts)
 	}
@@ -44,7 +44,7 @@ func TestFindRejectsMissingInputAndUnknownFlags(t *testing.T) {
 }
 
 func TestNotFoundMapsToExit3(t *testing.T) {
-	err := notFoundExit(fmt.Errorf("find: %w: closest \"Allow\"", windowctl.ErrNoMatch))
+	err := notFoundExit(fmt.Errorf("find: %w: closest \"Allow\"", engine.ErrNoMatch))
 	var exit *cli.ExitError
 	if !errors.As(err, &exit) || exit.Code != exitNotFound || exitNotFound != 3 || !strings.Contains(exit.Message, "Allow") {
 		t.Fatalf("got %#v", err)
@@ -63,8 +63,8 @@ func TestDrawOptionsFromFlags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opts.Point == nil || *opts.Point != (windowctl.Point{X: 10, Y: 20}) || opts.Text != "click" ||
-		opts.Style != windowctl.DrawRing || opts.Shape != windowctl.ShapeZigzag || opts.Size != windowctl.SizeL ||
+	if opts.Point == nil || *opts.Point != (engine.Point{X: 10, Y: 20}) || opts.Text != "click" ||
+		opts.Style != engine.DrawRing || opts.Shape != engine.ShapeZigzag || opts.Size != engine.SizeL ||
 		opts.Color == nil || opts.From != "top" || opts.Monitor == nil || *opts.Monitor != 2 ||
 		opts.Duration != 1500*time.Millisecond || set.String("preview", "") != "/tmp/p.png" {
 		t.Fatalf("got %+v", opts)
@@ -76,7 +76,7 @@ func TestDrawOptionsFromFlags(t *testing.T) {
 		t.Fatalf("find/detach: %+v, %v", opts, err)
 	}
 	opts, _, _ = drawOptionsFrom([]string{"--rect=1,2,3,4", "--text=x"})
-	if opts.Region == nil || *opts.Region != (windowctl.Rect{X: 1, Y: 2, W: 3, H: 4}) || opts.Duration != 8*time.Second {
+	if opts.Region == nil || *opts.Region != (engine.Rect{X: 1, Y: 2, W: 3, H: 4}) || opts.Duration != 8*time.Second {
 		t.Fatalf("rect/default duration: %+v", opts)
 	}
 }
@@ -100,7 +100,7 @@ func TestDrawPreviewRendersAPNG(t *testing.T) {
 	if testing.Short() {
 		t.Skip("needs a monitor list")
 	}
-	if _, err := windowctl.ListMonitors(); err != nil {
+	if _, err := engine.ListMonitors(); err != nil {
 		t.Skip("no monitors here:", err)
 	}
 	out := filepath.Join(t.TempDir(), "d.png")

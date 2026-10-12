@@ -2,7 +2,7 @@ package groups
 
 import (
 	"github.com/muthuishere/aos/internal/cli"
-	"github.com/muthuishere/windowctl"
+	"github.com/muthuishere/aos/internal/engine"
 )
 
 func init() {
@@ -30,8 +30,8 @@ func init() {
 }
 
 func runPermissionCheck(c *cli.Ctx, _ []string) error {
-	accessibility := windowctl.CheckAccessibility()
-	screen := windowctl.CheckScreenCapture()
+	accessibility := engine.CheckAccessibility()
+	screen := engine.CheckScreenCapture()
 
 	c.Printf("accessibility   %s\n", granted(accessibility))
 	c.Printf("screen capture  %s\n", granted(screen))
@@ -51,7 +51,7 @@ func runPermissionRequest(c *cli.Ctx, args []string) error {
 
 	switch which {
 	case "all", "accessibility":
-		if err := windowctl.RequestAccessibility(); err != nil && which == "accessibility" {
+		if err := engine.RequestAccessibility(); err != nil && which == "accessibility" {
 			return err
 		}
 		if which == "accessibility" {
@@ -59,7 +59,7 @@ func runPermissionRequest(c *cli.Ctx, args []string) error {
 		}
 		fallthrough
 	case "screen":
-		return windowctl.RequestScreenCapture()
+		return engine.RequestScreenCapture()
 	}
 	return &cli.ExitError{Code: 1, Message: "expected accessibility or screen, got " + which}
 }
