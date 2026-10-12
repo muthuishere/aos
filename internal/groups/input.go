@@ -1,6 +1,8 @@
 package groups
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,9 +27,10 @@ func init() {
 			&cli.Command{
 				Group: "mouse", Name: "click",
 				Summary: "Click, optionally moving to a point first",
-				Args:    "[<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>]",
+				Args:    "[<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json]",
 				Examples: []string{
 					"aos mouse click",
+					`aos mouse click --app=Calculator --find=7 --role=button   # AXPress / UIA Invoke: no pointer, no focus`,
 					"aos mouse click 400 300 --double",
 					"aos mouse click --button=right",
 				},
@@ -52,21 +55,23 @@ func init() {
 		r.Add(
 			&cli.Command{
 				Group: "key", Name: "type",
-				Summary: "Type text, optionally into a named window",
-				Args:    "<text...> [--app=<name>|--title=<substring>]",
+				Summary: "Type text; with --app/--title it goes to that window without needing focus",
+				Args:    "<text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]]",
 				Examples: []string{
 					`aos key type "hello world"`,
-					`aos key type "hello" --app=Chrome`,
+					`aos key type "hello" --app=TextEdit --verify   # posted to the app, read back from its text field`,
+					`aos key type "hello" --app=Chrome --focus      # real focus + verify, focus handed back after`,
+					"# exit 1 if --verify cannot see the text arrive; exit 3 if no window matches",
 				},
 				Run: runKeyType,
 			},
 			&cli.Command{
 				Group: "key", Name: "press",
 				Summary: "Press a key combination",
-				Args:    "<combo> [--app=<name>|--title=<substring>]",
+				Args:    "<combo> [--app=<name>|--title=<substring> [--focus] [--json]]",
 				Examples: []string{
 					"aos key press cmd+shift+s",
-					"aos key press enter --app=Chrome",
+					"aos key press enter --app=TextEdit   # posted to the app, no focus change",
 				},
 				Run: runKeyPress,
 			},
@@ -97,16 +102,60 @@ func runMouseMove(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	return engine.MouseMove(monitor, x, y)
+	if err := engine.MouseMove(monitor, x, y); err != nil {
+		return err
+	}
+	if gx, gy, err := engine.CursorPosition(); err == nil {
+		noteVideoPoint(c, gx, gy)
+	}
+	return nil
+}
+
+// clickRoute is the mouse click decision, pure for tests: "element" when a
+// window and --find are given (accessibility press, no pointer), "pointer"
+// otherwise (the unchanged coordinate click).
+func clickRoute(set *argSet) (string, error) {
+	named := namesWindow(set)
+	find := set.String("find", "")
+	switch {
+	case find != "" && !named:
+		return "", fmt.Errorf("--find needs the window to search: --app=<name> or --title=<s>")
+	case find != "" && len(set.Rest) > 0:
+		return "", fmt.Errorf("give either x y or --find, not both")
+	case find != "":
+		return "element", nil
+	case named || set.Has("focus"):
+		return "", fmt.Errorf("--app/--title/--focus on `mouse click` go with --find=<text>")
+	}
+	return "pointer", nil
 }
 
 func runMouseClick(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "monitor", "button")
+	set, err := parseArgs(args, "monitor", "button", "app", "title", "find", "role")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("monitor", "button", "double"); err != nil {
+	if err := set.Reject("monitor", "button", "double", "app", "title", "find", "role", "focus", "json"); err != nil {
 		return err
+	}
+	route, err := clickRoute(set)
+	if err != nil {
+		return err
+	}
+	if route == "element" {
+		match, _ := optionalMatch(set)
+		res, err := engine.ClickFound(engine.FindOptions{Match: match, Text: set.String("find", ""), Role: set.String("role", "")}, set.Has("focus"))
+		if err != nil {
+			return notFoundExit(err)
+		}
+		r := res.Found.Bounds
+		noteVideoTarget(c, "mouse click", res.Window)
+		noteVideo(c, "click", "mouse click", &r, res.Found.Label)
+		if set.Has("json") {
+			return json.NewEncoder(c.Stdout).Encode(res)
+		}
+		c.Printf("%s  %q at %d,%d\n", res.Route, res.Found.Label, res.Found.Center.X, res.Found.Center.Y)
+		return nil
 	}
 
 	opts := engine.ClickOptions{Double: set.Has("double")}
@@ -150,28 +199,75 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 	return nil
 }
 
+// inputOptionsFrom reads the shared focus-free input flags.
+func inputOptionsFrom(set *argSet) engine.InputOptions {
+	return engine.InputOptions{Focus: set.Has("focus"), Verify: set.Has("verify")}
+}
+
+// keyRoute decides which path a key command takes. Pure, for tests:
+// "target" means engine.TypeTo / PressTo (focus-free unless --focus),
+// "frontmost" means plain keystrokes to whatever has focus. --focus and
+// --verify only make sense with a named window.
+func keyRoute(set *argSet) (string, error) {
+	if !namesWindow(set) {
+		if set.Has("focus") || set.Has("verify") {
+			return "", fmt.Errorf("--focus and --verify need a target window: --app=<name> or --title=<s>")
+		}
+		return "frontmost", nil
+	}
+	return "target", nil
+}
+
+func emitInput(c *cli.Ctx, set *argSet, res engine.InputResult) error {
+	if set.Has("json") {
+		return json.NewEncoder(c.Stdout).Encode(res)
+	}
+	line := res.Route
+	if res.Reason != "" {
+		line += " (" + res.Reason + ")"
+	}
+	if res.Verified {
+		line += "  verified"
+	}
+	c.Println(line)
+	return nil
+}
+
+func inputExit(err error) error {
+	if errors.Is(err, engine.ErrNoMatch) {
+		return &cli.ExitError{Code: exitNotFound, Message: err.Error()}
+	}
+	return err
+}
+
 func runKeyType(c *cli.Ctx, args []string) error {
 	set, err := parseArgs(args, "app", "title")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "title"); err != nil {
+	if err := set.Reject("app", "title", "focus", "verify", "json"); err != nil {
 		return err
 	}
 	text := strings.Join(set.Rest, " ")
 	if text == "" {
 		return fmt.Errorf("`key type` needs some text")
 	}
-	// With a window named, the engine focuses and verifies before typing, so
-	// keystrokes cannot land in whatever happened to be frontmost.
-	if match, ok := optionalMatch(set); ok {
-		if err := engine.TypeInto(match, text); err != nil {
-			return err
-		}
-		noteVideoWindow(c, "key type", match)
-		return nil
+	route, err := keyRoute(set)
+	if err != nil {
+		return err
 	}
-	return engine.TypeText(text)
+	if route == "frontmost" {
+		return engine.TypeText(text)
+	}
+	// With a window named, input goes to that window's process and never to
+	// whatever happens to be frontmost (the person may be typing elsewhere).
+	match, _ := optionalMatch(set)
+	res, err := engine.TypeTo(match, text, inputOptionsFrom(set))
+	if err != nil {
+		return inputExit(err)
+	}
+	noteVideoTarget(c, "key type", res.Window)
+	return emitInput(c, set, res)
 }
 
 func runKeyPress(c *cli.Ctx, args []string) error {
@@ -179,21 +275,32 @@ func runKeyPress(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "title"); err != nil {
+	if err := set.Reject("app", "title", "focus", "json"); err != nil {
 		return err
 	}
 	if len(set.Rest) != 1 {
 		return fmt.Errorf("`key press` takes one combo, such as cmd+shift+s")
 	}
 	combo := set.Rest[0]
-	if match, ok := optionalMatch(set); ok {
-		if err := engine.PressKeyInto(match, combo); err != nil {
-			return err
-		}
-		noteVideoWindow(c, "key press", match)
-		return nil
+	route, err := keyRoute(set)
+	if err != nil {
+		return err
 	}
-	return engine.PressKey(combo)
+	if route == "frontmost" {
+		return engine.PressKey(combo)
+	}
+	match, _ := optionalMatch(set)
+	res, err := engine.PressTo(match, combo, inputOptionsFrom(set))
+	if err != nil {
+		return inputExit(err)
+	}
+	noteVideoTarget(c, "key press", res.Window)
+	return emitInput(c, set, res)
+}
+
+// namesWindow reports whether --app or --title was given (no lookup).
+func namesWindow(set *argSet) bool {
+	return set.String("app", "") != "" || set.String("title", "") != ""
 }
 
 // optionalMatch reads --app / --title when the command's positionals are its

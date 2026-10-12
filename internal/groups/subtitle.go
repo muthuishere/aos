@@ -1,6 +1,7 @@
 package groups
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -47,7 +48,7 @@ func init() {
 				Args: "<text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] " +
 					"[--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] " +
 					"[--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] " +
-					"[--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>]",
+					"[--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>] [--json]",
 				Examples: []string{
 					`aos subtitle show "installing dependencies"`,
 					`aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom`,
@@ -169,6 +170,7 @@ func runSubtitleShow(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	opts = applyRecordingMonitor(c, opts)
 	if out := set.String("preview", ""); out != "" {
 		res, err := engine.RenderDraw(opts, expandHome(out))
 		if err != nil {
@@ -197,7 +199,18 @@ func runSubtitleShow(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	c.Printf("%s  %gs  %s\n", mode, secs, positionName(opts.Position))
+	if set.Has("json") {
+		// Where it is: the same placement the overlay child computes.
+		res, rerr := engine.RenderDraw(opts, os.DevNull)
+		if rerr != nil {
+			return notFoundExit(rerr)
+		}
+		if err := json.NewEncoder(c.Stdout).Encode(subtitleJSON{Mode: mode, Seconds: secs, Position: positionName(opts.Position), DrawResult: res}); err != nil {
+			return err
+		}
+	} else {
+		c.Printf("%s  %gs  %s\n", mode, secs, positionName(opts.Position))
+	}
 
 	// Showing a subtitle returns immediately so it can sit over other work.
 	// --wait is for the script that wants the next step to follow this one.
@@ -205,6 +218,15 @@ func runSubtitleShow(c *cli.Ctx, args []string) error {
 		time.Sleep(opts.Duration)
 	}
 	return nil
+}
+
+// subtitleJSON is `subtitle show --json`: the backend used and where the
+// caption sits (Monitor, Sign = the caption's rect, Surface = the monitor).
+type subtitleJSON struct {
+	Mode     string  `json:"Mode"`
+	Seconds  float64 `json:"Seconds"`
+	Position string  `json:"Position"`
+	engine.DrawResult
 }
 
 func positionName(p engine.DrawPosition) string {

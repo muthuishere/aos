@@ -158,3 +158,28 @@ type Chord struct {
 	Shift bool
 	Key   string
 }
+
+// TargetedInput is implemented by adapters that can deliver keyboard
+// input to one window's process without giving it OS focus (macOS
+// CGEventPostToPid, Windows PostMessage to the window's focused child).
+// Optional: the engine type-asserts for it and falls back to the
+// focus-and-verify path when an adapter lacks it.
+type TargetedInput interface {
+	TypeTextTo(w Window, text string) error
+	PressChordTo(w Window, chord Chord) error
+}
+
+// FocusedTextReader reads the value of the target window's focused text
+// element (AX on macOS, WM_GETTEXT on Windows) so typed input can be
+// verified by state rather than by screenshot. ok is false when the
+// window has no readable text element.
+type FocusedTextReader interface {
+	FocusedText(w Window) (text string, ok bool, err error)
+}
+
+// ElementPresser activates the accessibility element of window w at the
+// global point (x, y) without moving the pointer or focusing the window
+// (macOS AXPress, Windows UIA Invoke).
+type ElementPresser interface {
+	PressElementAt(w Window, x, y int) error
+}

@@ -26,7 +26,7 @@ aos capture video stop
 
 | mode | records | camera in the final cut |
 |---|---|---|
-| `smart` (recommended) | the monitor | frames the active window, leans in toward the cursor while it moves inside a large window, and goes back to the window after 1.5 s idle. `draw`/`find` take over briefly. |
+| `smart` (recommended) | the monitor | frames the window aos last acted on (any `--app`/`--title` command, `find`, `draw`, `mouse click --find`) and follows its moves and resizes, leans in toward the cursor while it moves inside a large window, and goes back to the window after 1.5 s idle. `draw`/`find` take over briefly. OS focus is ignored: someone working on another monitor does not move the camera. |
 | `monitor` (default) | `--monitor=<n>` (else the focused one) | wide; zooms to each aos action (find, draw, window, key, click, screenshot) |
 | `app --app=<name>` | the monitor the app is on | follows that window as it moves and resizes |
 | `mouse [--zoom=2]` | the monitor | follows the cursor at a fixed zoom, spring-smoothed with a dead zone; clicks pulse |
@@ -34,7 +34,16 @@ aos capture video stop
 | `region --region=x,y,w,h` | only that rect (fixed crop) | as `monitor`, inside the crop |
 
 Camera priority, highest first: explicit `focus` > `draw`/`find` (in smart mode;
-every action in monitor mode) > cursor > active window > wide.
+every action in monitor mode) > cursor > aos's target window > wide. Windows
+outside the recorded area, and windows smaller than 120x80 (tooltips,
+popups), never steer the camera.
+
+While a recording runs, overlays with no place of their own go on the
+recording's monitor, not the focused one: `subtitle show` and `draw text`
+without `--monitor`/`--app`/`--rect`, `draw --at` (relative to the recording's
+monitor), and `draw --mouse` (when the pointer is elsewhere: the point aos
+last clicked on that monitor, else its centre). `subtitle show --json` and
+`draw ... --json` print `Monitor`, `Sign` (the drawn rect) and `Surface`.
 
 ## Flags
 

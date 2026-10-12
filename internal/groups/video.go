@@ -398,9 +398,93 @@ func noteVideoWindow(c *cli.Ctx, cmd string, match engine.Match) {
 		return
 	}
 	if w, ok := findWindow(match); ok {
-		r := w.Bounds
-		noteVideo(c, "action", cmd, &r, describeMatch(match))
+		noteVideoTarget(c, cmd, w)
 	}
+}
+
+// videoTarget is the window aos last acted on during a recording. The smart
+// camera follows it — not OS focus, which belongs to whoever else is using
+// the machine — and the supervisor logs its moves and resizes.
+type videoTarget struct {
+	ID     string      `json:"ID"`
+	App    string      `json:"App"`
+	Title  string      `json:"Title"`
+	Bounds engine.Rect `json:"Bounds"`
+	// Point is where aos last put the pointer or clicked, if anywhere.
+	Point *engine.Point `json:"Point,omitempty"`
+}
+
+func videoTargetPath(dir string) string { return filepath.Join(dir, "target.json") }
+
+func readVideoTarget(dir string) *videoTarget {
+	data, err := os.ReadFile(videoTargetPath(dir))
+	if err != nil {
+		return nil
+	}
+	var t videoTarget
+	if json.Unmarshal(data, &t) != nil {
+		return nil
+	}
+	return &t
+}
+
+func writeVideoTarget(dir string, t videoTarget) {
+	if data, err := json.Marshal(t); err == nil {
+		tmp := videoTargetPath(dir) + ".tmp"
+		if os.WriteFile(tmp, data, 0o644) == nil {
+			_ = os.Rename(tmp, videoTargetPath(dir))
+		}
+	}
+}
+
+// noteVideoTarget makes w the camera's window and logs the action on it.
+func noteVideoTarget(c *cli.Ctx, cmd string, w engine.Window) {
+	setVideoTarget(c, cmd, w, true)
+}
+
+// noteVideoMatchTarget makes the matched window the camera's window without
+// logging an action of its own: find and draw log their element instead.
+func noteVideoMatchTarget(c *cli.Ctx, cmd string, match *engine.Match) {
+	if match == nil || activeRecording(c) == nil {
+		return
+	}
+	if w, ok := findWindow(*match); ok {
+		setVideoTarget(c, cmd, w, false)
+	}
+}
+
+func setVideoTarget(c *cli.Ctx, cmd string, w engine.Window, action bool) {
+	st := activeRecording(c)
+	if st == nil {
+		return
+	}
+	dir := videoDir(c)
+	t := videoTarget{ID: w.ID, App: w.App, Title: w.Title, Bounds: w.Bounds}
+	if old := readVideoTarget(dir); old != nil && old.ID == w.ID {
+		t.Point = old.Point
+	}
+	writeVideoTarget(dir, t)
+	r := w.Bounds
+	now := since(st.Started)
+	if action {
+		_ = appendVideoEvent(st.Events, videoEvent{T: now, Kind: "action", Cmd: cmd, Rect: &r, Label: w.App})
+	}
+	_ = appendVideoEvent(st.Events, videoEvent{T: now, Kind: "window", Cmd: cmd, Rect: &r, Label: w.App})
+}
+
+// noteVideoPoint remembers where aos last pointed, for overlays that default
+// to "the mouse" while a recording runs.
+func noteVideoPoint(c *cli.Ctx, x, y int) {
+	if activeRecording(c) == nil {
+		return
+	}
+	dir := videoDir(c)
+	t := videoTarget{}
+	if old := readVideoTarget(dir); old != nil {
+		t = *old
+	}
+	t.Point = &engine.Point{X: x, Y: y}
+	writeVideoTarget(dir, t)
 }
 
 // noteVideoDraw logs a drawing as the union of its sign and what it points at,
@@ -422,6 +506,7 @@ func noteVideoClick(c *cli.Ctx) {
 	if x, y, err := engine.CursorPosition(); err == nil {
 		r := engine.Rect{X: x - 20, Y: y - 20, W: 40, H: 40}
 		noteVideo(c, "click", "mouse click", &r, "")
+		noteVideoPoint(c, x, y)
 	}
 }
 
@@ -435,6 +520,19 @@ func unionRect(a, b engine.Rect) engine.Rect {
 	x0, y0 := min(a.X, b.X), min(a.Y, b.Y)
 	x1, y1 := max(a.X+a.W, b.X+b.W), max(a.Y+a.H, b.Y+b.H)
 	return engine.Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0}
+}
+
+// smartWindow finds the camera's target window in a fresh window list.
+func smartWindow(windows []engine.Window, t *videoTarget) (engine.Window, bool) {
+	if t == nil || t.ID == "" {
+		return engine.Window{}, false
+	}
+	for _, w := range windows {
+		if w.ID == t.ID {
+			return w, true
+		}
+	}
+	return engine.Window{}, false
 }
 
 func since(t time.Time) float64 { return math.Round(time.Since(t).Seconds()*1000) / 1000 }
@@ -493,6 +591,7 @@ func runVideoStart(c *cli.Ctx, args []string) error {
 	}
 
 	_ = os.Remove(videoStopPath(dir))
+	_ = os.Remove(videoTargetPath(dir)) // a new recording starts with no camera target
 	st := &videoState{
 		Out: out, Events: strings.TrimSuffix(out, filepath.Ext(out)) + ".events.jsonl",
 		Mode: o.Mode, Follow: o.Follow, Monitor: monitor.rect, Capture: capture, Zoom: o.Zoom,
@@ -887,6 +986,7 @@ finished:
 		st.Error = strings.TrimSpace(exitErr.Error() + ": " + logTail(st.Log))
 	}
 	_ = os.Remove(videoStopPath(dir))
+	_ = os.Remove(videoTargetPath(dir)) // a new recording starts with no camera target
 	return writeVideoState(dir, st)
 }
 
@@ -894,6 +994,7 @@ finished:
 // a follow mode is on. It only writes when something changed.
 type videoSampler struct {
 	st       *videoState
+	dir      string
 	follow   string
 	match    *engine.Match
 	lastX    int
@@ -903,7 +1004,7 @@ type videoSampler struct {
 }
 
 func newVideoSampler(st *videoState) *videoSampler {
-	return &videoSampler{st: st, follow: st.Follow, match: st.Match}
+	return &videoSampler{st: st, dir: filepath.Dir(st.Events), follow: st.Follow, match: st.Match}
 }
 
 func (s *videoSampler) sample(n int) {
@@ -922,14 +1023,16 @@ func (s *videoSampler) sample(n int) {
 	case s.follow == "window" && s.match != nil:
 		win, ok = findWindow(*s.match)
 	case s.follow == "smart":
-		if windows, err := engine.ListWindows(engine.Filter{}); err == nil {
-			for _, w := range windows {
-				if w.Focused {
-					win, ok = w, true
-					break
-				}
+		// The window aos last acted on — never OS focus, which follows
+		// whoever else is using the machine.
+		if t := readVideoTarget(s.dir); t != nil && t.ID != "" {
+			if windows, err := engine.ListWindows(engine.Filter{}); err == nil {
+				win, ok = smartWindow(windows, t)
 			}
 		}
+	}
+	if ok && !onCapture("window", win.Bounds, s.st.Capture) {
+		ok = false
 	}
 	if ok && win.Bounds != s.lastWin {
 		s.lastWin = win.Bounds

@@ -423,22 +423,25 @@ func visibleEvents(evs []videoEvent, capture engine.Rect) []videoEvent {
 	}
 	out := evs[:0:0]
 	for _, ev := range evs {
-		if ev.Rect == nil || ev.Kind == "cursor" {
+		if ev.Rect == nil || ev.Kind == "cursor" || onCapture(ev.Kind, *ev.Rect, capture) {
 			out = append(out, ev)
-			continue
 		}
-		r := *ev.Rect
-		if ev.Kind == "window" && (r.W < 120 || r.H < 80) {
-			continue
-		}
-		ix := math.Min(float64(r.X+r.W), float64(capture.X+capture.W)) - math.Max(float64(r.X), float64(capture.X))
-		iy := math.Min(float64(r.Y+r.H), float64(capture.Y+capture.H)) - math.Max(float64(r.Y), float64(capture.Y))
-		if ix <= 0 || iy <= 0 || ix*iy < 0.5*float64(r.W*r.H) {
-			continue
-		}
-		out = append(out, ev)
 	}
 	return out
+}
+
+// onCapture reports whether a rect is mostly inside the recorded area (and,
+// for windows, big enough to be one).
+func onCapture(kind string, r, capture engine.Rect) bool {
+	if capture.W <= 0 || capture.H <= 0 {
+		return true
+	}
+	if kind == "window" && (r.W < 120 || r.H < 80) {
+		return false
+	}
+	ix := math.Min(float64(r.X+r.W), float64(capture.X+capture.W)) - math.Max(float64(r.X), float64(capture.X))
+	iy := math.Min(float64(r.Y+r.H), float64(capture.Y+capture.H)) - math.Max(float64(r.Y), float64(capture.Y))
+	return ix > 0 && iy > 0 && ix*iy >= 0.5*float64(r.W*r.H)
 }
 
 // planCamera simulates the camera over [0, dur] at o.Rate samples per second.
