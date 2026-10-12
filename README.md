@@ -45,20 +45,49 @@ $ aos skill install             # now an agent runs all of the above
 
 ## Install
 
+macOS / Linux (installs to `~/.local/bin`, no root, no Go):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
+```
+
+Windows (installs to `%LOCALAPPDATA%\Programs\aos` and adds it to your user PATH, no admin):
+
+```bat
+curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
+```
+
+The installer downloads the release archive for your OS/arch, verifies it
+against `checksums.txt` (sha256), strips the macOS quarantine flag, and runs
+`aos --version` once, which also installs the agent skill. Options (same on
+both; `install.cmd` also takes `/from`, `/version`, `/dir`):
+
+```sh
+sh install.sh --version v0.6.0                         # a specific release (default: latest)
+sh install.sh --from /path/to/release-folder           # offline: goreleaser archives + checksums.txt (e.g. a copied dist/)
+sh install.sh --from https://mirror.example/aos/v0.6.0/  # any HTTP(S) mirror with the same layout
+sh install.sh --from ./aos                             # a single extracted executable, copied as-is
+sh install.sh --dir ~/bin                              # install somewhere else
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --from https://mirror.example/aos/v0.6.0/
+```
+
+Environment equivalents: `AOS_FROM`, `AOS_VERSION`, `AOS_INSTALL_DIR`. A folder
+or URL without `checksums.txt` installs with a loud warning; a checksum mismatch
+refuses to install.
+
+With a Go toolchain (Go 1.26+; on macOS cgo, i.e. Xcode command line tools):
+
 ```sh
 go install github.com/muthuishere/aos/cmd/aos@latest
-aos skill install   # teach Claude Code and other agents to use it
-aos doctor
 ```
 
-Needs Go 1.26+. If you would rather not build, every release also ships
-prebuilt binaries for macOS, Linux and Windows:
-[the latest release](https://github.com/muthuishere/aos/releases/latest).
+The agent skill installs itself the first time you run any aos command, and
+stays current with the binary (`AOS_NO_SKILL_AUTOINSTALL=1` or
+`aos skill uninstall` turns that off). Then check the machine with `aos doctor`.
 
-```sh
-curl -fsSL -o aos https://github.com/muthuishere/aos/releases/latest/download/aos-darwin-arm64
-chmod +x aos && ./aos skill install && ./aos doctor
-```
+Releases are built with goreleaser (`goreleaser release --snapshot --clean` to
+try locally): `aos_<version>_<os>_<arch>.tar.gz` (zip on Windows) plus
+`checksums.txt`, for darwin/linux/windows on amd64 and arm64.
 
 One binary, no runtime and no package manager of its own. The macOS window
 backend is CoreGraphics through cgo, so a Mac build needs `CGO_ENABLED=1` — the

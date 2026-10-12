@@ -11,10 +11,19 @@ description: >
   lock or sleep the machine, list or kill a process, watch a file or the clipboard,
   run something as a service,
   show a caption on screen, share my screen on the LAN, what can this machine do,
+  snap a window to a half / quarter / third, N-way split, put an app on monitor 2,
+  apply / save a window layout, which monitor is active, find a button / menu /
+  text on screen, where is the Allow button, point at it, draw an arrow, show me
+  where to click, highlight / circle / box this, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP.
 ---
 
 # aos
+
+> **Supersedes `window-ctl-skill`.** aos runs windowctl as its engine library,
+> so everything that skill did (window layout, zones, pointing, find, draw, the
+> visual loop) is here as `aos …` commands. If both skills are installed, use
+> this one; `windowctl` remains only as the library aos is built on.
 
 One command surface over the machine, identical on macOS, Windows and Linux.
 You already have a shell, so just run these commands — there is nothing to start
@@ -43,6 +52,8 @@ If a command is not in `commands`, it does not exist here. Do not invent flags �
   `network wifi` on ethernet, `remote url` with nothing running. Often not an error.
 - **2** — refused before doing anything: the command needs a display this machine
   lacks, or is not supported on this platform. The message says which.
+- **3** — not found: `find` / `draw --find` could not find the window or the text.
+  The message lists the closest labels it did see; retry with one of them.
 
 Exit 2 on Linux is fixable: `aos headless start --wm` provides a virtual
 display, and later commands adopt it automatically. On macOS and Windows it means
@@ -55,9 +66,11 @@ there is no logged-in session and the desktop commands cannot work at all.
 | see the machine | `system info`, `doctor`, `display list`, `network status`, `battery status` |
 | find a window | `window list`, `window list --app=Chrome`, `window list --json` |
 | place a window | `window move Chrome --zone=1B` · `--at=x,y,w,h` · `--monitor=2` · `window resize Chrome --w=900 --h=500` |
-| save / restore a layout | `window save P` captures every window · `window arrange P` puts them back |
+| save / restore a layout | `window save P` captures every window · `window arrange P` (or `-` for stdin JSON) puts them back |
 | focus / wait | `window focus Chrome` · `launch Chrome --wait` · `window wait Chrome --timeout=5000` |
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
+| find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
+| point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
 | click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=Chrome` · `key press cmd+shift+s` |
 | files | `file read P --lines=10:40` · `file write P text` · `file list D --json` · `file stat P` · `file delete P --recursive` |
 | run something | `exec capture -- <cmd>` (JSON: stdout, stderr, exit) · `exec run` (streams) · `exec shell "a \| b"` |
@@ -70,6 +83,18 @@ there is no logged-in session and the desktop commands cannot work at all.
 
 `--app` and `--title` both select a window; a bare word is treated as an app name
 and falls back to matching the title, so `window focus Chrome` works everywhere.
+
+## Deeper references
+
+Load the one that matches the intent:
+
+- `references/windows-and-layout.md` — window list, monitors (ACTIVE/FOCUSED),
+  zones `1A..2D` and `N:M` splits, move/resize/focus rules, layouts, recipes
+- `references/automation.md` — the visual loop, focus guard, open a terminal and
+  run a command, screen sharing and the public-tunnel confirmation rule
+- `references/find.md` — `aos find`: sources, ranking, roles, exit 3
+- `references/draw.md` — `aos draw`: targets, look, `--find`, detach/stop, verified pointing
+- `references/permissions.md` — macOS Accessibility + Screen Recording
 
 ## Screenshots are for looking, not just saving
 
@@ -86,6 +111,12 @@ that rect is how image coordinates become click coordinates: global = origin + p
 - **A blocking command never returns**: `watch`, `remote share`,
   `serve mcp`. Give them `--max=N` where it exists, or run them in the background.
   They are deliberately absent from the MCP tool list.
+- **Public screen sharing needs an explicit yes.** `remote share` is LAN-only.
+  Anything that puts desktop control on a public URL (e.g. `windowctl remote
+  --tunnel`) must be confirmed by the human every time, after saying plainly
+  what it exposes.
+- **`draw` blocks** for its `--duration` (default 8 s) unless `--detach`; clean
+  up detached drawings with `draw stop`.
 - **`file delete` refuses** a filesystem root, `$HOME`, and system directories like
   `/etc`. That is a guard, not a bug. Directories need `--recursive`.
 - **Nothing is silently unavailable.** A command that cannot run here still appears
@@ -152,3 +183,10 @@ aos obs export              # OTLP JSON
 
 Spans record the route, exit code, duration and the *count* of arguments — never
 their contents.
+
+## The skill keeps itself current
+
+Every aos command (except `skill install/uninstall` and help) checks that this
+skill is installed and matches the binary, and refreshes it if not, saying so in
+one stderr line. `AOS_NO_SKILL_AUTOINSTALL=1`, or `aos skill uninstall`, turns
+that off; `aos skill install` turns it back on.

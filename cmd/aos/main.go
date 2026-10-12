@@ -45,5 +45,6 @@ func main() {
 	cli.LoadAdapters(registry, ctx.Env)
 	cli.DiscoverPlugins(registry, ctx.Env)
 
+	groups.EnsureSkill(ctx, os.Args[1:])
 	os.Exit(cli.Run(ctx, os.Args[1:]))
 }

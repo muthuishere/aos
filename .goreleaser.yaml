@@ -1,0 +1,63 @@
+version: 2
+
+project_name: aos
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  # Linux and Windows are pure Go and cross-compile from anywhere.
+  - id: aos-nondarwin
+    main: ./cmd/aos
+    binary: aos
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    goos: [linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+  # darwin needs cgo: the windowctl darwin adapter links CoreGraphics,
+  # ApplicationServices and AppKit. Build on a macOS host (system clang);
+  # cross-compiling darwin from elsewhere needs osxcross.
+  - id: aos-darwin
+    main: ./cmd/aos
+    binary: aos
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -trimpath
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Version }}-snapshot"
+
+release:
+  github:
+    owner: muthuishere
+    name: aos
+  draft: false
+  prerelease: auto
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ['^docs', '^test', '^ci', '^chore']

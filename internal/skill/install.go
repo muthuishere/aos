@@ -43,9 +43,13 @@ type Result struct {
 // gets set up later, with nothing to indicate why — and a directory holding one
 // small file costs nothing.
 func Hosts(env func(string) string) ([]Host, error) {
-	home, err := os.UserHomeDir()
+	home, err := homeDir()
 	if err != nil {
 		return nil, err
+	}
+	claudeRoot := filepath.Join(home, ".claude", "skills")
+	if dir := strings.TrimSpace(env("CLAUDE_CONFIG_DIR")); dir != "" {
+		claudeRoot = filepath.Join(dir, "skills")
 	}
 	root := func(override, dir string) string {
 		if value := strings.TrimSpace(env(override)); value != "" {
@@ -54,7 +58,7 @@ func Hosts(env func(string) string) ([]Host, error) {
 		return filepath.Join(home, dir, "skills")
 	}
 	return []Host{
-		{Name: "claude", Root: root("CLAUDE_SKILLS_DIR", ".claude")},
+		{Name: "claude", Root: orDefault(env("CLAUDE_SKILLS_DIR"), claudeRoot)},
 		{Name: "agents", Root: root("AGENTS_SKILLS_DIR", ".agents")},
 	}, nil
 }
@@ -123,7 +127,7 @@ func writeSkill(target string) error {
 	}
 	source := filepath.ToSlash(filepath.Join("assets", Name))
 
-	return fs.WalkDir(bundled, source, func(path string, entry fs.DirEntry, err error) error {
+	if err := fs.WalkDir(bundled, source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -143,5 +147,16 @@ func writeSkill(target string) error {
 			return err
 		}
 		return os.WriteFile(destination, data, 0o644)
-	})
+	}); err != nil {
+		return err
+	}
+	// The stamp is what lets Ensure tell a current install from a stale one.
+	return os.WriteFile(filepath.Join(target, StampFile), []byte(BundleHash()+"\n"), 0o644)
+}
+
+func orDefault(value, fallback string) string {
+	if value = strings.TrimSpace(value); value != "" {
+		return value
+	}
+	return fallback
 }
