@@ -9,18 +9,24 @@ import { Steps } from '@astrojs/starlight/components';
 
 1. **Install.**
 
+   macOS / Linux:
+
    ```sh
-   go install github.com/muthuishere/aos/cmd/aos@latest
+   curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
    ```
 
-   Needs Go 1.26+. One static binary, no runtime and no package manager of its
-   own. The macOS window backend is CoreGraphics through cgo, so a Mac build
-   needs `CGO_ENABLED=1` — the default when building natively. Linux and Windows
-   are pure Go and cross-compile from anywhere.
+   Windows (cmd or PowerShell):
 
-   Prefer not to build? Every release also ships prebuilt binaries for macOS,
-   Linux and Windows —
-   [the latest release](https://github.com/muthuishere/aos/releases/latest).
+   ```bat
+   curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
+   ```
+
+   One binary, no Go toolchain, no root or administrator. It downloads the
+   latest [release](https://github.com/muthuishere/aos/releases/latest) and verifies it
+   against `checksums.txt`. To install from somewhere else — a copied release
+   folder, a mirror URL, or a single executable — pass
+   `--from <folder|url|exe>` (`sh install.sh --from ./dist`,
+   `install.cmd --from C:\path\to\aos.exe`). `--version` and `--dir` work too.
 
 2. **Ask the machine what works.**
 

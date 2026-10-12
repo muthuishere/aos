@@ -140,7 +140,7 @@ has the binary works the same way — same commands, same exit codes:
 ```bash
 ssh server aos system info
 ssh server aos exec capture -- systemctl is-active nginx
-ssh server 'go install github.com/muthuishere/aos/cmd/aos@latest'
+ssh server 'curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh'
 ```
 
 A server has no display, so the desktop commands there exit 2 with that reason.

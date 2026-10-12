@@ -75,7 +75,7 @@ Environment equivalents: `AOS_FROM`, `AOS_VERSION`, `AOS_INSTALL_DIR`. A folder
 or URL without `checksums.txt` installs with a loud warning; a checksum mismatch
 refuses to install.
 
-With a Go toolchain (Go 1.26+; on macOS cgo, i.e. Xcode command line tools):
+Build from source instead (Go 1.26+; on macOS cgo, i.e. Xcode command line tools):
 
 ```sh
 go install github.com/muthuishere/aos/cmd/aos@latest
@@ -118,7 +118,7 @@ supplies — and it buys things a server cannot:
   ```sh
   ssh server aos system info
   ssh server aos exec capture -- systemctl is-active nginx
-  ssh server 'go install github.com/muthuishere/aos/cmd/aos@latest'
+  ssh server 'curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh'
   ```
 
   A headless server refuses the desktop commands with a reason rather than

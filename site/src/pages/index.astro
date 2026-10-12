@@ -1,213 +1,204 @@
 ---
-// The landing page sits outside the Starlight layout on purpose: the diagram is
-// the first thing, full viewport, with no chrome in front of it.
+// Landing page: outside the Starlight layout, plain HTML + CSS, no extra deps.
 import registry from '../data/registry.json';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const surface = `${registry.commands} commands · ${registry.groups} groups`;
-const bin = registry.binary;
+const repo = 'https://github.com/muthuishere/aos';
+const raw = 'https://raw.githubusercontent.com/muthuishere/aos/main';
+const installSh = `curl -fsSL ${raw}/install.sh | sh`;
+const installCmd = `curl -fsSL -o install.cmd ${raw}/install.cmd && install.cmd`;
+
+const features = [
+	{ t: 'Windows & layout', d: 'List, focus, move and resize any window. Snap to halves, quarters or N-way splits on any monitor.', c: 'aos window move Safari --zone=1A --monitor=2' },
+	{ t: 'Find on screen', d: 'Locate a button, menu item or text inside a window via accessibility or OCR, and get its exact center.', c: 'aos find --app=Calculator --text=7' },
+	{ t: 'Point for humans', d: 'Draw a big click-through arrow, ring or box with a sign, so a person knows exactly where to click.', c: 'aos draw --app=Calculator --find=7 --text="Press 7"' },
+	{ t: 'Keyboard & mouse', d: 'Type text and press key combos into a named window, or move and click the pointer.', c: 'aos key press cmd+s --app=TextEdit' },
+	{ t: 'Screenshots', d: 'Capture a monitor, a region or one app window so the agent can see what it did.', c: 'aos capture screenshot window --app=Safari' },
+	{ t: 'Shell & packages', d: 'Run commands with JSON-captured output, and one package verb set over brew, winget, apt and more.', c: 'aos exec capture -- git status' },
+	{ t: 'Remote screen share', d: 'Hand this screen and its input to a browser on the LAN, and watch the agent work from your phone.', c: 'aos remote share' },
+	{ t: 'Headless & MCP', d: 'Give a Linux server a virtual display, or serve every command as typed MCP tools.', c: 'aos serve mcp' },
+];
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<title>aos — the machine, as one command surface</title>
-		<meta
-			name="description"
-			content={`One CLI over the machine that agents drive the same way you do \u2014 as an installed agent skill, or over MCP. ${registry.commands} commands across ${registry.groups} groups, on macOS, Windows and Linux.`}
-		/>
+		<title>aos — your agent can finally use your computer</title>
+		<meta name="description" content={`One CLI that lets AI agents and people control the desktop on macOS, Windows and Linux. ${registry.commands} commands across ${registry.groups} groups.`} />
 		<link rel="icon" href={`${base}/favicon.svg`} />
 	</head>
 	<body>
-		<canvas id="c"></canvas>
-		<div id="fps"></div>
-		<a id="scroll" href="#start">↓</a>
+		<header class="nav wrap">
+			<a class="brand" href={`${base}/`}>aos</a>
+			<nav>
+				<a href={`${base}/quickstart/`}>Docs</a>
+				<a href={`${base}/reference/commands/`}>Commands</a>
+				<a href={repo}>GitHub</a>
+			</nav>
+		</header>
 
-		<section id="start">
-			<h1>aos</h1>
-			<p class="lede">
-				One CLI over the machine &mdash; windows, input, screenshots, files, shell commands, packages
-				&mdash; that an agent drives the same way you do. Install the skill and your agent just
-				uses it; serve it over MCP when you want typed tools instead. Same commands, one code
-				path, three platforms.
-			</p>
+		<main>
+			<section class="hero wrap">
+				<p class="eyebrow">macOS · Windows · Linux · one binary</p>
+				<h1>Your agent can finally use your computer.</h1>
+				<p class="sub">aos is one CLI for windows, keyboard, mouse, screenshots and on-screen pointers that Claude Code and other agents drive exactly the way you do.</p>
 
+				<div class="install" data-tabs>
+					<div class="tabs" role="tablist">
+						<button role="tab" aria-selected="true" data-tab="sh">macOS / Linux</button>
+						<button role="tab" aria-selected="false" data-tab="cmd">Windows</button>
+					</div>
+					<div class="cmdline" data-panel="sh"><code>{installSh}</code><button class="copy" data-copy={installSh}>Copy</button></div>
+					<div class="cmdline" data-panel="cmd" hidden><code>{installCmd}</code><button class="copy" data-copy={installCmd}>Copy</button></div>
+					<p class="note">No Go, no root. The agent skill installs itself on first run. Then run <code>aos doctor</code>.</p>
+				</div>
 
-			<figure class="demo">
-				<video src={`${base}/demo/aos-demo.mp4`} poster={`${base}/demo/aos-demo-poster.jpg`} controls playsinline preload="metadata">
-					<track kind="captions" src={`${base}/demo/aos-demo.vtt`} srclang="en" label="English" default />
-				</video>
-				<figcaption>Recorded live on macOS with the real binary: every command group, then an agent driving it from plain English. Captions show each exact command.</figcaption>
-			</figure>
+				<div class="cta">
+					<a class="btn primary" href={`${base}/quickstart/`}>Get started</a>
+					<a class="btn" href={repo}>View on GitHub</a>
+				</div>
+			</section>
 
-			<pre><code>{`go install github.com/muthuishere/aos/cmd/${bin}@latest
-${bin} skill install
-${bin} doctor`}</code></pre>
+			<section class="wrap">
+				<figure class="demo">
+					<video src={`${base}/demo/aos-demo.mp4`} poster={`${base}/demo/aos-demo-poster.jpg`} controls playsinline preload="metadata">
+						<track kind="captions" src={`${base}/demo/aos-demo.vtt`} srclang="en" label="English" default />
+					</video>
+					<figcaption>Recorded live on macOS with the real binary. Captions show each exact command.</figcaption>
+				</figure>
+			</section>
 
-			<p class="links">
-				<a class="primary" href={`${base}/what-it-is/`}>Read the docs</a>
-				<a href={`${base}/what-it-is-not/`}>What it&rsquo;s not</a>
-				<a href={`${base}/reference/commands/`}>Every command</a>
-				<a href="https://github.com/muthuishere/aos">GitHub</a>
-			</p>
+			<section class="wrap block">
+				<h2>What it does</h2>
+				<p class="lead">{registry.commands} commands across {registry.groups} groups. Same verbs, same exit codes, on every OS.</p>
+				<div class="grid">
+					{features.map((f) => (
+						<article class="card">
+							<h3>{f.t}</h3>
+							<p>{f.d}</p>
+							<code class="ex">{f.c}</code>
+						</article>
+					))}
+				</div>
+			</section>
 
-			<p class="foot">
-				{surface} · macOS, Windows and Linux, including a headless Linux server.
-			</p>
-		</section>
+			<section class="wrap block">
+				<h2>Works with your agent</h2>
+				<p class="lead">The skill ships inside the binary, so Claude Code already knows every command. Just ask in plain English.</p>
+				<div class="two">
+					<div class="term">
+						<div class="bar"><span></span><span></span><span></span><em>Claude Code</em></div>
+						<pre><code><b>&gt;</b> put TextEdit on the left half of monitor 2,
+  then point at its Format menu with a green arrow</code></pre>
+					</div>
+					<div class="term">
+						<div class="bar"><span></span><span></span><span></span><em>headless, from a script</em></div>
+						<pre><code><b>$</b> claude -p "screenshot Safari and tell me
+  what page is open"</code></pre>
+					</div>
+				</div>
+			</section>
 
-		<section id="ask">
-			<h2>Just ask your agent</h2>
-			<p class="lede">
-				The skill installs itself, so Claude Code already knows every command. Say what you want in
-				plain English &mdash; &ldquo;put TextEdit top right and Calculator bottom right&rdquo;, &ldquo;point at
-				the 7 with a green arrow&rdquo;, &ldquo;box the Format menu&rdquo; &mdash; or run it headless from a script:
-			</p>
-			<pre><code>{`claude -p "put TextEdit on the left half of monitor 2 and point at its Format menu"`}</code></pre>
-			<figure class="demo">
-				<video src={`${base}/demo/aos-agent-demo.mp4`} poster={`${base}/demo/aos-agent-poster.jpg`} controls playsinline preload="metadata">
-					<track kind="captions" src={`${base}/demo/aos-agent-demo.vtt`} srclang="en" label="English" default />
-				</video>
-				<figcaption>A real Claude Code session in Ghostty, then the same thing headless with <code>claude -p</code>. Captions show each prompt.</figcaption>
-			</figure>
-			<p class="links"><a class="primary" href={`${base}/agent-skill/`}>How the agent skill works</a></p>
-		</section>
+			<section class="wrap block">
+				<h2>Read more</h2>
+				<div class="grid small">
+					<a class="card link" href={`${base}/quickstart/`}><h3>Quickstart</h3><p>Install, check the machine, run a command.</p></a>
+					<a class="card link" href={`${base}/agent-skill/`}><h3>Agent skill</h3><p>How agents learn the CLI.</p></a>
+					<a class="card link" href={`${base}/mcp/`}><h3>MCP</h3><p>Typed tools over HTTP.</p></a>
+					<a class="card link" href={`${base}/safety/`}><h3>Safety model</h3><p>What it refuses, and why.</p></a>
+				</div>
+			</section>
+		</main>
+
+		<footer class="wrap foot">aos · {registry.commands} commands · <a href={repo}>GitHub</a></footer>
 
 		<style is:global>
-			.demo { margin: 1.75rem 0; }
-			.demo video { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--hair); background: #000; }
-			.demo figcaption { margin-top: .5rem; font-size: .85rem; color: var(--muted); }
-
 			:root {
-				--bg: #f4f3ef;
-				--ink: #1c1b19;
-				--muted: #8a857c;
-				--faint: #b9b5ab;
-				--hair: #d6d2c8;
-				--card: #fff;
-				--code-bg: #151412;
-				--code-ink: #e6e2d9;
-				--acc: #b96f13;
-				--acc-ink: #fff;
+				--bg: #fbfbfa; --ink: #121212; --muted: #5f6368; --hair: #e6e6e3; --card: #fff;
+				--code-bg: #0f1115; --code-ink: #e6e8ec; --acc: #4f46e5; --acc-ink: #fff; --acc-soft: #eef0ff;
 			}
 			@media (prefers-color-scheme: dark) {
 				:root {
-					--bg: #161512;
-					--ink: #f4f3ef;
-					--muted: #8a857c;
-					--faint: #514c44;
-					--hair: #2b2926;
-					--card: #1f1e1b;
-					--code-bg: #0b0a09;
-					--code-ink: #e6e2d9;
-					--acc: #e08a1e;
-					--acc-ink: #161512;
+					--bg: #0b0c0f; --ink: #f2f3f5; --muted: #9aa0a8; --hair: #23262d; --card: #13151a;
+					--code-bg: #07080a; --code-ink: #e6e8ec; --acc: #8b85ff; --acc-ink: #0b0c0f; --acc-soft: #1b1c33;
 				}
 			}
-			html,
-			body {
-				margin: 0;
-				background: var(--bg);
-				color: var(--ink);
-				font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial,
-					sans-serif;
+			* { box-sizing: border-box; }
+			html, body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: hidden;
+				font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+			code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+			a { color: inherit; }
+			.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+			.nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+			.brand { font-weight: 700; font-size: 20px; text-decoration: none; letter-spacing: -0.02em; }
+			.nav nav { display: flex; gap: 20px; font-size: 14.5px; }
+			.nav nav a { text-decoration: none; color: var(--muted); }
+			.nav nav a:hover { color: var(--ink); }
+			.hero { text-align: center; padding-top: 72px; padding-bottom: 40px; }
+			.eyebrow { display: inline-block; font-size: 13px; color: var(--acc); background: var(--acc-soft); padding: 4px 12px; border-radius: 999px; margin: 0 0 20px; }
+			h1 { font-size: clamp(36px, 6.5vw, 68px); line-height: 1.05; letter-spacing: -0.035em; margin: 0 auto 20px; max-width: 14ch; }
+			.sub { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 40em; margin: 0 auto 36px; }
+			.install { max-width: 720px; margin: 0 auto; text-align: left; }
+			.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+			.tabs button { font: inherit; font-size: 13.5px; border: 1px solid transparent; background: none; color: var(--muted); padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+			.tabs button[aria-selected='true'] { color: var(--ink); background: var(--card); border-color: var(--hair); }
+			.cmdline { display: flex; align-items: center; gap: 12px; background: var(--code-bg); color: var(--code-ink); border-radius: 12px; padding: 14px 14px 14px 18px; }
+			.cmdline[hidden] { display: none; }
+			.cmdline code { flex: 1; min-width: 0; font-size: 14px; overflow-x: auto; white-space: nowrap; }
+			.copy { flex: none; font: inherit; font-size: 13px; border: 1px solid #ffffff26; background: #ffffff10; color: var(--code-ink); padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+			.copy:hover { background: #ffffff22; }
+			.note { font-size: 14px; color: var(--muted); margin: 10px 2px 0; }
+			.note code { font-size: 13px; }
+			.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+			.btn { text-decoration: none; padding: 11px 20px; border-radius: 10px; border: 1px solid var(--hair); background: var(--card); font-weight: 500; font-size: 15px; }
+			.btn.primary { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+			.demo { margin: 32px 0 0; }
+			.demo video { width: 100%; height: auto; display: block; border-radius: 16px; border: 1px solid var(--hair); background: #000; box-shadow: 0 30px 80px -30px #0005; }
+			.demo figcaption { margin-top: 10px; font-size: 13.5px; color: var(--muted); text-align: center; }
+			.block { padding-top: 96px; }
+			h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.025em; margin: 0 0 10px; }
+			.lead { color: var(--muted); font-size: 18px; margin: 0 0 32px; max-width: 40em; }
+			.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+			.card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; min-width: 0; }
+			.card h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; }
+			.card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; flex: 1; }
+			.ex { display: block; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); padding: 9px 11px; border-radius: 8px; overflow-x: auto; white-space: nowrap; }
+			.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+			.term { background: var(--code-bg); border-radius: 14px; overflow: hidden; border: 1px solid var(--hair); min-width: 0; }
+			.bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #ffffff14; }
+			.bar span { width: 10px; height: 10px; border-radius: 50%; background: #ffffff26; }
+			.bar em { font-style: normal; font-size: 12.5px; color: #9aa0a8; margin-left: 8px; }
+			.term pre { margin: 0; padding: 18px; color: var(--code-ink); font-size: 14px; line-height: 1.7; overflow-x: auto; }
+			.term b { color: var(--acc); }
+			.small { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+			.card.link { text-decoration: none; transition: border-color .15s; }
+			.card.link:hover { border-color: var(--acc); }
+			.card.link p { margin: 0; }
+			.foot { padding-top: 32px; padding-bottom: 48px; margin-top: 96px; border-top: 1px solid var(--hair); font-size: 14px; color: var(--muted); }
+			@media (max-width: 520px) {
+				.hero { padding-top: 40px; }
+				.grid, .two, .small { grid-template-columns: 1fr; }
+				.nav nav { gap: 14px; }
+				.cmdline code { font-size: 12.5px; }
+				.block { padding-top: 72px; }
 			}
-			canvas#c {
-				display: block;
-				width: 100vw;
-				height: 100vh;
-			}
-			#fps {
-				position: fixed;
-				right: 10px;
-				bottom: 8px;
-				font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
-				color: var(--faint);
-				letter-spacing: 0.04em;
-				user-select: none;
-			}
-			#scroll {
-				position: absolute;
-				top: calc(100vh - 46px);
-				left: 50%;
-				transform: translateX(-50%);
-				width: 30px;
-				height: 30px;
-				line-height: 30px;
-				text-align: center;
-				color: var(--muted);
-				text-decoration: none;
-				border: 1px solid var(--hair);
-				border-radius: 50%;
-				background: var(--card);
-			}
-			#start, #ask {
-				max-width: 720px;
-				margin: 0 auto;
-				padding: 88px 24px 120px;
-				border-top: 1px solid var(--hair);
-			}
-			#start h1, #ask h1 {
-				font-size: 46px;
-				margin: 0;
-				letter-spacing: -0.02em;
-			}
-			.formal {
-				margin: 2px 0 14px;
-				font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-				letter-spacing: 0.18em;
-				color: var(--muted);
-				text-transform: lowercase;
-			}
-			.lede {
-				color: var(--muted);
-				font-size: 18px;
-				margin: 0 0 28px;
-			}
-			#start pre, #ask pre {
-				background: var(--code-bg);
-				color: var(--code-ink);
-				padding: 18px 20px;
-				border-radius: 10px;
-				overflow-x: auto;
-				font: 13.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-			}
-			.links {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 10px;
-				margin: 28px 0 0;
-			}
-			.links a {
-				border: 1px solid var(--hair);
-				background: var(--card);
-				color: var(--ink);
-				border-radius: 8px;
-				padding: 9px 16px;
-				text-decoration: none;
-				font-size: 14.5px;
-			}
-			.links a.primary {
-				background: var(--acc);
-				border-color: var(--acc);
-				color: var(--acc-ink);
-			}
-			.foot {
-				margin-top: 34px;
-				color: var(--muted);
-				font-size: 13.5px;
-			}
-			@media (prefers-reduced-motion: reduce) {
-				#fps {
-					display: none;
-				}
-			}
-			#ask { padding-top: 0; border-top: none; }
-			#ask h2 { font-size: 2rem; margin: 0 0 1rem; }
 		</style>
 
-		<script is:inline set:html={`window.AOS_STATS=${JSON.stringify(registry)}`} />
-		<script is:inline src={`${base}/canvas.js`}></script>
+		<script is:inline>
+			document.querySelectorAll('[data-tabs]').forEach((root) => {
+				const tabs = root.querySelectorAll('[data-tab]');
+				tabs.forEach((t) => t.addEventListener('click', () => {
+					tabs.forEach((x) => x.setAttribute('aria-selected', String(x === t)));
+					root.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== t.dataset.tab; });
+				}));
+				if (/Win/.test(navigator.platform || navigator.userAgent)) root.querySelector('[data-tab="cmd"]').click();
+			});
+			document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {
+				try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; }
+				catch { b.textContent = 'Select & copy'; }
+				setTimeout(() => (b.textContent = 'Copy'), 1500);
+			}));
+		</script>
 	</body>
 </html>

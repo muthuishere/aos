@@ -69,8 +69,10 @@ see exactly what was taken and what was not.
 One static binary:
 
 ```sh
-go install github.com/muthuishere/aos/cmd/aos@latest
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
 ```
+
+On Windows: `curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd`
 
 It uses native tools when they are present, and says so plainly when they are
 not — `doctor` reports what is missing and what to run about it, instead of

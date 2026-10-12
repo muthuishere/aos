@@ -60,7 +60,7 @@ ssh server aos file read /etc/hostname
 Install it on the far machine the same way:
 
 ```sh
-ssh server 'go install github.com/muthuishere/aos/cmd/aos@latest'
+ssh server 'curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh'
 ```
 
 Two things are worth knowing before an agent does this:
