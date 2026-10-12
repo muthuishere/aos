@@ -33,6 +33,14 @@ const bin = registry.binary;
 				path, three platforms.
 			</p>
 
+
+			<figure class="demo">
+				<video src={`${base}/demo/aos-demo.mp4`} poster={`${base}/demo/aos-demo-poster.jpg`} controls playsinline preload="metadata">
+					<track kind="captions" src={`${base}/demo/aos-demo.vtt`} srclang="en" label="English" default />
+				</video>
+				<figcaption>Recorded live on macOS with the real binary: every command group, then an agent driving it from plain English. Captions show each exact command.</figcaption>
+			</figure>
+
 			<pre><code>{`go install github.com/muthuishere/aos/cmd/${bin}@latest
 ${bin} skill install
 ${bin} doctor`}</code></pre>
@@ -49,7 +57,28 @@ ${bin} doctor`}</code></pre>
 			</p>
 		</section>
 
+		<section id="ask">
+			<h2>Just ask your agent</h2>
+			<p class="lede">
+				The skill installs itself, so Claude Code already knows every command. Say what you want in
+				plain English &mdash; &ldquo;put TextEdit top right and Calculator bottom right&rdquo;, &ldquo;point at
+				the 7 with a green arrow&rdquo;, &ldquo;box the Format menu&rdquo; &mdash; or run it headless from a script:
+			</p>
+			<pre><code>{`claude -p "put TextEdit on the left half of monitor 2 and point at its Format menu"`}</code></pre>
+			<figure class="demo">
+				<video src={`${base}/demo/aos-agent-demo.mp4`} poster={`${base}/demo/aos-agent-poster.jpg`} controls playsinline preload="metadata">
+					<track kind="captions" src={`${base}/demo/aos-agent-demo.vtt`} srclang="en" label="English" default />
+				</video>
+				<figcaption>A real Claude Code session in Ghostty, then the same thing headless with <code>claude -p</code>. Captions show each prompt.</figcaption>
+			</figure>
+			<p class="links"><a class="primary" href={`${base}/agent-skill/`}>How the agent skill works</a></p>
+		</section>
+
 		<style is:global>
+			.demo { margin: 1.75rem 0; }
+			.demo video { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--hair); background: #000; }
+			.demo figcaption { margin-top: .5rem; font-size: .85rem; color: var(--muted); }
+
 			:root {
 				--bg: #f4f3ef;
 				--ink: #1c1b19;
@@ -113,13 +142,13 @@ ${bin} doctor`}</code></pre>
 				border-radius: 50%;
 				background: var(--card);
 			}
-			#start {
+			#start, #ask {
 				max-width: 720px;
 				margin: 0 auto;
 				padding: 88px 24px 120px;
 				border-top: 1px solid var(--hair);
 			}
-			#start h1 {
+			#start h1, #ask h1 {
 				font-size: 46px;
 				margin: 0;
 				letter-spacing: -0.02em;
@@ -136,7 +165,7 @@ ${bin} doctor`}</code></pre>
 				font-size: 18px;
 				margin: 0 0 28px;
 			}
-			#start pre {
+			#start pre, #ask pre {
 				background: var(--code-bg);
 				color: var(--code-ink);
 				padding: 18px 20px;
@@ -174,6 +203,8 @@ ${bin} doctor`}</code></pre>
 					display: none;
 				}
 			}
+			#ask { padding-top: 0; border-top: none; }
+			#ask h2 { font-size: 2rem; margin: 0 0 1rem; }
 		</style>
 
 		<script is:inline set:html={`window.AOS_STATS=${JSON.stringify(registry)}`} />

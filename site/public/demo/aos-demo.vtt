@@ -1,0 +1,212 @@
+WEBVTT
+
+00:00:00.300 --> 00:00:11.098
+Every machine needs ten different tools. One for windows, one for screenshots, one for packages... and a different set on every OS.
+
+00:00:11.449 --> 00:00:20.796
+And your AI agent? It can write the script — but it can't see the screen, click a button, or show you where to look.
+
+00:00:21.146 --> 00:00:30.521
+So what if one small binary could do all of it — on every machine — and your agent could just... use it?
+
+00:00:30.871 --> 00:00:38.375
+This is aos. First thing it does: check this machine can actually keep its promises.
+$ aos doctor
+
+00:00:38.725 --> 00:00:42.597
+What's open, and on which screen? One command each.
+$ aos window list --app=TextEdit
+
+00:00:42.597 --> 00:00:43.706
+What's open, and on which screen? One command each.
+$ aos display list
+
+00:00:44.056 --> 00:00:49.884
+Now, put things where they belong. TextEdit top right, Calculator bottom right — no dragging.
+$ aos window move TextEdit --monitor=2 --zone=2B
+
+00:00:49.884 --> 00:00:52.283
+Now, put things where they belong. TextEdit top right, Calculator bottom right — no dragging.
+$ aos window move Calculator --monitor=2 --zone=2D
+
+00:00:52.633 --> 00:00:58.299
+Save the whole layout once... scatter everything... and bring it all back in a single pass.
+$ aos window save /tmp/aosdemo/work.json --monitor=2
+
+00:00:58.299 --> 00:01:01.910
+Save the whole layout once... scatter everything... and bring it all back in a single pass.
+$ aos window move TextEdit --monitor=2 --zone=1B
+
+00:01:01.910 --> 00:01:03.680
+Save the whole layout once... scatter everything... and bring it all back in a single pass.
+$ aos window arrange /tmp/aosdemo/work.json
+
+00:01:04.030 --> 00:01:09.369
+It launches apps, and waits until the window is really there.
+$ aos launch Calculator --wait
+
+00:01:09.719 --> 00:01:15.016
+It types — straight into the window you name, never the wrong one.
+$ aos key type " Typed by aos." --app=TextEdit
+
+00:01:15.016 --> 00:01:16.334
+It types — straight into the window you name, never the wrong one.
+$ aos key press cmd+left --app=TextEdit
+
+00:01:16.684 --> 00:01:22.634
+It sees, too. A screenshot of just one window...
+$ aos capture screenshot --app=Calculator --out=/tmp/aosdemo/calc.png
+
+00:01:22.634 --> 00:01:23.682
+It sees, too. A screenshot of just one window...
+$ aos file stat /tmp/aosdemo/calc.png
+
+00:01:24.032 --> 00:01:30.969
+Now the good part. Ask where the seven is — by name, not by pixels...
+$ aos find Calculator --text=7 --role=button --exact
+
+00:01:31.319 --> 00:01:34.000
+...and click it.
+$ aos mouse click 2722 751
+
+00:01:34.350 --> 00:01:43.021
+Or show a human where to click. A big, friendly arrow, right on top of everything.
+$ aos draw Calculator --find=7 --role=button --exact --text="press 7" --color=green --duration=6
+
+00:01:43.371 --> 00:01:51.534
+Point at a menu by name, and it boxes exactly that.
+$ aos draw TextEdit --find=Format --role=menuitem --text="Format menu" --duration=5
+
+00:01:51.884 --> 00:01:58.128
+And it can narrate what an agent is doing — on screen, without stealing focus.
+$ aos subtitle show "agent: tidying your desktop" --seconds=4 --position=bottom
+
+00:01:58.478 --> 00:02:03.871
+Files work the same everywhere. Make a folder, write a note, read it back.
+$ aos file mkdir /tmp/aosdemo/notes
+
+00:02:03.871 --> 00:02:07.065
+Files work the same everywhere. Make a folder, write a note, read it back.
+$ aos file write /tmp/aosdemo/notes/todo.txt "ship the demo"
+
+00:02:07.065 --> 00:02:10.581
+Files work the same everywhere. Make a folder, write a note, read it back.
+$ aos file list /tmp/aosdemo/notes
+
+00:02:10.581 --> 00:02:11.613
+Files work the same everywhere. Make a folder, write a note, read it back.
+$ aos file read /tmp/aosdemo/notes/todo.txt
+
+00:02:11.963 --> 00:02:17.061
+Run anything, and get the output back as clean JSON.
+$ aos exec capture -- git --version
+
+00:02:17.411 --> 00:02:20.895
+One set of package verbs, whatever the OS calls its package manager.
+$ aos pkg manager
+
+00:02:20.895 --> 00:02:22.788
+One set of package verbs, whatever the OS calls its package manager.
+$ aos pkg search ripgrep
+
+00:02:23.138 --> 00:02:26.388
+Network, sound, power — the boring stuff, finally the same everywhere.
+$ aos network ip
+
+00:02:26.388 --> 00:02:29.139
+Network, sound, power — the boring stuff, finally the same everywhere.
+$ aos audio volume
+
+00:02:29.139 --> 00:02:31.848
+Network, sound, power — the boring stuff, finally the same everywhere.
+$ aos power status
+
+00:02:31.848 --> 00:02:32.885
+Network, sound, power — the boring stuff, finally the same everywhere.
+$ aos battery status
+
+00:02:33.235 --> 00:02:37.387
+The clipboard, in and out.
+$ aos clipboard copy "hello from aos"
+
+00:02:37.387 --> 00:02:38.440
+The clipboard, in and out.
+$ aos clipboard paste
+
+00:02:38.790 --> 00:02:42.098
+Find a process, and stop it.
+$ sleep 600 &
+
+00:02:42.098 --> 00:02:44.971
+Find a process, and stop it.
+$ aos process find sleep
+
+00:02:44.971 --> 00:02:46.021
+Find a process, and stop it.
+$ aos process kill sleep
+
+00:02:46.371 --> 00:02:50.773
+Turn any command into a real background service — and clean it up just as easily.
+$ aos service create aosdemo-nap -- /bin/sleep 60
+
+00:02:50.773 --> 00:02:53.923
+Turn any command into a real background service — and clean it up just as easily.
+$ aos service list
+
+00:02:53.923 --> 00:02:54.954
+Turn any command into a real background service — and clean it up just as easily.
+$ aos service remove aosdemo-nap
+
+00:02:55.304 --> 00:03:00.264
+Watch the machine change, one event per line.
+$ aos watch file /tmp/aosdemo --max=1
+
+00:03:00.614 --> 00:03:09.531
+The dangerous ones — lock, sleep, restart — are there too. We'll just read the label, not press the button.
+$ aos system --help
+
+00:03:09.881 --> 00:03:17.105
+Open any site as its own clean app window.
+$ aos webapp open https://muthuishere.github.io/aos/
+
+00:03:17.455 --> 00:03:28.359
+Need a second pair of eyes? Share this screen to any browser on your network.
+$ aos remote share --monitor=2
+
+00:03:28.709 --> 00:03:35.869
+And every one of these commands becomes a tool any agent can call, over MCP.
+$ aos serve tools --groups=window
+
+00:03:36.219 --> 00:03:40.136
+It even remembers what it was asked to do.
+$ aos obs summary
+
+00:03:40.486 --> 00:03:46.540
+And the agent skill installs itself — so your agent already knows all of this.
+$ aos skill path
+
+00:03:46.890 --> 00:03:52.668
+Which brings us to the fun part. Just... ask.
+
+00:03:53.018 --> 00:04:13.748
+I'll say it like I'd say it to a friend. TextEdit top right, Calculator bottom right.
+you: put TextEdit in the top-right quarter and Calculator in the bottom-right quarter of my second monitor
+
+00:04:14.098 --> 00:04:28.458
+Point at the seven, with a green arrow.
+you: point at the 7 button on Calculator with a green arrow saying press 7
+
+00:04:28.808 --> 00:04:51.138
+Find the Format menu, box it — and tell me when you're done.
+you: find the Format menu in TextEdit and box it, then show a subtitle saying done
+
+00:04:51.488 --> 00:05:01.288
+And clean up after yourself.
+you: clean up the drawings
+
+00:05:01.638 --> 00:05:31.054
+And it works from a script, or CI, too. One line, no chat window — and the desktop just follows along.
+$ claude -p "put TextEdit on the left half of monitor 2 and point at its Format menu" --dangerously-skip-permissions
+
+00:05:31.404 --> 00:05:39.858
+One binary. Every machine. Go make your computer work for you.
