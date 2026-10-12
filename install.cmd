@@ -6,6 +6,7 @@ rem   curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/ao
 rem   install.cmd /version v0.6.0
 rem   install.cmd /from C:\path\to\release-folder      (goreleaser archives + checksums.txt)
 rem   install.cmd /from https://mirror.example/aos/v0.6.0/
+rem   install.cmd /from .\aos_0.5.0_windows_arm64.zip     (one release archive: unpacked)
 rem   install.cmd /from .\aos.exe                       (copied in as-is)
 rem   install.cmd /dir %USERPROFILE%\bin
 rem
@@ -55,7 +56,15 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $target = Join-Path $dir 'aos.exe'
 
 try {
-    if ($from -and (Test-Path -LiteralPath $from -PathType Leaf)) {
+    if ($from -and (Test-Path -LiteralPath $from -PathType Leaf) -and $from -like '*.zip') {
+        Write-Host "==> Installing from the archive $from"
+        $tmpa = Join-Path ([IO.Path]::GetTempPath()) ("aos-" + [guid]::NewGuid())
+        Expand-Archive -LiteralPath $from -DestinationPath $tmpa -Force
+        $exe = Join-Path $tmpa 'aos.exe'
+        if (-not (Test-Path -LiteralPath $exe)) { Fail "$from does not contain aos.exe" }
+        Copy-Item -LiteralPath $exe -Destination $target -Force
+        Remove-Item -Recurse -Force $tmpa
+    } elseif ($from -and (Test-Path -LiteralPath $from -PathType Leaf)) {
         Write-Host "==> Installing the executable $from"
         Copy-Item -LiteralPath $from -Destination $target -Force
     } else {
