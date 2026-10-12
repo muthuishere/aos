@@ -5,6 +5,10 @@ description: Install the agent skill bundled inside the binary, and an agent tha
 
 This is the primary way an agent uses aos, and it needs no server.
 
+**You usually do not install it at all:** the first `aos` command you run writes the skill for you and keeps it current
+with the binary. Opt out with `AOS_NO_SKILL_AUTOINSTALL=1`, or remove it with `aos skill uninstall`. To install it
+explicitly (for example, into a fresh home directory):
+
 ```sh
 aos skill install
 ```

@@ -1,7 +1,20 @@
 # aos
 
-**One CLI over the machine that an agent drives the same way you do — on macOS,
-Windows, and Linux.**
+**Let your AI use your computer, without taking it over.**
+
+aos is a CLI and an agent skill. Install it once, and your agent can arrange
+your windows, open apps, click, type, show you where to click, and record what
+it did, on macOS, Windows, and Linux.
+
+- **Finds buttons by name, not pixels.** `aos mouse click --app=Calculator --find=Equals`
+  goes through the accessibility tree: no screenshots, no coordinates, no vision model.
+- **Works beside you, not instead of you.** `aos key type --app=TextEdit --verify "…"`
+  sends input to the named app while you keep working elsewhere, and reads it back.
+  When a person should act, `aos draw`, `aos draw text` and `aos subtitle show` put
+  click-through arrows, labels and captions on the real screen.
+- **One binary, every OS, every agent.** The skill installs itself on first run;
+  `aos capture video start smart` … `stop` records what happened with an automatic
+  zoom camera. Demo: https://muthuishere.github.io/aos/
 
 Give an agent your machine: windows, input, screenshots, files, shell
 commands, packages, network, audio, clipboard. Two ways in, and they run the same code:
@@ -68,6 +81,7 @@ both; `install.cmd` also takes `/from`, `/version`, `/dir`):
 sh install.sh --version v0.6.0                         # a specific release (default: latest)
 sh install.sh --from /path/to/release-folder           # offline: goreleaser archives + checksums.txt (e.g. a copied dist/)
 sh install.sh --from https://mirror.example/aos/v0.6.0/  # any HTTP(S) mirror with the same layout
+sh install.sh --from ./aos_0.5.0_darwin_arm64.tar.gz   # one release archive (.tar.gz / .zip), unpacked
 sh install.sh --from ./aos                             # a single extracted executable, copied as-is
 sh install.sh --dir ~/bin                              # install somewhere else
 curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --from https://mirror.example/aos/v0.6.0/

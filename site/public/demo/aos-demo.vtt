@@ -1,139 +1,115 @@
 WEBVTT
 
-00:00:00.300 --> 00:00:01.253
-This is aos:
+00:00:00.350 --> 00:00:04.697
+Most computer-use agents live inside a browser, or a VM,
 
-00:00:01.253 --> 00:00:04.905
-one small tool that gives your AI agent hands.
+00:00:04.697 --> 00:00:08.189
+or they grab your mouse like a clumsy intern.
 
-00:00:04.905 --> 00:00:10.939
-Agents can write code all day, but they can't move a window, click a button,
+00:00:08.189 --> 00:00:09.509
+aos is different.
 
-00:00:10.939 --> 00:00:13.004
-or show you where to look.
+00:00:09.509 --> 00:00:11.837
+It's a CLI and an agent skill.
 
-00:00:13.004 --> 00:00:18.800
-aos puts the whole desktop behind one command, on Mac, Windows and Linux.
+00:00:11.837 --> 00:00:18.124
+Install it once, and your agent can arrange your windows, open apps, click, type,
 
-00:00:20.100 --> 00:00:21.995
-Getting it is a single line.
+00:00:18.124 --> 00:00:21.850
+show you where to click, and record what it did.
 
-00:00:21.995 --> 00:00:27.410
-The installer fetches the right release for your machine, verifies the checksum,
+00:00:23.083 --> 00:00:26.065
+Let's start where every desk gets messy:
 
-00:00:27.410 --> 00:00:29.440
-and drops one binary in place.
+00:00:26.065 --> 00:00:26.661
+windows.
 
-00:00:29.440 --> 00:00:31.200
-No toolchain, and no root.
+00:00:26.661 --> 00:00:30.761
+One short command puts an app exactly where it belongs.
 
-00:00:32.500 --> 00:00:35.062
-The first thing to run is aos doctor.
+00:00:30.761 --> 00:00:35.233
+A half, a quarter, a third, on whichever monitor you choose.
 
-00:00:35.062 --> 00:00:39.148
-It checks that this machine can actually keep its promises:
+00:00:36.483 --> 00:00:38.306
+Need a page, or an app?
 
-00:00:39.148 --> 00:00:44.550
-screen access, permissions, the clipboard, even which package manager is here.
+00:00:38.306 --> 00:00:43.138
+aos opens it, waits for the window, and puts it in its place.
 
-00:00:45.867 --> 00:00:48.659
-Let's open a note and bring in Calculator.
+00:00:43.138 --> 00:00:47.733
+The same command works on a Mac, on Windows, and on Linux.
 
-00:00:48.659 --> 00:00:53.179
-Instead of dragging windows around, just tell aos where they belong:
+00:00:48.983 --> 00:00:51.885
+Now the part pixel-guessers can't do.
 
-00:00:53.179 --> 00:00:57.567
-TextEdit in the top right quarter, Calculator in the bottom right.
+00:00:51.885 --> 00:00:58.551
+aos finds a button by its name, straight from the accessibility tree, and presses it.
 
-00:00:58.867 --> 00:01:00.493
-Got a layout you like?
+00:00:58.551 --> 00:01:02.316
+No screenshots, no coordinates, no vision model.
 
-00:01:00.493 --> 00:01:02.267
-Keep it in a small file.
+00:01:02.316 --> 00:01:03.649
+Seven, times six.
 
-00:01:02.267 --> 00:01:04.559
-Then, however messy things get,
+00:01:03.649 --> 00:01:04.433
+Forty-two.
 
-00:01:04.559 --> 00:01:09.217
-one arrange call puts every window right back where it belongs.
+00:01:05.683 --> 00:01:07.837
+And it never steals your keyboard.
 
-00:01:10.533 --> 00:01:13.228
-Now, where exactly is the seven key?
+00:01:07.837 --> 00:01:13.286
+Text goes straight to the app you name, even while you keep working in another window.
 
-00:01:13.228 --> 00:01:19.366
-aos find asks the accessibility tree, falls back to on-screen text when it has to,
+00:01:13.286 --> 00:01:16.833
+Then verify reads it back, so the agent knows it landed.
 
-00:01:19.366 --> 00:01:23.183
-and hands back the precise spot, ready for a click.
+00:01:18.083 --> 00:01:21.222
+Sometimes you'd rather do it yourself.
 
-00:01:24.500 --> 00:01:30.445
-And when a person needs to see it, aos draw puts a big arrow right on the screen.
+00:01:21.222 --> 00:01:22.627
+So aos shows you.
 
-00:01:30.445 --> 00:01:31.325
-Press seven.
+00:01:22.627 --> 00:01:28.244
+It draws an arrow, a label, or a subtitle right on your real screen,
 
-00:01:31.325 --> 00:01:37.050
-It's click-through, so it never gets in your way, and it fades out on its own.
+00:01:28.244 --> 00:01:31.383
+and your clicks pass straight through.
 
-00:01:38.367 --> 00:01:40.871
-The keyboard works the same way.
+00:01:32.617 --> 00:01:35.755
+Now hand it to an agent, in plain English.
 
-00:01:40.871 --> 00:01:47.134
-aos key type writes straight into TextEdit, and key press sends any combination,
+00:01:35.755 --> 00:01:41.433
+The skill teaches Claude Code every command, so one sentence becomes a plan:
 
-00:01:47.134 --> 00:01:49.717
-from enter, to command S to save.
+00:01:41.433 --> 00:01:45.767
+launch, arrange, type, check, and point you at the result.
 
-00:01:51.033 --> 00:01:53.445
-Screenshots are one command too:
+00:01:47.017 --> 00:01:49.767
+Here's the same thing on Windows.
 
-00:01:53.445 --> 00:01:56.385
-a window, a region, or a whole monitor.
+00:01:49.767 --> 00:01:53.017
+Same binary, same commands, same skill.
 
-00:01:56.385 --> 00:02:00.983
-Here's that TextEdit window, captured, and opened in Preview.
+00:01:54.283 --> 00:01:57.694
+And when the work is done, aos can record it.
 
-00:02:02.300 --> 00:02:03.679
-Away from your desk?
+00:01:57.694 --> 00:02:04.137
+Start a smart capture, stop it, and the camera has already zoomed in on every action.
 
-00:02:03.679 --> 00:02:09.816
-aos remote share streams this screen to any browser on your network, your phone included.
+00:02:04.137 --> 00:02:08.533
+Every clip you just watched was recorded exactly that way.
 
-00:02:09.816 --> 00:02:14.850
-The link carries a one time key, and it dies the moment you stop sharing.
+00:02:09.783 --> 00:02:11.589
+Install it with one line.
 
-00:02:16.167 --> 00:02:17.760
-But here's the real point:
+00:02:11.589 --> 00:02:16.139
+install dot S H on Mac and Linux, install dot C M D on Windows.
 
-00:02:17.760 --> 00:02:19.967
-you don't have to learn any of this.
+00:02:16.139 --> 00:02:21.194
+The skill installs itself, so your agent is ready the moment it lands.
 
-00:02:19.967 --> 00:02:22.296
-Just ask Claude Code in plain English.
+00:02:21.194 --> 00:02:21.483
+aos.
 
-00:02:22.296 --> 00:02:25.852
-Here I'm asking it to point at the nine key on Calculator.
-
-00:02:25.852 --> 00:02:30.817
-Watch it find the button, pick the right aos commands, and draw the arrow for me.
-
-00:02:32.133 --> 00:02:34.544
-It works without a chat window, too.
-
-00:02:34.544 --> 00:02:38.294
-Run claude with dash p from a script or a scheduled job,
-
-00:02:38.294 --> 00:02:41.576
-and the same agent drives the desktop on its own.
-
-00:02:41.576 --> 00:02:46.933
-Here it takes a screenshot of our note, reads it, and reports back what it says.
-
-00:02:48.233 --> 00:02:49.137
-That's aos.
-
-00:02:49.137 --> 00:02:54.394
-One binary, every desktop, and an agent that can finally use it.
-
-00:02:54.394 --> 00:03:00.883
-Grab it at muthuishere dot github dot io, slash aos, and give your agent hands.
+00:02:21.483 --> 00:02:25.383
+Let your AI use your computer, without taking it over.
