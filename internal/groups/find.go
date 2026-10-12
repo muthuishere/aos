@@ -11,7 +11,7 @@ import (
 )
 
 // exitNotFound is what `find` (and `draw --find`) exit with when the window or
-// the text is not there. It matches windowctl's own CLI, so an agent reading
+// the text is not there. It matches the old windowctl CLI, so an agent reading
 // exit codes gets the same answer from either tool, and it stays distinct from
 // 1 (ran and failed) and 2 (refused before doing anything).
 const exitNotFound = 3
@@ -34,7 +34,7 @@ func init() {
 	})
 }
 
-// findOptionsFrom turns `find` flags into windowctl's options. Kept apart from
+// findOptionsFrom turns `find` flags into the engine's options. Kept apart from
 // the runner so flag handling is testable without a screen.
 func findOptionsFrom(args []string) (engine.FindOptions, *argSet, error) {
 	set, err := parseArgs(args, "app", "title", "text", "source", "role")
@@ -62,7 +62,7 @@ func findOptionsFrom(args []string) (engine.FindOptions, *argSet, error) {
 	}, set, nil
 }
 
-// notFoundExit maps windowctl's ErrNoMatch onto exit 3 with its message (which
+// notFoundExit maps the engine's ErrNoMatch onto exit 3 with its message (which
 // lists the closest labels it did see); anything else passes through as exit 1.
 func notFoundExit(err error) error {
 	if errors.Is(err, engine.ErrNoMatch) {

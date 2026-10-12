@@ -19,7 +19,8 @@ import (
 var drawValueFlags = []string{
 	"at", "rect", "app", "title", "monitor", "find", "source", "role", "nth", "text",
 	"style", "shape", "size", "color", "text-color", "border", "corners", "from", "font",
-	"duration", "preview",
+	"duration", "preview", "position", "margin", "offset", "bg", "align", "max-width", "weight",
+	"font-scale", "animate",
 }
 
 var drawBoolFlags = []string{"mouse", "exact", "detach", "json", "no-config"}
@@ -33,7 +34,7 @@ func init() {
 				Summary: "Draw a click-through arrow + sign at a point, region, window, text or the mouse",
 				Args: "(--at=<x,y> | --rect=<x,y,w,h> | <app> | --app=<name> | --title=<s> | --mouse) [--find=<text> [--role=<r>] [--source=<s>] [--exact] [--nth=<n>]] " +
 					"--text=<sign> [--style=arrow|ring|box] [--shape=bend|straight|zigzag|spiral] [--size=S|M|L] [--color=<name|#hex>] [--from=<side>] [--monitor=<n>] " +
-					"[--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]",
+					"[--position=<side>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]",
 				Examples: []string{
 					`aos draw --app=Calculator --find=7 --style=ring --text="press 7"`,
 					`aos draw --at=640,400 --text="click here" --duration=5`,
@@ -43,6 +44,21 @@ func init() {
 					"# exit 3 when --find does not find the window or the text",
 				},
 				Run: runDraw,
+			},
+			&cli.Command{
+				Group: "draw", Name: "text",
+				Summary: "Show a styled text label (no arrow) inside a window, a monitor, a rect, or beside a point",
+				Args: "<text...> [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] " +
+					"[--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] " +
+					"[--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--font-scale=<k>] [--size=S|M|L|XL] [--weight=regular|bold] " +
+					"[--align=left|center|right] [--max-width=<px|N%>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]",
+				Examples: []string{
+					`aos draw text "Step 2: pick a file" --app=Finder --position=top --color=amber`,
+					`aos draw text "Done ✓" --monitor=2 --position=center --size=XL --color=green`,
+					`aos draw text "Line one\nLine two" --rect=100,100,800,500 --position=bottom-right --bg=none`,
+					"# default: bottom-center of the focused monitor, subtitle safe area (8% bottom, 5% sides)",
+				},
+				Run: runDrawText,
 			},
 			&cli.Command{
 				Group: "draw", Name: "stop",
@@ -68,8 +84,8 @@ func init() {
 	})
 }
 
-// drawOptionsFrom turns `draw` flags into windowctl's options. Every rule about
-// targets, enums and defaults stays in windowctl; this only translates.
+// drawOptionsFrom turns `draw` flags into the engine's options. Every rule about
+// targets, enums and defaults stays in the engine; this only translates.
 func drawOptionsFrom(args []string) (engine.DrawOptions, *argSet, error) {
 	var opts engine.DrawOptions
 	set, err := parseArgs(args, drawValueFlags...)
@@ -88,6 +104,25 @@ func drawOptionsFrom(args []string) (engine.DrawOptions, *argSet, error) {
 	opts.Border = engine.DrawBorder(set.String("border", ""))
 	opts.Corners = engine.DrawCorners(set.String("corners", ""))
 	opts.From = engine.DrawFrom(set.String("from", ""))
+	opts.Position = engine.DrawPosition(set.String("position", ""))
+	opts.Margin = set.String("margin", "")
+	opts.Background = set.String("bg", "")
+	opts.Align = set.String("align", "")
+	opts.MaxWidth = set.String("max-width", "")
+	opts.Weight = set.String("weight", "")
+	opts.Animate = engine.DrawAnimate(set.String("animate", ""))
+	if raw := set.String("font-scale", ""); raw != "" {
+		if opts.FontScale, err = strconv.ParseFloat(raw, 64); err != nil || opts.FontScale <= 0 {
+			return opts, nil, fmt.Errorf("--font-scale must be a positive number, got %q", raw)
+		}
+	}
+	if raw := set.String("offset", ""); raw != "" {
+		n, err := drawInts(raw, 2, "--offset=dx,dy")
+		if err != nil {
+			return opts, nil, err
+		}
+		opts.Offset = &engine.Point{X: n[0], Y: n[1]}
+	}
 	opts.Font = set.String("font", "")
 	opts.NoConfig = set.Has("no-config")
 	opts.Find = set.String("find", "")
@@ -172,6 +207,33 @@ func runDraw(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	return showDraw(c, []string{"draw"}, args, opts, set)
+}
+
+// runDrawText is `draw text <text...>`: the positional words are the label
+// (not an app name), drawn with the engine's text style.
+func runDrawText(c *cli.Ctx, args []string) error {
+	opts, set, err := drawOptionsFrom(args)
+	if err != nil {
+		return err
+	}
+	if opts.Match != nil && set.String("app", "") == "" && set.String("title", "") == "" {
+		opts.Match = nil // the words were the text, not an app
+	}
+	if opts.Text == "" {
+		opts.Text = strings.Join(set.Rest, " ")
+	}
+	opts.Text = strings.ReplaceAll(opts.Text, `\n`, "\n")
+	if strings.TrimSpace(opts.Text) == "" {
+		return fmt.Errorf("`draw text` needs the text to show")
+	}
+	opts.Style = engine.DrawText
+	return showDraw(c, []string{"draw", "text"}, args, opts, set)
+}
+
+// showDraw previews, detaches or shows a drawing; prefix is the command
+// line a detached / MCP child re-runs (e.g. ["draw", "text"]).
+func showDraw(c *cli.Ctx, prefix, args []string, opts engine.DrawOptions, set *argSet) error {
 	if opts.Match != nil {
 		if resolved, err := resolveMatch(*opts.Match); err == nil {
 			opts.Match = &resolved
@@ -187,10 +249,10 @@ func runDraw(c *cli.Ctx, args []string) error {
 	}
 
 	// --detach re-runs this command as a detached child that registers in
-	// windowctl's shared drawing registry, so `aos draw stop` (and
-	// windowctl's) can end it and new drawings keep clear of its sign.
+	// the engine's shared drawing registry, so `aos draw stop` can end it and
+	// new drawings keep clear of its sign.
 	if set.Has("detach") {
-		child := append([]string{"draw"}, withoutDetach(args)...)
+		child := append(append([]string{}, prefix...), withoutDetach(args)...)
 		if !set.Has("duration") {
 			child = append(child, "--duration", "300")
 		}
@@ -216,7 +278,7 @@ func runDraw(c *cli.Ctx, args []string) error {
 		if err != nil {
 			return err
 		}
-		return runChild(c, self, append([]string{"draw"}, args...))
+		return runChild(c, self, append(append([]string{}, prefix...), args...))
 	}
 
 	stop := make(chan struct{})

@@ -31,9 +31,45 @@ Exactly one target: `--at`, `--rect`, a window (`<app>`/`--app`/`--title`) or
 with `--detach`. `--json` prints where it landed: `Tip`, `Sign`, `Monitor`,
 `Surface`, `PixelScale`, and `Found` for `--find`.
 
+## Text labels and subtitles (no arrow)
+
+```sh
+aos draw text "Step 2: pick a file" --app=Finder --position=top --color=amber
+aos draw text "Done ✓" --monitor=2 --position=center --size=XL --color=green
+aos draw text "Line one\nLine two" --rect=100,100,800,500 --position=bottom-right --bg=none --detach
+aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom
+aos subtitle show "step 1 of 3" --seconds=4 --wait
+aos subtitle stop
+```
+
+- Container: `--app`/`--title` (inside that window), `--monitor=N` alone (that
+  monitor; default = the monitor with focus), `--rect=x,y,w,h`, or
+  `--at=x,y` / `--mouse` (the label sits on the `--position` side of the point).
+- `--position=bottom-center` (default) `| top-center | center | left | right |
+  top-left | top-right | bottom-left | bottom-right` (`top`/`bottom` = the
+  `-center` ones) · `--margin=px|N%` · `--offset=dx,dy`.
+- Look: `--color` (text colour) · `--bg=auto|none|<colour>` (auto = translucent
+  contrasting pill) · `--size=S|M|L|XL` (subtitle also takes pixels) ·
+  `--font` · `--font-scale` · `--weight=regular|bold` · `--align` ·
+  `--max-width=px|N%` · `\n` for line breaks.
+- Same lifecycle as arrows: `--duration` (subtitle: `--seconds`), `--detach`,
+  `--preview=out.png`, fade + slide in (no pulse), click-through, never focused.
+  `aos draw stop` ends everything; `aos subtitle stop` ends only captions, and a
+  new caption replaces the previous one.
+- Defaults follow the film/broadcast subtitle convention (Netflix/BBC
+  title-safe): 8% of the container height off the bottom, 5% side safe area,
+  lines at most 80% of the container width, at most 2 lines before the font
+  shrinks. Subtitles: white on a translucent dark pill, font ~4.75% of the
+  container height (18–64 pt); `draw text` defaults to size M.
+- Defaults file: `"text": {...}` and `"subtitle": {...}` blocks in
+  `~/.config/aos/draw.json` (keys color, bg, font, size, position,
+  align, weight, margin, maxWidth).
+- For arrow / ring / box, `--position` is the side the sign sits on (alias of
+  `--from`).
+
 ## Look
 
-`--style=arrow|ring|box` · `--shape=bend|straight|zigzag|spiral` · `--size=S|M|L` ·
+`--style=arrow|ring|box` · `--shape=bend|straight|zigzag|spiral` · `--size=S|M|L|XL` ·
 `--color=red|orange|amber|yellow|green|teal|blue|purple|pink|black|white|#RRGGBB` ·
 `--text-color` · `--border=shadow|white-black|black` · `--corners=round|sharp` ·
 `--from=auto|top-left|top|top-right|left|right|bottom-left|bottom|bottom-right` ·

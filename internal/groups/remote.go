@@ -115,7 +115,7 @@ const (
 // service unit injects a secret, so it must beat a file on disk, while an
 // explicit --key typed at the terminal still wins over everything.
 //
-// generated reports that no key was configured anywhere and windowctl will mint
+// generated reports that no key was configured anywhere and the engine will mint
 // a fresh one, which the caller must say out loud — a per-run key means
 // yesterday's link is dead, and someone expecting a stable link should learn
 // that from the output rather than from a broken bookmark.

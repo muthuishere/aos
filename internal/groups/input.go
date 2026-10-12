@@ -158,7 +158,7 @@ func runKeyType(c *cli.Ctx, args []string) error {
 	if text == "" {
 		return fmt.Errorf("`key type` needs some text")
 	}
-	// With a window named, windowctl focuses and verifies before typing, so
+	// With a window named, the engine focuses and verifies before typing, so
 	// keystrokes cannot land in whatever happened to be frontmost.
 	if match, ok := optionalMatch(set); ok {
 		return engine.TypeInto(match, text)

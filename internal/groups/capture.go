@@ -84,7 +84,7 @@ func runScreenshot(c *cli.Ctx, args []string) error {
 	}
 
 	// A named target (monitor, region, or window) is a deterministic capture
-	// windowctl can do identically on every OS. Only the interactive modes and
+	// the engine can do identically on every OS. Only the interactive modes and
 	// clipboard output need the platform's own screenshot tool.
 	if targeted(set) {
 		if req.Copy {
@@ -114,7 +114,7 @@ func targeted(set *argSet) bool {
 }
 
 // targetedScreenshot captures a monitor, an explicit rect, or a named window
-// through windowctl, and prints the captured rect so image coordinates can be
+// through the engine, and prints the captured rect so image coordinates can be
 // translated back to global click coordinates.
 func targetedScreenshot(c *cli.Ctx, set *argSet, outPath string) error {
 	opts := engine.ScreenshotOptions{OutPath: outPath}
