@@ -410,9 +410,39 @@ func clickPulse(t float64, clicks []float64) float64 {
 	return k
 }
 
+// visibleEvents drops events the camera must not chase: anything mostly
+// outside the recorded area (another monitor), and "windows" too small to be
+// one (Chrome's 22 px-tall popups were logged as the active window and pulled
+// the smart camera off screen). Cursor samples and explicit unfocus/follow
+// toggles carry no meaningful rect test and are kept.
+func visibleEvents(evs []videoEvent, capture engine.Rect) []videoEvent {
+	if capture.W <= 0 || capture.H <= 0 {
+		return evs
+	}
+	out := evs[:0:0]
+	for _, ev := range evs {
+		if ev.Rect == nil || ev.Kind == "cursor" {
+			out = append(out, ev)
+			continue
+		}
+		r := *ev.Rect
+		if ev.Kind == "window" && (r.W < 120 || r.H < 80) {
+			continue
+		}
+		ix := math.Min(float64(r.X+r.W), float64(capture.X+capture.W)) - math.Max(float64(r.X), float64(capture.X))
+		iy := math.Min(float64(r.Y+r.H), float64(capture.Y+capture.H)) - math.Max(float64(r.Y), float64(capture.Y))
+		if ix <= 0 || iy <= 0 || ix*iy < 0.5*float64(r.W*r.H) {
+			continue
+		}
+		out = append(out, ev)
+	}
+	return out
+}
+
 // planCamera simulates the camera over [0, dur] at o.Rate samples per second.
 func planCamera(doc videoDoc, g camGeom, o zoomOptions, dur float64) []camKey {
 	o = o.withDefaults()
+	doc.Events = visibleEvents(doc.Events, g.Capture)
 	d := newDirector(doc, g, o, dur)
 	dt := 1 / o.Rate
 	n := int(math.Ceil(dur*o.Rate)) + 1
@@ -491,54 +521,95 @@ func num(v float64) string {
 	return s
 }
 
-// keyExpr writes one camera component as a flat ffmpeg expression in t: a sum
-// of gated linear pieces, plus the last value held from the final key on.
-// Flat (not nested if()) so a long recording does not hit parser depth.
-func keyExpr(keys []camKey, get func(cam) float64) string {
-	if len(keys) == 0 {
-		return "0"
-	}
-	if len(keys) == 1 {
-		return num(get(keys[0].C))
-	}
-	var terms []string
-	for i := 0; i+1 < len(keys); i++ {
-		a, b := keys[i], keys[i+1]
-		if b.T <= a.T {
-			continue
-		}
-		va, vb := get(a.C), get(b.C)
-		gate := fmt.Sprintf("gte(t,%s)*lt(t,%s)", num(a.T), num(b.T))
-		if num(va) == num(vb) {
-			terms = append(terms, gate+"*"+num(va))
-			continue
-		}
-		terms = append(terms, fmt.Sprintf("%s*(%s+%s*(t-%s))", gate, num(va), num((vb-va)/(b.T-a.T)), num(a.T)))
-	}
-	last := keys[len(keys)-1]
-	terms = append(terms, fmt.Sprintf("gte(t,%s)*%s", num(last.T), num(get(last.C))))
-	return strings.Join(terms, "+")
-}
-
 // cameraFilter builds the filtergraph: fit the source into the canvas, draw a
-// ring at each click (follow modes), then zoom with scale(eval=frame) and pan
-// with crop. Zoom is recovered inside crop as iw/W, so it is computed once.
+// ring at each click (follow modes), then zoom with scale and pan with crop.
+//
+// The camera is driven by a sendcmd timeline computed here in Go, one entry
+// per key, rather than by time expressions inside scale/crop: a 20 s smart
+// recording produced expressions too long for ffmpeg's parser ("Cannot parse
+// expression for width"). Keys are already dense through every ease, so
+// holding each value until the next key is visually identical.
 func cameraFilter(keys []camKey, g camGeom, rings []frect, ringTimes []float64) string {
 	W, H := int(g.W), int(g.H)
-	z := keyExpr(keys, func(c cam) float64 { return c.Z })
-	cx := keyExpr(keys, func(c cam) float64 { return c.CX })
-	cy := keyExpr(keys, func(c cam) float64 { return c.CY })
 	var b strings.Builder
 	fmt.Fprintf(&b, "[0:v]scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1", W, H, W, H)
 	for i, r := range rings {
 		fmt.Fprintf(&b, ",drawbox=x=%s:y=%s:w=%s:h=%s:color=yellow@0.85:t=5:enable='between(t,%s,%s)'",
 			num(r.X), num(r.Y), num(r.W), num(r.H), num(ringTimes[i]), num(ringTimes[i]+0.6))
 	}
-	fmt.Fprintf(&b, ",scale=w='trunc(%d*(%s)/2)*2':h='trunc(%d*(%s)/2)*2':eval=frame", W, z, H, z)
-	fmt.Fprintf(&b, ",crop=w=%d:h=%d:x='clip((%s)*iw/%d-%d,0,iw-%d)':y='clip((%s)*ih/%d-%d,0,ih-%d)'",
-		W, H, cx, W, W/2, W, cy, H, H/2, H)
+	sw, sh, x, y := camFrame(cam{Z: 1, CX: float64(W) / 2, CY: float64(H) / 2}, W, H)
+	if len(keys) > 0 {
+		sw, sh, x, y = camFrame(keys[0].C, W, H)
+	}
+	if cmds := camCommands(keys, W, H); cmds != "" {
+		fmt.Fprintf(&b, ",sendcmd=c='%s'", cmds)
+	}
+	fmt.Fprintf(&b, ",scale@cam=w=%d:h=%d", sw, sh)
+	fmt.Fprintf(&b, ",crop@cam=w=%d:h=%d:x=%d:y=%d:keep_aspect=0:exact=1", W, H, x, y)
 	b.WriteString(",format=yuv420p[v]")
 	return b.String()
+}
+
+// camFrame turns one camera state into the scaled canvas size and the crop
+// origin inside it.
+func camFrame(c cam, W, H int) (sw, sh, x, y int) {
+	z := c.Z
+	if z < 1 {
+		z = 1
+	}
+	sw = int(float64(W)*z/2) * 2
+	sh = int(float64(H)*z/2) * 2
+	x = clampInt(int(c.CX*float64(sw)/float64(W))-W/2, 0, sw-W)
+	y = clampInt(int(c.CY*float64(sh)/float64(H))-H/2, 0, sh-H)
+	return
+}
+
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+// camStep is the sendcmd resolution: keys are simplified to the ends of
+// straight runs, so moves between them are re-sampled at 30 fps.
+const camStep = 1.0 / 30
+
+// camCommands is the sendcmd timeline: the camera linearly interpolated
+// between keys at camStep, as scale size + crop origin. Repeated identical
+// frames are skipped, so holds cost nothing.
+func camCommands(keys []camKey, W, H int) string {
+	var samples []camKey
+	for i, k := range keys {
+		samples = append(samples, k)
+		if i+1 == len(keys) {
+			break
+		}
+		n := keys[i+1]
+		for t := k.T + camStep; t < n.T-camStep/2; t += camStep {
+			f := (t - k.T) / (n.T - k.T)
+			samples = append(samples, camKey{t, cam{
+				CX: k.C.CX + (n.C.CX-k.C.CX)*f,
+				CY: k.C.CY + (n.C.CY-k.C.CY)*f,
+				Z:  k.C.Z + (n.C.Z-k.C.Z)*f,
+			}})
+		}
+	}
+	var parts []string
+	prev := ""
+	for _, k := range samples {
+		sw, sh, x, y := camFrame(k.C, W, H)
+		cmd := fmt.Sprintf("scale@cam w %d, scale@cam h %d, crop@cam x %d, crop@cam y %d", sw, sh, x, y)
+		if cmd == prev {
+			continue
+		}
+		prev = cmd
+		parts = append(parts, num(math.Max(k.T, 0))+" "+cmd)
+	}
+	return strings.Join(parts, ";")
 }
 
 // clickRings are the highlight boxes for clicks the follow camera pulses on.

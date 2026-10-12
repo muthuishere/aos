@@ -393,16 +393,12 @@ func TestSimplifyAndExpressions(t *testing.T) {
 	if len(s) != 2 {
 		t.Fatalf("a straight line should collapse to its ends, got %d keys", len(s))
 	}
-	expr := keyExpr(s, func(c cam) float64 { return c.CX })
-	if expr != "gte(t,0)*lt(t,3)*(960+100*(t-0))+gte(t,3)*1260" {
-		t.Errorf("expr %s", expr)
-	}
-	if keyExpr([]camKey{{0, cam{1, 2, 1}}}, func(c cam) float64 { return c.CY }) != "2" {
-		t.Error("single key is a constant")
+	if n := strings.Count(camCommands(s, 1920, 1080), ";") + 1; n < 80 {
+		t.Errorf("a 3 s move should be re-sampled at 30 fps, got %d commands", n)
 	}
 	g := newCamGeom(1920, 1080, 3024, 1964, engine.Rect{})
 	f := cameraFilter(s, g, []frect{{10, 10, 44, 44}}, []float64{1})
-	for _, want := range []string{"force_original_aspect_ratio=decrease", "pad=1920:1080", "drawbox=", "eval=frame", "crop=w=1920:h=1080", "[v]"} {
+	for _, want := range []string{"force_original_aspect_ratio=decrease", "pad=1920:1080", "drawbox=", "sendcmd=c=", "scale@cam=", "crop@cam=w=1920:h=1080", "[v]"} {
 		if !strings.Contains(f, want) {
 			t.Errorf("filter missing %q: %s", want, f)
 		}
