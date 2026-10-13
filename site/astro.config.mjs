@@ -39,6 +39,7 @@ export default defineConfig({
 				}),
 			],
 			customCss: ['@fontsource-variable/inter', './src/styles/theme.css'],
+			components: { SiteTitle: './src/components/SiteTitle.astro' },
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/muthuishere/aos' },
 			],
@@ -76,7 +77,7 @@ export default defineConfig({
 				},
 				{
 					label: 'Reference',
-					items: [{ label: 'Every command', slug: 'reference/commands' }],
+					items: [{ autogenerate: { directory: 'reference' } }],
 				},
 			],
 		}),

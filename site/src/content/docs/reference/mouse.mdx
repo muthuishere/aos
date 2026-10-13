@@ -1,0 +1,77 @@
+---
+title: aos mouse
+description: Pointer position and clicks
+sidebar:
+  label: mouse
+  order: 1
+---
+
+<p class="cmd-lead">Pointer position and clicks</p>
+
+3 commands. Run `aos mouse --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos mouse click
+
+<p class="cmd-lead">Click, optionally moving to a point first</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<x>` | | Optional positional argument |
+| `<y>` | | Optional positional argument |
+| `--button` | `left`, `right`, `middle` | Optional |
+| `--double` |  | Optional |
+| `--monitor` | `<n>` | Optional |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<s>` | One of these is required |
+| `--find` | `<text>` | Required |
+| `--role` | `<r>` | Optional |
+| `--focus` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos mouse click
+aos mouse click --app=Calculator --find=7 --role=button   # AXPress / UIA Invoke: no pointer, no focus
+aos mouse click 400 300 --double
+aos mouse click --button=right
+```
+
+### aos mouse move
+
+<p class="cmd-lead">Move the pointer</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos mouse move <x> <y> [--monitor=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<x>` | | Required positional argument |
+| `<y>` | | Required positional argument |
+| `--monitor` | `<n>` | Optional |
+
+```sh
+aos mouse move 400 300
+aos mouse move 400 300 --monitor=2
+```
+
+### aos mouse position
+
+<p class="cmd-lead">Print the pointer position as `x y`</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos mouse position
+```
+
+```sh
+aos mouse position     # 784 539
+```

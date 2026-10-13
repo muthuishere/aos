@@ -1,0 +1,60 @@
+---
+title: aos exec
+description: Run commands, with output streamed or captured
+sidebar:
+  label: exec
+  order: 1
+---
+
+<p class="cmd-lead">Run commands, with output streamed or captured</p>
+
+3 commands. Run `aos exec --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos exec capture
+
+<p class="cmd-lead">Run a command and print stdout, stderr, and exit code as JSON</p>
+
+```sh
+aos exec capture <command> [args...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<command>` | | Required positional argument |
+
+```sh
+aos exec capture git status
+aos exec capture -- ls -la
+```
+
+### aos exec run
+
+<p class="cmd-lead">Run a command with its output streamed to this terminal</p>
+
+```sh
+aos exec run <command> [args...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<command>` | | Required positional argument |
+
+```sh
+aos exec run git status
+```
+
+### aos exec shell
+
+<p class="cmd-lead">Run a command line through the platform shell</p>
+
+```sh
+aos exec shell <script>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<script>` | | Required positional argument |
+
+```sh
+aos exec shell "git log --oneline | head -5"
+```

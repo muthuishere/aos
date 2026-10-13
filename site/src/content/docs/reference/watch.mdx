@@ -1,0 +1,75 @@
+---
+title: aos watch
+description: Follow what changes on this machine, one JSON line per event
+sidebar:
+  label: watch
+  order: 1
+---
+
+<p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
+
+3 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos watch clipboard
+
+<p class="cmd-lead">Print a JSON line whenever the clipboard text changes</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos watch clipboard [--interval=<500ms>] [--max=<n>] [--content]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--interval` | `<500ms>` | Optional. default 500ms |
+| `--max` | `<n>` | Optional |
+| `--content` |  | Optional |
+
+```sh
+aos watch clipboard
+aos watch clipboard --max=1 --content
+```
+
+### aos watch file
+
+<p class="cmd-lead">Print a JSON line whenever a file or directory entry changes</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+| `--interval` | `<500ms>` | Optional. default 500ms |
+| `--max` | `<n>` | Optional |
+| `--recursive` |  | Optional |
+
+```sh
+aos watch file ~/Downloads
+aos watch file ./notes.md --max=1
+aos watch file ./src --recursive --interval=1s
+```
+
+### aos watch window
+
+<p class="cmd-lead">Print a JSON line whenever the focused window changes</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos watch window [--interval=<500ms>] [--max=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--interval` | `<500ms>` | Optional. default 500ms |
+| `--max` | `<n>` | Optional |
+
+```sh
+aos watch window
+aos watch window --max=1
+```

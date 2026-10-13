@@ -1,0 +1,114 @@
+---
+title: aos obs
+description: What this machine has been asked to do
+sidebar:
+  label: obs
+  order: 1
+---
+
+<p class="cmd-lead">What this machine has been asked to do</p>
+
+6 commands. Run `aos obs --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos obs audit
+
+<p class="cmd-lead">Every command this machine was asked to run, oldest first</p>
+
+```sh
+aos obs audit [--since=<duration>] [--source=<cli|mcp>] [--failed] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--since` | `<duration>` | Optional |
+| `--source` | `cli`, `mcp` | Optional |
+| `--failed` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos obs audit --since=24h
+aos obs audit --source=mcp     # only what agents asked for
+aos obs audit --failed
+```
+
+### aos obs export
+
+<p class="cmd-lead">Emit recorded spans as OTLP JSON, ready for a collector</p>
+
+```sh
+aos obs export [--since=<duration>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--since` | `<duration>` | Optional |
+
+```sh
+aos obs export --since=1h > spans.json
+```
+
+### aos obs path
+
+<p class="cmd-lead">Print where telemetry is written</p>
+
+```sh
+aos obs path
+```
+
+```sh
+aos obs path
+```
+
+### aos obs stats
+
+<p class="cmd-lead">Summarise recorded work: calls, failures, and latency per route</p>
+
+```sh
+aos obs stats [--since=<duration>] [--source=<cli|mcp>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--since` | `<duration>` | Optional |
+| `--source` | `cli`, `mcp` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos obs stats
+aos obs stats --since=24h --source=mcp
+```
+
+### aos obs summary
+
+<p class="cmd-lead">How much this machine is actually used, and by what</p>
+
+```sh
+aos obs summary [--since=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--since` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos obs summary
+aos obs summary --since=7d
+```
+
+### aos obs tail
+
+<p class="cmd-lead">Print the most recent spans, newest last</p>
+
+```sh
+aos obs tail [--limit=<n>] [--since=<duration>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--limit` | `<n>` | Optional |
+| `--since` | `<duration>` | Optional |
+
+```sh
+aos obs tail --limit=20
+```

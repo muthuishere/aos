@@ -1,0 +1,32 @@
+---
+title: aos launch
+description: Start applications
+sidebar:
+  label: launch
+  order: 1
+---
+
+<p class="cmd-lead">Start applications</p>
+
+1 command. Run `aos launch --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos launch
+
+<p class="cmd-lead">Launch an application, optionally waiting for its window</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos launch <app> [args...] [--wait[=<ms>]]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | Required positional argument |
+| `<ms>` | | Optional positional argument |
+| `--wait` |  | Optional |
+
+```sh
+aos launch "Visual Studio Code"
+aos launch Chrome --wait
+```

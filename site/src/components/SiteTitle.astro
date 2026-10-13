@@ -1,0 +1,10 @@
+---
+// Starlight `SiteTitle` override: the same wordmark as the landing page
+// header (src/pages/index.astro), so the docs and the landing read as one site.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<a class="aos-brand" href={`${base}/`}>
+	<span class="aos-brand-mark">aos</span>
+	<span class="aos-brand-sub">agentic os operations</span>
+</a>

@@ -1,0 +1,74 @@
+---
+title: aos headless
+description: Run the desktop commands on a machine with no screen
+sidebar:
+  label: headless
+  order: 1
+---
+
+<p class="cmd-lead">Run the desktop commands on a machine with no screen</p>
+
+4 commands. Run `aos headless --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos headless run
+
+<p class="cmd-lead">Run a command against the managed virtual display</p>
+
+```sh
+aos headless run <command> [args...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<command>` | | Required positional argument |
+
+```sh
+aos headless run aos window list
+```
+
+### aos headless start
+
+<p class="cmd-lead">Start a virtual display, so window and input commands work</p>
+
+<p class="cmd-badges"><span class="cmd-badge">linux only</span></p>
+
+```sh
+aos headless start [--display=:99] [--size=<WxH>] [--wm]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--display` | `<:99>` | Optional |
+| `--size` | `<WxH>` | Optional |
+| `--wm` |  | Optional |
+
+```sh
+aos headless start
+aos headless start --display=:101 --size=1920x1080 --wm
+```
+
+### aos headless status
+
+<p class="cmd-lead">Report whether a display is available, and where it came from</p>
+
+```sh
+aos headless status
+```
+
+```sh
+aos headless status
+```
+
+### aos headless stop
+
+<p class="cmd-lead">Stop the virtual display this machine started</p>
+
+<p class="cmd-badges"><span class="cmd-badge">linux only</span></p>
+
+```sh
+aos headless stop
+```
+
+```sh
+aos headless stop
+```

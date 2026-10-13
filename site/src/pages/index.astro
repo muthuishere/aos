@@ -15,24 +15,24 @@ const usps = [
 ];
 
 const features = [
-	{ t: 'Windows & layout', d: 'List, focus, move and resize any window. Snap to halves, quarters or N-way splits on any monitor.', c: 'aos window move Safari --zone=1A --monitor=2' },
-	{ t: 'Find on screen', d: 'Locate a button, menu item or text inside a window via accessibility or OCR, and get its exact center.', c: 'aos find --app=Calculator --text=7' },
-	{ t: 'Point for humans', d: 'Draw a big click-through arrow, ring or box with a sign, so a person knows exactly where to click.', c: 'aos draw --app=Calculator --find=7 --text="Press 7"' },
-	{ t: 'Focus-free input', d: 'Type and press key combos into a named app while you keep working in another window. --verify reads the text back.', c: 'aos key type --app=TextEdit --verify "hello"' },
-	{ t: 'Labels & subtitles', d: 'Put a styled text label or a film-style caption on screen so the agent can narrate what it is doing.', c: 'aos subtitle show "Saving the report…"' },
-	{ t: 'Capture video', d: 'Record the screen and get a .final.mp4 where a smart camera has already zoomed in on every action.', c: 'aos capture video start smart' },
-	{ t: 'Screenshots', d: 'Capture a monitor, a region or one app window so the agent can see what it did.', c: 'aos capture screenshot window --app=Safari' },
-	{ t: 'Shell & packages', d: 'Run commands with JSON-captured output, and one package verb set over brew, winget, apt and more.', c: 'aos exec capture -- git status' },
-	{ t: 'Watch for changes', d: 'Stream one JSON line whenever the clipboard, the focused window or a file changes, so an agent can react instead of polling.', c: 'aos watch window' },
-	{ t: 'Clipboard', d: 'Copy words or stdin to the clipboard and paste it back out, the same way on every OS.', c: 'aos clipboard paste' },
-	{ t: 'Launch, open & web apps', d: 'Start an app, hand a file or URL to its default app, or open a site as its own chromeless window.', c: 'aos webapp open https://mail.google.com' },
-	{ t: 'Processes & services', d: 'List, find and kill processes, and install any command as a per-user service that survives reboots.', c: 'aos service create sync --autostart -- rclone sync a b' },
-	{ t: 'Files', d: 'Read line ranges, append, list, copy, move and delete files with exit codes an agent can trust.', c: 'aos file read notes.md --lines=1:20' },
-	{ t: 'System & hardware', d: 'Volume and mute, battery, power, Wi-Fi and IP, monitors, fonts, plus lock and sleep.', c: 'aos audio volume 30' },
-	{ t: 'Audit log', d: 'Every command this machine was asked to run is recorded, with failures and latency, and exports as OTLP.', c: 'aos obs audit --since=1h --failed' },
-	{ t: 'Your own commands', d: 'Add adapters as small config files and they show up as aos commands, in the skill and over MCP.', c: 'aos adapters example --write' },
-	{ t: 'Remote screen share', d: 'Hand this screen and its input to a browser on the LAN, and watch the agent work from your phone.', c: 'aos remote share' },
-	{ t: 'Headless & MCP', d: 'Give a Linux server a virtual display, or serve every command as typed MCP tools.', c: 'aos serve mcp' },
+	{ t: 'Windows & layout', img: 'windows', d: 'List, focus, move and resize any window. Snap to halves, quarters or N-way splits on any monitor.', c: 'aos window move Safari --zone=1A --monitor=2' },
+	{ t: 'Find on screen', img: 'find', d: 'Locate a button, menu item or text inside a window via accessibility or OCR, and get its exact center.', c: 'aos find --app=Calculator --text=7' },
+	{ t: 'Point for humans', img: 'point', d: 'Draw a big click-through arrow, ring or box with a sign, so a person knows exactly where to click.', c: 'aos draw --app=Calculator --find=7 --text="Press 7"' },
+	{ t: 'Focus-free input', img: 'typing', d: 'Type and press key combos into a named app while you keep working in another window. --verify reads the text back.', c: 'aos key type --app=TextEdit --verify "hello"' },
+	{ t: 'Labels & subtitles', img: 'labels', d: 'Put a styled text label or a film-style caption on screen so the agent can narrate what it is doing.', c: 'aos subtitle show "Saving the report…"' },
+	{ t: 'Capture video', img: 'video', d: 'Record the screen and get a .final.mp4 where a smart camera has already zoomed in on every action.', c: 'aos capture video start smart' },
+	{ t: 'Screenshots', img: 'screenshot', d: 'Capture a monitor, a region or one app window so the agent can see what it did.', c: 'aos capture screenshot window --app=Safari' },
+	{ t: 'Shell & packages', img: 'shell', d: 'Run commands with JSON-captured output, and one package verb set over brew, winget, apt and more.', c: 'aos exec capture -- git status' },
+	{ t: 'Watch for changes', img: 'watch', d: 'Stream one JSON line whenever the clipboard, the focused window or a file changes, so an agent can react instead of polling.', c: 'aos watch window' },
+	{ t: 'Clipboard', img: 'clipboard', d: 'Copy words or stdin to the clipboard and paste it back out, the same way on every OS.', c: 'aos clipboard paste' },
+	{ t: 'Launch, open & web apps', img: 'launch', d: 'Start an app, hand a file or URL to its default app, or open a site as its own chromeless window.', c: 'aos webapp open https://mail.google.com' },
+	{ t: 'Processes & services', img: 'process', d: 'List, find and kill processes, and install any command as a per-user service that survives reboots.', c: 'aos service create sync --autostart -- rclone sync a b' },
+	{ t: 'Files', img: 'files', d: 'Read line ranges, append, list, copy, move and delete files with exit codes an agent can trust.', c: 'aos file read notes.md --lines=1:20' },
+	{ t: 'System & hardware', img: 'system', d: 'Volume and mute, battery, power, Wi-Fi and IP, monitors, fonts, plus lock and sleep.', c: 'aos audio volume 30' },
+	{ t: 'Audit log', img: 'audit', d: 'Every command this machine was asked to run is recorded, with failures and latency, and exports as OTLP.', c: 'aos obs audit --since=1h --failed' },
+	{ t: 'Your own commands', img: 'adapters', d: 'Add adapters as small config files and they show up as aos commands, in the skill and over MCP.', c: 'aos adapters example --write' },
+	{ t: 'Remote screen share', img: 'remote', d: 'Hand this screen and its input to a browser on the LAN, and watch the agent work from your phone.', c: 'aos remote share' },
+	{ t: 'Headless & MCP', img: 'mcp', d: 'Give a Linux server a virtual display, or serve every command as typed MCP tools.', c: 'aos serve mcp' },
 ];
 ---
 
@@ -117,6 +117,7 @@ const features = [
 				<div class="grid">
 					{features.map((f) => (
 						<article class="card">
+							<img class="thumb" src={`${base}/cards/${f.img}.webp`} alt="" width="640" height="360" loading="lazy" decoding="async" />
 							<h3>{f.t}</h3>
 							<p>{f.d}</p>
 							<code class="ex">{f.c}</code>
@@ -206,6 +207,7 @@ const features = [
 			.lead { color: var(--muted); font-size: 18px; margin: 0 0 32px; max-width: 40em; }
 			.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 			.card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; min-width: 0; }
+			.thumb { display: block; width: calc(100% + 40px); height: auto; margin: -20px -20px 14px; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 13px 13px 0 0; border-bottom: 1px solid var(--hair); background: #07080a; }
 			.card h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; }
 			.card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; flex: 1; }
 			.ex { display: block; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); padding: 9px 11px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }

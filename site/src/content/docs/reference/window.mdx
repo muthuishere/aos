@@ -1,0 +1,176 @@
+---
+title: aos window
+description: Desktop windows - list, focus, move, resize, arrange
+sidebar:
+  label: window
+  order: 1
+---
+
+<p class="cmd-lead">Desktop windows: list, focus, move, resize, arrange</p>
+
+8 commands. Run `aos window --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos window arrange
+
+<p class="cmd-lead">Apply a saved layout of many windows in one pass</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window arrange <layout.json | ->
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<layout.json \| ->` | | Required positional argument |
+
+```sh
+aos window arrange ~/.config/aos/layouts/work.json
+echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos window arrange -
+```
+
+### aos window focus
+
+<p class="cmd-lead">Bring a window to the front</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window focus <app> | --app=<name> | --title=<substring>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | One of these is required |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+
+```sh
+aos window focus Chrome
+```
+
+### aos window list
+
+<p class="cmd-lead">List open windows</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window list [--app=<name>] [--title=<substring>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--app` | `<name>` | Optional |
+| `--title` | `<substring>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos window list
+aos window list --app=Chrome
+```
+
+### aos window move
+
+<p class="cmd-lead">Move a window to a zone, a split, or absolute bounds</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window move <app> (--zone=<1A|2:1> | --at=<x,y,w,h>) [--monitor=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | Required positional argument |
+| `--zone` | `1A`, `2:1` | One of these is required |
+| `--at` | `<x,y,w,h>` | One of these is required. comma-separated |
+| `--monitor` | `<n>` | Optional |
+
+```sh
+aos window move Chrome --zone=1B
+aos window move Chrome --monitor=2 --zone=1:3
+aos window move Slack --at=0,25,1920,1055
+```
+
+### aos window resize
+
+<p class="cmd-lead">Resize a window in place</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window resize <app> --w=<width> --h=<height>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | Required positional argument |
+| `--w` | `<width>` | Required |
+| `--h` | `<height>` | Required |
+
+```sh
+aos window resize Chrome --w=900 --h=700
+```
+
+### aos window save
+
+<p class="cmd-lead">Save the current layout to a file `window arrange` can apply</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window save <layout.json> [--app=<name>] [--monitor=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<layout.json>` | | Required positional argument |
+| `--app` | `<name>` | Optional |
+| `--monitor` | `<n>` | Optional |
+
+```sh
+aos window save ~/.config/aos/layouts/work.json
+aos window save ~/work.json --app=Chrome
+aos window save ~/second-screen.json --monitor=2
+```
+
+### aos window wait
+
+<p class="cmd-lead">Wait for a window to appear, then print it</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window wait <app> [--timeout=<ms>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | Required positional argument |
+| `--timeout` | `<ms>` | Optional |
+
+```sh
+aos window wait Chrome --timeout=5000
+```
+
+### aos window zones
+
+<p class="cmd-lead">Show what each zone means on a real monitor</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window zones [--monitor=<n>] [--show]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--monitor` | `<n>` | Optional |
+| `--show` |  | Optional |
+
+```sh
+aos window zones
+aos window zones --monitor=2
+aos window zones --show --app=Chrome
+```

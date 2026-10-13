@@ -1,0 +1,40 @@
+---
+title: aos permission
+description: OS permissions the window and input commands need
+sidebar:
+  label: permission
+  order: 1
+---
+
+<p class="cmd-lead">OS permissions the window and input commands need</p>
+
+2 commands. Run `aos permission --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos permission check
+
+<p class="cmd-lead">Report whether accessibility and screen capture are granted</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos permission check
+```
+
+```sh
+aos permission check
+```
+
+### aos permission request
+
+<p class="cmd-lead">Ask the OS for the permissions that are missing</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos permission request [accessibility|screen]
+```
+
+```sh
+aos permission request
+aos permission request screen
+```
