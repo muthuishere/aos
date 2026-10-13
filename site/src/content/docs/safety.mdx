@@ -1,16 +1,13 @@
 ---
 title: Safety model
-description: What aos refuses to do, where each refusal lives, and why the refusals are structural rather than advisory.
+description: What aos refuses to do, and what it does not protect against.
 ---
 
-Handing an agent a machine is the whole point of this tool, which is why the
-limits are part of the structure rather than a warning in a README. Each one
-below is a place the code says no.
+aos hands a machine to an agent. These are the limits built into the commands, not warnings in a README.
 
-## A command that needs a screen says so, up front
+## Commands that need a screen refuse up front
 
-Every command declares `NeedsDisplay`. On a machine with no display it is
-refused before it runs, with the fix:
+On a machine with no display, a desktop command exits 2 before doing anything:
 
 ```console
 $ aos window list
@@ -18,78 +15,57 @@ aos: "window list" needs a display, and this machine has none
 Start one with `aos headless start`, or check `aos headless status`.
 ```
 
-The alternative — failing three layers deep inside a display-server call — gives
-an agent an error it cannot act on. See [headless
-machines](/aos/headless/).
+See [headless machines](/aos/headless/).
 
-## `file delete` will not delete the things you cannot undo
+## `file delete` will not delete what you cannot undo
 
-Filesystem roots, `$HOME`, and system directories are refused outright:
+Filesystem roots, `$HOME`, and system directories are refused:
 
 ```console
 $ aos file delete /
 aos: refusing to delete /
 
 $ aos file delete $HOME
-aos: refusing to delete /Users/muthuishere
+aos: refusing to delete /Users/you
 ```
 
-This is not a confirmation prompt, because an agent will answer a prompt.
+There is no confirmation prompt, because an agent would answer it.
 
-## `serve` binds loopback
+## `serve mcp` listens on loopback only
 
-Serving this registry *is* remote control of the machine. Reaching it from
-anywhere else should be a deliberate act — an SSH tunnel, or an explicit
-`--addr` — not the default.
+The default address is `127.0.0.1:14320`. Reaching it from another machine takes a deliberate step: an SSH tunnel, or an explicit `--addr`. Every request also needs the per-run token. See [MCP](/aos/mcp/).
 
-## Blocking commands are not MCP tools
+## Long-running commands are not MCP tools
 
-`remote share` is marked blocking, and blocking commands are excluded from the
-tool list. That is a security property, not a UX one: an agent connected over
-MCP cannot quietly open a desktop-control channel. A person has to start the
-share at a terminal, watch it run, and Ctrl-C to revoke it. The link lives
-exactly as long as the process a human is looking at.
+`remote share` and the `watch` commands run until interrupted, so they are left out of the tool list. An agent connected over MCP cannot open a screen-share of your machine. A person starts it at a terminal and ends it with Ctrl-C.
 
 ## Services are namespaced
 
-Every service `aos` creates is named `aos.<name>`, and `service
-list` and `service remove` only ever see that namespace. This CLI cannot delete
-a service it did not create. Everything is per-user — a launchd user agent on
-macOS, a `systemd --user` unit on Linux, a Scheduled Task on Windows — so
-nothing here asks for admin or sudo.
+Every service aos creates is named `aos.<name>`. `service list` and `service remove` only see that namespace, so aos cannot delete a service it did not create. Services are per user: a launchd user agent on macOS, a `systemd --user` unit on Linux, a Scheduled Task on Windows. None of it asks for admin or sudo.
 
-## Adapters cannot shadow a built-in
+## Adapters and plugins cannot replace a built-in
 
-A file in the config directory must not be able to change what a shipped command
-does. An adapter that collides with a built-in route loses, and a malformed
-adapter is *reported* by `commands --check` rather than silently ignored.
-Plugins follow the same rule: a built-in wins over an executable of the same
-route.
+A file in your config directory cannot change what a shipped command does. On a route collision the built-in wins. A malformed adapter is reported by `aos commands --check` rather than ignored.
 
 ## Telemetry records counts, not contents
 
-A span carries the route, the source (`cli` or `mcp`), the exit code, the
-duration, and the *number* of arguments. Never the arguments themselves — they
-routinely carry paths, message bodies and clipboard text. Nothing is sent
-anywhere; see [observability](/aos/observability/).
+A span holds the route, the source (`cli` or `mcp`), the exit code, the duration, and the number of arguments. Never the arguments. Nothing is sent anywhere. See [observability](/aos/observability/).
 
-## `watch clipboard` hides the clipboard by default
+## `watch clipboard` hides the text by default
 
 ```console
 $ aos watch clipboard
 {"event":"clipboard","at":"…","seq":1,"length":34,"digest":"7a37ded45b5e"}
 ```
 
-Length and digest, so a watcher can tell that something changed. `--content` is
-opt-in.
+You get the length and a digest. Add `--content` to include the text.
 
-## What is *not* protected
+## What is not protected
 
-`exec run`, `exec shell` and `exec capture` run what you give them. There is no
-sandbox and no command allowlist — that would be a different product, and a
-false sense of one is worse than none. If an agent should not be able to run
-arbitrary commands on a machine, do not expose the `exec` group:
+`exec run`, `exec shell` and `exec capture` run whatever you give them. There is no sandbox and no allowlist. If an agent should not run arbitrary commands on a machine, do not expose the `exec` group:
 
 ```sh
 aos serve mcp --groups=window,capture,display
 ```
+
+The same goes for `file write`, `process kill`, `system shutdown` and `pkg install`. They do what they say. Scope the groups you serve to what the agent needs.

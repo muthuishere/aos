@@ -1,15 +1,26 @@
 ---
 title: Extending it
-description: Add commands with a JSON adapter or a PATH executable — both become MCP tools, neither can shadow a built-in.
+description: Add your own commands with a JSON adapter or an executable on PATH. Both show up in help and as MCP tools. Neither can replace a built-in.
 ---
 
-Two ways to add a command without forking. Both are gated on the same terms as a
-built-in — `platforms`, `needsDisplay`, `blocking` — and both automatically
-become MCP tools.
+You can add commands to aos without changing the binary. There are two ways. Both appear in `aos commands`, in `--help`, and as MCP tools.
 
-## Adapters — when it is a command line you already run
+## Adapters: wrap a command line you already run
 
-Drop a JSON file in `~/.config/aos/adapters/` and it becomes a group:
+Drop a JSON file in the adapters directory and it becomes a group.
+
+```sh
+aos adapters path             # where adapters are read from
+aos adapters example --write  # write a working starter file there
+aos adapters list             # what this machine has loaded
+```
+
+```console
+$ aos adapters path
+/Users/you/.config/aos/adapters
+```
+
+A file `~/.config/aos/adapters/notes.json`:
 
 ```json
 {
@@ -26,28 +37,26 @@ Drop a JSON file in `~/.config/aos/adapters/` and it becomes a group:
 }
 ```
 
-```console
-$ aos adapters example --write   # a working starter file
-$ aos adapters path
-/Users/you/.config/aos/adapters
-$ aos adapters list
-no adapters in /Users/you/.config/aos/adapters
-run `aos adapters example --write` to start one
+```sh
+aos notes today
 ```
 
-`run` goes through the platform shell with the user's arguments appended and
-quoted.
+`run` goes through the platform shell. Arguments you pass on the command line are appended, quoted.
 
-### This is where anything site-specific belongs
+### Fields
 
-aos used to ship a `msg` group that talked to a local messenger hub. It
-was removed, because a built-in command that only works if you happen to run one
-particular service is a command that fails for everyone else — and the command
-list is a promise about what this machine can do.
+| field | meaning |
+|---|---|
+| `group`, `description` | the group name and its line in help |
+| `commands[].name` | the command word |
+| `commands[].summary` | one line of help |
+| `commands[].args` | argument usage shown in help, such as `<text...>` |
+| `commands[].run` | the shell line to run |
+| `commands[].platforms` | which platforms it runs on. Omit for all |
 
-Notifications are personal: Slack, Telegram, ntfy, a webhook, a hub of your own.
-So they are an adapter, and yours works exactly like a built-in — it shows up in
-`commands`, in `--help`, and as an MCP tool:
+### Notifications belong here
+
+aos has no built-in notification command, because every setup is different. An adapter that posts to a Slack webhook:
 
 ```json
 {
@@ -68,15 +77,11 @@ So they are an adapter, and yours works exactly like a built-in — it shows up 
 aos notify send "build passed"
 ```
 
-Keep the secret in the environment, not in the adapter file — the `run` line is
-a shell command, so `$SLACK_WEBHOOK_URL` expands at call time and never has to
-be written down here.
+Keep the secret in the environment. The `run` line is a shell command, so `$SLACK_WEBHOOK_URL` expands when it runs and never has to be written in the file.
 
-## Plugins — when you need a program
+## Plugins: when you need a program
 
-Any executable named `aos-<group>-<name>` in `$AOS_BIN_DIR`,
-`~/.config/aos/bin`, or on `PATH` joins the CLI, and therefore the MCP
-tool list. It describes itself with comment headers in its first 80 lines:
+Any executable named `aos-<group>-<name>` in `$AOS_BIN_DIR`, `~/.config/aos/bin`, or on `PATH` becomes a command. It describes itself with comment headers in its first 80 lines:
 
 ```sh
 #!/bin/sh
@@ -87,31 +92,19 @@ tool list. It describes itself with comment headers in its first 80 lines:
 # aos:route=theme bg-switcher   # when a word contains a hyphen
 ```
 
-## Neither can shadow a built-in
+Save it as `aos-demo-do` and make it executable. `aos demo do thing a` runs it.
 
-A file in the config directory must not be able to change what a shipped command
-does, so a built-in always wins a route collision. Shipping a Go implementation
-of a route transparently replaces the script that used to serve it.
-
-A malformed adapter is reported, not ignored:
+## Check what a machine picked up
 
 ```sh
-aos commands --check    # registry lint; non-zero when something is off
+aos commands --check    # lint the registry; exits non-zero when something is off
+aos debug               # platform, plugin directories, counts
+aos doctor              # includes the plugin count
 ```
 
-## Seeing what a machine picked up
+## Gotchas
 
-```console
-$ aos debug
-aos  dev
-go          go1.26.3
-platform    darwin/arm64
-commands    96 available of 98 registered, in 34 groups
-
-plugin dirs:
-  /Users/you/.config/aos/bin
-  …
-```
-
-`doctor` reports the count too: `ok plugins  0 external commands across 38
-directories`.
+- **A built-in always wins.** An adapter or plugin with the same route as a shipped command is ignored for that route. A file in your config directory cannot change what a built-in does.
+- **A malformed adapter is reported, not skipped.** Run `aos commands --check` after editing one.
+- **Platform gating applies.** If `platforms` leaves out this OS, the command is listed only under `aos commands --all`.
+- **Adapters run through the shell.** Quote carefully in `run`, and do not put secrets in the file.

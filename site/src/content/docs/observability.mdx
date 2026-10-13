@@ -1,11 +1,11 @@
 ---
 title: Observability
-description: Every invocation records one OTLP-shaped span in a local file — route, source, exit code, duration, and the count of arguments, never their contents.
+description: Every aos command records one span in a local file. Use obs to see what was run, by whom, how often, and how it failed. Nothing is sent anywhere.
 ---
 
-Every invocation — typed at a terminal or called as an MCP tool — records one
-OpenTelemetry-shaped span. Nothing is sent anywhere. The record simply exists,
-in the right shape, for the day you want it.
+`aos obs` shows what this machine has been asked to do. Every command, typed at a terminal or called as an MCP tool, records one OpenTelemetry-shaped span in a local file.
+
+## Example
 
 ```console
 $ aos obs stats
@@ -25,26 +25,35 @@ $ aos obs tail --limit=3
 01:05:36  err  cli         0ms  file delete
 ```
 
-```sh
-aos obs export --since=1h   # OTLP JSON, ready for a collector
-aos obs path                # where it is written
-```
-
-## What a span carries
-
-The route, the source (`cli` or `mcp`), the exit code, the duration, and the
-*count* of arguments — never their contents, which routinely carry paths,
-message bodies and clipboard text.
-
-The `source` field is why this is worth having: it is how you find out what an
-agent has actually been asking your machine to do, separately from what you
-typed yourself.
-
-## Turning it off, or moving it
+## Commands
 
 ```sh
-AOS_TELEMETRY=off          # do not record
-AOS_TELEMETRY_DIR=/tmp/t   # record somewhere else
+aos obs audit --since=24h --source=mcp   # everything an agent asked for, oldest first
+aos obs audit --failed                   # only the commands that failed
+aos obs summary --since=7d               # how much the machine is used, and by what
+aos obs stats --since=24h --source=mcp   # calls, failures and latency per route
+aos obs tail --limit=20                  # the most recent spans
+aos obs export --since=1h > spans.json   # OTLP JSON, ready for a collector
+aos obs path                             # where the file lives
 ```
 
-It is a file on your disk. Deleting it is a supported operation.
+`--source=cli|mcp` separates what you typed from what an agent called. That is the main reason this exists.
+
+## What a span holds
+
+The route, the source (`cli` or `mcp`), the exit code, the duration, and the number of arguments. Never the arguments themselves. Arguments routinely carry paths, message bodies and clipboard text.
+
+## Turn it off, or move it
+
+```sh
+AOS_TELEMETRY=off aos window list        # do not record this run
+AOS_TELEMETRY_DIR=/tmp/t aos obs path    # record somewhere else
+```
+
+Export either variable in your shell to make it permanent.
+
+## Gotchas
+
+- **It is a file on your disk.** Deleting it is fine. `aos obs path` shows where.
+- **Nothing is uploaded.** `obs export` writes to stdout. Sending it to a collector is your step.
+- **Spans are per machine.** Over SSH, run `aos obs audit` on the server to see what happened there.

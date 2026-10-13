@@ -1,89 +1,48 @@
 ---
 title: What it is
-description: One CLI over the machine that an agent drives the same way you do — via an installed agent skill, or over MCP. macOS, Windows and Linux.
+description: One CLI over the machine that an agent drives the same way you do, through an installed agent skill or over MCP. macOS, Windows and Linux.
 ---
 
 import registry from '../../data/registry.json';
 
-**One CLI over the machine that an agent drives the same way you do.**
+**aos is one CLI over the machine that an agent drives the same way you do.**
 {registry.commands} commands across {registry.groups} groups: windows, input,
 screen capture, files, processes, shell commands, packages, network, audio,
 clipboard and services.
 
-## One surface, two callers
-
-An agent gets in through [the skill](/aos/agent-skill/) — it already has
-a shell, so it runs the same commands you do, with nothing listening and nothing
-to start. [MCP](/aos/mcp/) is the second way in, for agents that want
-typed tools.
-
-Both resolve the same route and invoke the same `Runner`. There is no second
-implementation behind the protocol.
+## Example
 
 ```sh
-aos window move Chrome --zone=1B     # you, at a terminal
-```
-
-```json
-{ "name": "window_move", "arguments": { "app": "Chrome", "zone": "1B" } }
-```
-
-Those two lines are the same work. What you test by hand is what the agent gets,
-and a bug you reproduce in a shell is the bug the agent hit.
-
-## Three platforms, verified
-
-macOS, Windows and Linux — all three tested by a suite that drives the built
-binaries on real machines, locally, over SSH and through an agentbus node,
-including a headless Linux server. The macOS window backend is CoreGraphics
-through cgo; Windows is Win32; Linux is wmctrl and xdotool.
-
-## Safety as structure
-
-The refusals are part of the design, not a disclaimer in a README.
-
-- Commands that need a screen are refused with a reason instead of failing deep
-  inside a display-server call.
-- `file delete` will not touch a filesystem root, `$HOME`, or a system
-  directory.
-- `serve` binds loopback.
-- Services are namespaced `aos.<name>`, so removing one cannot reach a
-  system service.
-- Telemetry records how many arguments a command got, never what they were.
-
-```console
-$ aos file delete /
-aos: refusing to delete /
-$ aos file delete $HOME
-aos: refusing to delete /Users/muthuishere
-```
-
-The [safety model](/aos/safety/) page has the rest.
-
-## One verb set that means the same thing everywhere
-
-```sh
-aos pkg install ripgrep    # brew · winget · scoop · choco · apt · pacman · yay · dnf
 aos window move Chrome --zone=1B
 aos capture screenshot --app=Chrome --out=/tmp/shot.png
+aos pkg install ripgrep
+aos find --app=Calculator --text=7
+aos draw --app=Calculator --find=Equals --text="Click here"
 ```
 
-`--app=Chrome` matches the same window on all three platforms. That took fixing
-Windows and working around Linux to make true, which is the sort of work a
-single verb set is for.
+Each line works the same on macOS, Windows and Linux. `--app=Chrome` finds the same window on all three. `pkg install` uses brew, winget, scoop, choco, apt, pacman, yay or dnf, whichever the machine has.
+
+## Two ways in for an agent
+
+- **The skill.** The first `aos` command writes an agent skill to `~/.claude/skills/` and `~/.agents/skills/`. An agent with a shell then runs the same commands you do. Nothing is listening and nothing needs to start. It works over SSH. See [the agent skill](/aos/agent-skill/).
+- **MCP.** `aos serve mcp` exposes every command as a typed tool, guarded by a token. See [MCP](/aos/mcp/).
+
+Both paths run the same code. A `window_move` tool call with `{"app":"Chrome","zone":"1B"}` does exactly what `aos window move Chrome --zone=1B` does. A bug you reproduce in a shell is the bug the agent hit.
+
+## Built-in limits
+
+- Commands that need a screen refuse with a reason on a headless machine.
+- `file delete` will not touch a filesystem root, `$HOME`, or a system directory.
+- `serve mcp` listens on loopback and requires a token.
+- Services are named `aos.<name>`, so removing one cannot reach a system service.
+- Telemetry records how many arguments a command got, never what they were.
+
+The [safety model](/aos/safety/) page has the full list.
 
 ## Extensible without forking
 
-A JSON file in `~/.config/aos/adapters/` adds a group. An executable
-named `aos-<group>-<name>` on `PATH` adds a command. Both become MCP
-tools on exactly the same terms as a built-in — and neither can shadow one. See
-[extending it](/aos/extending/).
+A JSON file in `~/.config/aos/adapters/` adds a group. An executable named `aos-<group>-<name>` on `PATH` adds a command. Both appear in help and as MCP tools. Neither can replace a built-in. See [extending it](/aos/extending/).
 
-## Where the shape came from
+## Where the command shape came from
 
-The command *shape* — `<group> <command>` routes resolved by longest prefix,
-discoverable help, a machine-readable index, drop-in plugins — is borrowed from
-the [omarchy CLI](https://learn.omacom.io/2/the-omarchy-manual/115/omarchy-cli).
-The implementation is Go, on three platforms. Everything outside that
-map — `window`, `mouse`, `key`, `exec`, `file`, `serve` — is new here:
-the parts an agent needs that a desktop CLI never had.
+The `<group> <command>` routes, discoverable help, machine-readable index and drop-in plugins follow the [omarchy CLI](https://learn.omacom.io/2/the-omarchy-manual/115/omarchy-cli). aos adds the parts an agent needs that a desktop CLI never had: `window`, `mouse`, `key`, `find`, `draw`, `exec`, `file` and `serve`, on three platforms.

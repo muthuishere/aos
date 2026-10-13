@@ -1,22 +1,43 @@
 ---
 title: Showing a human where to click
-description: draw puts a click-through arrow, ring or box with a sign on the real screen; draw text adds a styled label; subtitle shows a film-style caption. Nothing takes focus.
+description: draw puts a click-through arrow, ring or box with a sign on the real screen. draw text adds a label. subtitle shows a caption. None of them take focus.
 ---
 
-Sometimes the agent should not click; the person should. aos draws on the real screen instead, and every drawing is
-click-through, so the person's clicks land on the app underneath.
+`aos draw` points at something on screen so a person can click it. Every drawing is click-through, so clicks land on the app underneath.
 
-## An arrow at a button
+## Example
 
 ```sh
 aos draw --app=Calculator --find=Equals --text="Click here"
-aos draw --app=Safari --find="Reload this page" --style=ring --text="This one"
-aos draw --rect=100,200,300,80 --style=box --text="Fill these in" --color=green
 ```
 
-`--find` resolves the target through the accessibility tree (OCR as a fallback), so the arrow follows the button, not a
-guessed coordinate. `--style=arrow|ring|box`, `--shape=bend|straight|zigzag|spiral`, `--size=S|M|L`.
-Add `--detach --duration=10` to return immediately and let it fade on its own; `aos draw stop` clears every drawing.
+A big arrow with the sign "Click here" appears next to the Equals button in Calculator. It stays until the command exits.
+
+More targets:
+
+```sh
+aos draw --app=Safari --find="Reload this page" --style=ring --text="This one"
+aos draw --rect=100,200,300,80 --style=box --text="Fill these in" --color=green
+aos draw --at=640,400 --text="Here" --shape=straight
+aos draw --mouse --text="You are here"
+```
+
+## Options
+
+| flag | what it does |
+|---|---|
+| `--app`, `--title`, `--rect`, `--at`, `--mouse` | what to point at |
+| `--find=<text>` | locate a control inside the window by its label. `--role`, `--exact`, `--nth` narrow the match |
+| `--text=<sign>` | the words on the sign |
+| `--style=arrow\|ring\|box` | the shape of the marker |
+| `--shape=bend\|straight\|zigzag\|spiral` | the arrow's path |
+| `--size=S\|M\|L` | marker size |
+| `--color=<name\|#hex>` | marker colour |
+| `--duration=<seconds>` | how long it stays |
+| `--detach` | return at once and let the drawing fade on its own |
+| `--preview=<out.png>` | render to a file instead of the screen |
+
+`aos draw stop` removes every detached drawing. `aos draw config --init` writes a defaults file. `aos draw fonts` lists the font names `--font` accepts.
 
 ## A text label
 
@@ -25,20 +46,21 @@ aos draw text "Your notes live here" --app=TextEdit --position=center --size=L -
 aos draw text "Step 2 of 3" --monitor=1 --position=top-right
 ```
 
-Place it inside a window, a monitor, a rect or beside a point, with `--position`, `--margin`, `--offset`, `--font`, `--bg`
-and `--max-width`.
+Place it inside a window, a monitor, a rect or beside a point. `--position`, `--margin`, `--offset`, `--font`, `--bg` and `--max-width` control the look. With no target it sits bottom-center of the focused monitor.
 
 ## A subtitle
 
 ```sh
 aos subtitle show "Opening the export dialog…" --seconds=4
 aos subtitle show "Arrows, labels and subtitles" --monitor=1 --detach
+aos subtitle stop
 ```
 
-Subtitles are how an agent narrates what it is doing without taking focus. They pair well with
-[capture video](/aos/capture-video/): the narration ends up in the recording.
+Subtitles let an agent narrate what it is doing without taking focus. A new caption replaces the last one. They pair well with [capture video](/aos/capture-video/): the narration ends up in the recording.
 
-## Previewing
+## Gotchas
 
-Every draw command takes `--preview=out.png` to render the overlay to a file instead of the screen, which is handy in
-tests and on headless machines.
+- **`--find` uses the accessibility tree first and OCR as a fallback.** The arrow follows the real control, not a guessed coordinate. If nothing matches, the command fails and says so instead of drawing in the wrong place.
+- **Without `--detach`, the command blocks** until the duration ends or you press Ctrl-C.
+- **Use `--preview` on headless machines and in tests.** It writes a PNG and never touches the screen.
+- **On macOS the terminal needs Accessibility permission** for `--find`. Run `aos permission request accessibility`.

@@ -1,24 +1,47 @@
 ---
 title: Headless machines
-description: Most of aos needs no display at all; on Linux, headless start provides one when something does.
+description: Most of aos works with no display. On Linux, headless start creates a virtual display for the commands that need one.
 ---
 
-Most of the surface needs no screen. On a server, in CI, or in a container,
-`exec`, `file`, `pkg`, `network`, `system`, `power`, `battery`, `font`,
-`debug` and `serve` work exactly as they do on a laptop.
+Most aos commands need no screen. On a server, in CI, or in a container, `exec`, `file`, `pkg`, `network`, `system`, `power`, `battery`, `font`, `debug` and `serve` work the same as on a laptop.
 
-## What the machine says about itself
+## Example
+
+Check what this machine has:
 
 ```console
 $ aos headless status
-platform     darwin
-virtual      not available on this platform
-note         desktop commands need a logged-in session here
+platform     linux
+DISPLAY      -
+WAYLAND      -
+xvfb         present
+managed      none
 
-display      yes — window, mouse, key, capture, and display commands will work
+display      no — only the screenless commands will work
 ```
 
-## The desktop commands refuse, rather than fail deep
+On Linux, start a virtual display and the desktop commands work:
+
+```sh
+aos headless start --size=1920x1080 --wm
+aos window list
+aos capture screenshot --out=/tmp/shot.png
+aos headless stop
+```
+
+Later `aos` commands find the managed display on their own. There is no `export DISPLAY` step.
+
+## Options for `headless start`
+
+| flag | what it does |
+|---|---|
+| `--display=:99` | X display number to use |
+| `--size=<WxH>` | screen size of the virtual display |
+| `--wm` | also start a lightweight window manager, so windows can be placed and focused |
+
+`headless start` waits for the window manager to claim the screen before it returns, so the next command does not race it.
+
+## What a screenless machine says
 
 ```console
 $ aos window list
@@ -26,35 +49,20 @@ aos: "window list" needs a display, and this machine has none
 Start one with `aos headless start`, or check `aos headless status`.
 ```
 
-## On Linux, give it a display
+The command exits 2 before doing anything. Agents get an error they can act on instead of a failure deep inside a display call.
 
-```sh
-aos headless start --size=1920x1080 --wm   # Xvfb + a lightweight WM
-aos window list                            # the display is adopted automatically
-aos headless stop
-```
-
-`headless start` waits for the window manager to claim the screen before it
-returns, so the next command works instead of losing a race with it. Later runs
-of `aos` adopt the managed display on their own — there is no
-`export DISPLAY` step. An environment that already names a display always wins,
-so this never redirects a real session.
-
-macOS and Windows have no Xvfb equivalent. There, the desktop commands need a
-real logged-in session, and `headless status` says exactly that.
-
-## Knowing in advance what will work
+## Know in advance what will work
 
 ```sh
 aos headless status       # is there a display, and where did it come from
-aos commands              # screenless machines list only what will run
-aos commands --all        # `g` marks a command waiting on a display
+aos commands              # on a screenless machine, lists only what will run
+aos commands --all        # `g` marks commands that need a display
 aos commands --json       # each entry carries "needs_display"
-aos serve mcp --gui=off   # expose only the screenless tools
+aos serve mcp --gui=off   # offer an agent only the screenless tools
 ```
 
-## It is tested this way
+## Gotchas
 
-The end-to-end suite drives the built binaries on real machines, and on a
-machine configured `hasDisplay: false` it asserts the *refusal* — `window list`
-must exit 2 saying it needs a display — rather than skipping quietly.
+- **`headless start` and `headless stop` are Linux-only.** macOS and Windows have no equivalent of Xvfb. There the desktop commands need a real logged-in session, and `headless status` says so.
+- **An existing display always wins.** If `DISPLAY` is already set, aos uses it and never redirects a real session to the virtual one.
+- **Xvfb must be installed** on the Linux machine. `aos headless status` shows whether it is present.

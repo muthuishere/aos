@@ -1,9 +1,9 @@
 ---
 title: Installing
-description: One line on macOS, Linux and Windows. Install from GitHub, a local folder, a mirror URL, a single release archive or a bare executable. The agent skill installs itself.
+description: One line on macOS, Linux and Windows. Install from GitHub, a local folder, a mirror URL, a single release archive or a bare executable.
 ---
 
-aos is one executable. Nothing else to install, and no administrator step.
+aos is one executable. There is nothing else to install and no administrator step.
 
 ## macOS and Linux
 
@@ -11,12 +11,7 @@ aos is one executable. Nothing else to install, and no administrator step.
 curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
 ```
 
-This puts `aos` in `~/.local/bin`. Options go after `sh -s --`:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --version v0.5.0
-sh install.sh --dir ~/bin
-```
+This downloads the latest release, verifies it against `checksums.txt`, and puts `aos` in `~/.local/bin`.
 
 ## Windows
 
@@ -24,18 +19,33 @@ sh install.sh --dir ~/bin
 curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
 ```
 
-This puts `aos.exe` in `%LOCALAPPDATA%\Programs\aos` and adds it to your user `PATH`.
-It is a `.cmd` on purpose: PowerShell's execution policy blocks unsigned script files by default, but a `.cmd` runs everywhere.
-Both `/from` and `--from` styles work (`/version`, `/dir` likewise).
+This puts `aos.exe` in `%LOCALAPPDATA%\Programs\aos` and adds it to your user `PATH`. It is a `.cmd` file because PowerShell blocks unsigned script files by default, and a `.cmd` runs everywhere. Both `/from` and `--from` styles work, and likewise `/version` and `/dir`.
 
-## Installing without GitHub: `--from`
+## Options
 
-Every installer takes `--from`, so you can install on an air-gapped machine, from a mirror, or from your own build.
+| option | what it does |
+|---|---|
+| `--version v0.5.0` | install a specific release instead of the latest |
+| `--dir ~/bin` | install somewhere else |
+| `--from <source>` | install from a folder, a URL, one archive, or a bare executable |
+
+Pass options after `sh -s --` when piping from curl:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh -s -- --version v0.5.0
+sh install.sh --dir ~/bin
+```
+
+The environment variables `AOS_FROM`, `AOS_VERSION` and `AOS_INSTALL_DIR` do the same.
+
+## Installing without GitHub
+
+`--from` works on an air-gapped machine, from a mirror, or from your own build:
 
 | `--from` value | what happens |
 |---|---|
-| a folder (`./dist/`) | goreleaser archives plus `checksums.txt`; the right archive for this OS/arch is picked and verified |
-| an `http(s)` URL | the same, from a mirror (`https://mirror.example/aos/v0.6.0/`) |
+| a folder (`./dist/`) | release archives plus `checksums.txt`. The right archive for this OS and CPU is picked and verified |
+| an `http(s)` URL | the same, from a mirror such as `https://mirror.example/aos/v0.6.0/` |
 | one archive (`aos_0.5.0_darwin_arm64.tar.gz`, `.zip`) | unpacked and installed |
 | an executable (`./aos`, `aos.exe`) | copied in as-is |
 
@@ -48,20 +58,20 @@ install.cmd /from .\aos_0.5.0_windows_arm64.zip
 install.cmd /from .\aos.exe
 ```
 
-Environment equivalents: `AOS_FROM`, `AOS_VERSION`, `AOS_INSTALL_DIR`.
-
-## The agent skill installs itself
-
-You do not run a second command for your agent. The first time you run any `aos` command, the bundled skill is written to
-`~/.claude/skills/` and `~/.agents/skills/`, and it is refreshed whenever the binary changes, so the skill never describes
-flags your build does not have.
-
-To opt out, set `AOS_NO_SKILL_AUTOINSTALL=1`, or remove it with `aos skill uninstall`. See [the agent skill](/aos/agent-skill/).
-
 ## Check the machine
 
 ```sh
 aos doctor
 ```
 
-`doctor` says what this machine can and cannot do (permissions, display, ffmpeg for `capture video`) and how to fix each gap.
+`doctor` says what this machine can and cannot do, including permissions, display, and ffmpeg for `capture video`, and how to fix each gap.
+
+## The agent skill installs itself
+
+The first time you run any `aos` command, the bundled agent skill is written to `~/.claude/skills/` and `~/.agents/skills/`. It is refreshed whenever the binary changes. Set `AOS_NO_SKILL_AUTOINSTALL=1` to opt out, or run `aos skill uninstall`. See [the agent skill](/aos/agent-skill/).
+
+## Gotchas
+
+- **`~/.local/bin` must be on your `PATH`.** The installer tells you if it is not.
+- **On macOS, desktop commands need permissions.** Run `aos permission request` to ask for Accessibility and Screen Recording.
+- **Upgrading is the same command.** Run the install line again to replace the binary with the latest release.

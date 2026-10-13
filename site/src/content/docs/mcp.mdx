@@ -1,67 +1,59 @@
 ---
 title: Using it from an agent (MCP)
-description: Serve the whole command registry as MCP tools over streamable HTTP, scope what an agent sees, and keep the server running as a per-user service.
+description: serve mcp exposes every aos command as an MCP tool over HTTP on loopback, guarded by a token. Scope what an agent sees, and keep the server running as a service.
 ---
 
+`aos serve mcp` turns every command on this machine into an MCP tool. Use it when your agent wants typed tools with schemas instead of a shell.
+
 :::note
-MCP is the *second* way to use this. The first is
-[the agent skill](/aos/quickstart/) — an agent that already has a shell
-needs nothing running to use `aos`, and that path works over SSH into any
-machine. Reach for MCP when your agent wants typed tools rather than a terminal.
+The [agent skill](/aos/agent-skill/) is the first choice. An agent with a shell needs nothing running to use `aos`, and that path works over SSH. MCP is the second way in.
 :::
+
+## Example
 
 ```console
 $ aos serve mcp
 aos mcp  http://127.0.0.1:14320/mcp
-token    9c23b0efb0a002fe536a579adfd7cdb1
+token           9c23b0efb0a002fe536a579adfd7cdb1
+tools           96
+connect         claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
+                  --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
 ```
 
-```sh
-claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
-  --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
+Run the printed `claude mcp add` line to connect Claude Code. Every command available on this machine becomes one tool with the same summary, usage and examples as the CLI.
+
+The tool name is the route with underscores. `window move` is `window_move`. A call with `{"app":"Chrome","zone":"1B"}` does the same work as `aos window move Chrome --zone=1B`.
+
+## Options
+
+| flag | what it does |
+|---|---|
+| `--addr=<host:port>` | where to listen. Default `127.0.0.1:14320` |
+| `--token=<k>` | pin the token instead of minting one per run. At least 16 characters |
+| `--groups=<a,b>` | expose only these groups |
+| `--gui=on\|off\|auto` | whether to include tools that need a display. Default `auto` |
+| `--quiet` | print less at start |
+
+Preview the tool list without starting a server:
+
+```console
+$ aos serve tools --groups=window
+window_arrange               Apply a saved layout of many windows in one pass
+window_focus                 Bring a window to the front
+window_list                  List open windows
+window_move                  Move a window to a zone, a split, or absolute bounds
 ```
 
-Every non-hidden, non-blocking command available on this machine becomes one MCP
-tool, carrying the same summary, usage and examples the CLI documents.
+## The token
 
-## The token is not optional
+Loopback is not a permission. Every process on the machine can reach `127.0.0.1`, and this server drives windows, input and files. So each run mints a random token and refuses any request without it. Send it as an `Authorization: Bearer` header or a `?t=` query parameter.
 
-Loopback is not a permission. Every process on the machine can reach
-`127.0.0.1`, and this surface drives windows, input and the filesystem — so a
-server that trusted loopback alone would be an open door for anything already
-running as you.
-
-`serve mcp` mints a random token per run and refuses any request without it,
-either as an `Authorization: Bearer` header or a `?t=` query parameter, compared
-in constant time. Pin one so a client configured once survives a restart:
+Pin a token so a client configured once survives a restart:
 
 ```sh
 export AOS_MCP_TOKEN=$(openssl rand -hex 16)   # or --token=…
 aos serve mcp
 ```
-
-A pinned token must be at least 16 characters; a shorter one is refused rather
-than quietly accepted.
-
-## Preview the catalogue first
-
-```console
-$ aos serve tools
-adapters_example             Print a starter adapter, ready to save and edit
-adapters_list                List the adapters this machine has loaded
-audio_volume                 Print the output volume, or set it
-capture_screenshot           Take a screenshot
-clipboard_paste              Print the clipboard to stdout
-display_list                 List attached monitors with geometry and focus state
-exec_capture                 Run a command and print stdout, stderr, and exit code as JSON
-file_read                    Print a file, optionally a line range
-window_move                  Move a window to a zone, a split, or coordinates
-```
-
-The tool name is the route with underscores. `window move` is `window_move`;
-`aos window move Chrome --zone=1B` and a `window_move` call with
-`{"app":"Chrome","zone":"1B"}` do the same work, through the same `Runner`.
-There is no second implementation behind the protocol.
 
 ## Give an agent less than everything
 
@@ -70,20 +62,9 @@ aos serve mcp --groups=window,capture,exec   # a subset
 aos serve mcp --gui=off                      # only the screenless tools
 ```
 
-`--gui` defaults to `auto`: GUI tools appear only when the machine actually has
-a display. Offering an agent a tool that cannot run is worse than not offering
-it — it will try, fail, and try again.
+With `--gui=auto`, tools that need a display appear only when the machine has one. A tool that cannot run is worse than no tool: the agent tries, fails, and tries again.
 
-## It binds loopback
-
-Serving this registry is remote control of the machine, so reaching it from
-elsewhere should be deliberate: an SSH tunnel, or an explicit `--addr`. The
-token travels in clear text, so `--addr` on an untrusted network wants a tunnel
-or a TLS front anyway — the tunnel is the better habit.
-
-## Keeping it running
-
-A server an agent connects to should not depend on a terminal staying open:
+## Keep it running
 
 ```sh
 aos service create mcp --autostart --now -- aos serve mcp
@@ -92,27 +73,21 @@ aos service list
 aos service remove mcp
 ```
 
-A launchd user agent on macOS, a `systemd --user` unit on Linux, a Scheduled
-Task on Windows — per-user throughout, so nothing here asks for admin or sudo.
+This creates a launchd user agent on macOS, a `systemd --user` unit on Linux, or a Scheduled Task on Windows. Everything is per user, so no admin or sudo is needed. Pin a token first, or the client's token will stop matching after each restart.
 
-## The protocol layer is not hand-rolled
+## Over SSH
 
-MCP serving is [toolnexus](https://github.com/muthuishere/toolnexus)'s
-`Toolkit.Serve`, so the protocol work is conformance-tested rather than
-reimplemented here. Windows, monitors, input and screenshots come from
-aos's own engine (`internal/engine`, absorbed from windowctl). aos is the
-front door.
-
-## What an agent should read
+Keep the server on loopback and forward the port:
 
 ```sh
-aos skill install
+ssh -L 14320:127.0.0.1:14320 server
 ```
 
-writes the agent skill bundled inside the binary to `~/.claude/skills/` and
-`~/.agents/skills/`. Because it ships *in* the binary, the instructions an agent
-reads cannot describe a different version than the one installed.
+The token is still required through the tunnel, and it never crosses the network in clear text.
 
-This site also publishes [`/aos/llms.txt`](/aos/llms.txt) and
-`llms-full.txt`, which is the same documentation in the form an agent prefers to
-read it.
+## Gotchas
+
+- **A pinned token shorter than 16 characters is refused.**
+- **Commands that run until interrupted are not tools.** `watch clipboard`, `watch window`, `watch file` and `remote share` are left out. Use them from a shell.
+- **`--addr` on a non-loopback address sends the token in clear text.** Prefer an SSH tunnel.
+- **The server does not sandbox `exec`.** If an agent should not run arbitrary commands, leave the `exec` group out with `--groups`. See the [safety model](/aos/safety/).

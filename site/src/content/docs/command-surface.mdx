@@ -1,40 +1,44 @@
 ---
 title: The command surface
-description: The whole command registry — what the groups cover, how routes resolve, and how to ask the binary what this machine can actually run.
+description: What the command groups cover, how a command line is read, and how to ask aos what this machine can run.
 ---
 
 import registry from '../../data/registry.json';
 
-{registry.commands} commands across {registry.groups} groups. The full list is on
-[every command](/aos/reference/commands/), generated from the binary. This
-page is the shape of it.
+aos has {registry.commands} commands in {registry.groups} groups. The full list is on
+[every command](/aos/reference/commands/), generated from the binary. This page is the map.
 
 ## The groups
 
 | | |
 |---|---|
 | **Desktop** | `window` · `display` · `mouse` · `key` · `permission` |
-| **Point** | `find` — locate a button, menu or text by its label · `draw` — big click-through arrow, ring or box with a sign, so a person knows where to click |
+| **Point** | `find` locates a button, menu or text by its label · `draw` puts a click-through arrow, ring or box with a sign on screen |
 | **Machine** | `system` · `process` · `power` · `battery` · `network` · `audio` · `font` · `pkg` · `debug` |
 | **Content** | `capture` · `clipboard` · `file` · `exec` · `open` · `launch` · `webapp` · `subtitle` |
-| **Remote** | `remote` — hand this screen and its input to a browser on the LAN |
-| **Watch** | `watch` — clipboard, focused window, files and directories; one JSON line per change |
-| **Agents** | `serve` (MCP) · `service` (keep it running) · `headless` (run without a screen) · `completion` (shell completions) |
+| **Remote** | `remote` shares this screen and its input with a browser on the LAN |
+| **Watch** | `watch` prints one JSON line per change to the clipboard, the focused window, or a file |
+| **Agents** | `serve` (MCP) · `service` (keep a command running) · `headless` (run without a screen) · `completion` (shell completions) |
 | **Itself** | `doctor` · `commands` · `obs` · `adapters` · `skill` · `version` |
 
-## Routes are as many words as they need
+## How a command line is read
 
-A route resolves by longest prefix, and everything after it is the command's own
-arguments. `audio output set default` is one route; `window move Chrome
---zone=1B` is the route `window move` plus its args.
+A command is a group followed by one or more words. aos matches the longest known route, and everything after it belongs to the command. `audio output set default` is one route. `window move Chrome --zone=1B` is the route `window move` plus its arguments.
 
-## Asking the binary, not the docs
+Every group and command has help:
+
+```sh
+aos window --help
+aos window move --help
+```
+
+## Ask the machine what it can run
 
 ```sh
 aos commands            # what this machine can run
-aos commands --all      # every registered command, including other platforms
+aos commands --all      # every command, including other platforms
 aos commands --json     # machine-readable index
-aos commands --check    # registry lint; non-zero when something is off
+aos commands --check    # lint the registry; exits non-zero when something is off
 ```
 
 ```console
@@ -47,34 +51,21 @@ $ aos commands | head -6
   battery percent     Print the charge percentage as a bare number
 ```
 
-On a screenless machine, plain `commands` lists only what will run. `--all`
-shows everything and marks with `g` the commands waiting on a display. Each
-entry in `--json` carries `needs_display`, `platforms`, `requires_sudo` and
-`source` (`builtin`, `adapter` or `plugin`).
+On a screenless machine, plain `commands` lists only what will run. `--all` shows everything and marks commands that need a display with `g`. Each entry in `--json` carries `needs_display`, `platforms`, `requires_sudo` and `source` (`builtin`, `adapter` or `plugin`).
 
-That index is what this site's [command
-reference](/aos/reference/commands/) is built from, and what
-`serve mcp` builds its tool list from. One registry, three consumers.
+The same index builds the [command reference](/aos/reference/commands/) on this site and the tool list of `serve mcp`.
 
-## Commands that do not exist everywhere
+## Commands that run until you stop them
 
-A command that genuinely cannot exist on a platform declares it. It still shows
-in help, marked, and exits 2 with a clear message rather than pretending not to
-exist. `headless start` and `headless stop` are the only two today: they are
-Linux-only, because macOS and Windows have no Xvfb equivalent.
-
-## Blocking commands
-
-`watch clipboard`, `watch window` and `remote share` run until interrupted.
-Being blocking, they are deliberately absent from the tool list — an agent
-reads them by running the CLI and consuming the stream, and a screen-share can
-only be started by a person.
+`watch clipboard`, `watch window`, `watch file` and `remote share` keep running until interrupted. They are not offered as MCP tools. From a shell, use `--max` to make a watcher return:
 
 ```console
-$ aos watch clipboard
+$ aos watch clipboard --max=1
 {"event":"clipboard","at":"…","seq":1,"length":34,"digest":"7a37ded45b5e"}
 ```
 
-The first sample is only a baseline, so `--max=1` means "the next change" —
-which is what makes a watcher scriptable. `--content` includes the text, opt-in,
-because clipboards hold passwords.
+## Gotchas
+
+- **The first watch sample is a baseline.** `--max=1` means "the next change", which is what makes a watcher usable in a script.
+- **`watch clipboard` hides the text by default.** Add `--content` to include it. Clipboards hold passwords.
+- **Some commands exist on one platform only.** `headless start` and `headless stop` are Linux-only. They still appear in `--all`, marked, and exit 2 with a clear message elsewhere.
