@@ -166,9 +166,10 @@ func init() {
 			},
 			&cli.Command{
 				Group: "capture", Name: "video supervise",
-				Summary: "Internal: the detached process that runs ffmpeg for a recording",
-				Hidden:  true,
-				Run:     runVideoSupervise,
+				Summary:  "Internal: the detached process that runs ffmpeg for a recording",
+				Hidden:   true,
+				Examples: []string{"aos capture video supervise"},
+				Run:      runVideoSupervise,
 			},
 		)
 	})
