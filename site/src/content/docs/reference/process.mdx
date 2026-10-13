@@ -1,0 +1,67 @@
+---
+title: aos process
+description: Running processes - list, find, kill
+sidebar:
+  label: process
+  order: 1
+---
+
+<p class="cmd-lead">Running processes: list, find, kill</p>
+
+3 commands. Run `aos process --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos process find
+
+<p class="cmd-lead">Find processes whose name contains a substring</p>
+
+```sh
+aos process find <name> [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+| `--json` |  | Optional |
+
+```sh
+aos process find Chrome
+aos process find node --json
+```
+
+### aos process kill
+
+<p class="cmd-lead">Kill a process by pid, or by name when it is unambiguous</p>
+
+```sh
+aos process kill <pid|name> [--force]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<pid\|name>` | | Required positional argument |
+| `--force` |  | Optional |
+
+```sh
+aos process kill 4821
+aos process kill Calculator
+aos process kill Calculator --force
+```
+
+### aos process list
+
+<p class="cmd-lead">List running processes</p>
+
+```sh
+aos process list [--filter=<substring>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--filter` | `<substring>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos process list
+aos process list --filter=chrome
+aos process list --json
+```

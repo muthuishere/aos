@@ -1,0 +1,47 @@
+---
+title: aos battery
+description: Battery presence and charge
+sidebar:
+  label: battery
+  order: 1
+---
+
+<p class="cmd-lead">Battery presence and charge</p>
+
+3 commands. Run `aos battery --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos battery percent
+
+<p class="cmd-lead">Print the charge percentage as a bare number</p>
+
+```sh
+aos battery percent
+```
+
+```sh
+aos battery percent    # 87
+```
+
+### aos battery present
+
+<p class="cmd-lead">Exit 0 when a battery is present, 1 otherwise</p>
+
+```sh
+aos battery present
+```
+
+```sh
+aos battery present && echo has a battery
+```
+
+### aos battery status
+
+<p class="cmd-lead">Print battery charge and charging state</p>
+
+```sh
+aos battery status
+```
+
+```sh
+aos battery status
+```

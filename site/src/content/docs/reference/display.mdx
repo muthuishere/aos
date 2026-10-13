@@ -1,0 +1,53 @@
+---
+title: aos display
+description: Attached monitors
+sidebar:
+  label: display
+  order: 1
+---
+
+<p class="cmd-lead">Attached monitors</p>
+
+3 commands. Run `aos display --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos display active
+
+<p class="cmd-lead">Print the ID of the monitor the pointer is on</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos display active
+```
+
+```sh
+aos capture screenshot --monitor=$(aos display active)
+```
+
+### aos display focused
+
+<p class="cmd-lead">Print the ID of the monitor holding the frontmost window</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos display focused
+```
+
+```sh
+aos window move Chrome --monitor=$(aos display focused)
+```
+
+### aos display list
+
+<p class="cmd-lead">List attached monitors with geometry and focus state</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos monitors</code></span></p>
+
+```sh
+aos display list
+```
+
+```sh
+aos display list
+```

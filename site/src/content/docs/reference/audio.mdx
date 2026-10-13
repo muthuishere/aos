@@ -1,0 +1,43 @@
+---
+title: aos audio
+description: Output volume and mute
+sidebar:
+  label: audio
+  order: 1
+---
+
+<p class="cmd-lead">Output volume and mute</p>
+
+2 commands. Run `aos audio --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos audio mute
+
+<p class="cmd-lead">Print or change the output mute state</p>
+
+```sh
+aos audio mute [on|off|toggle]
+```
+
+```sh
+aos audio mute toggle
+```
+
+### aos audio volume
+
+<p class="cmd-lead">Print the output volume, or set it</p>
+
+```sh
+aos audio volume [<0-100>|+<n>|-<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<0-100>` | | Optional positional argument |
+| `<n>` | | Optional positional argument |
+| `<n>` | | Optional positional argument |
+
+```sh
+aos audio volume
+aos audio volume 40
+aos audio volume +5
+```

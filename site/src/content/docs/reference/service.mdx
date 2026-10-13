@@ -1,0 +1,108 @@
+---
+title: aos service
+description: Run a command as a managed per-user OS service
+sidebar:
+  label: service
+  order: 1
+---
+
+<p class="cmd-lead">Run a command as a managed per-user OS service</p>
+
+6 commands. Run `aos service --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos service create
+
+<p class="cmd-lead">Install a command as a service</p>
+
+```sh
+aos service create <name> [--autostart] [--now] -- <command> [args...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+| `<command>` | | Required positional argument |
+| `--autostart` |  | Optional |
+| `--now` |  | Optional |
+| `--` |  | Required |
+
+```sh
+aos service create mcp --autostart --now -- aos serve mcp
+aos service create nap -- /bin/sleep 60
+```
+
+### aos service list
+
+<p class="cmd-lead">List the services aos manages</p>
+
+```sh
+aos service list
+```
+
+```sh
+aos service list
+```
+
+### aos service remove
+
+<p class="cmd-lead">Stop a service and delete its definition</p>
+
+```sh
+aos service remove <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos service remove mcp
+```
+
+### aos service start
+
+<p class="cmd-lead">Start an installed service</p>
+
+```sh
+aos service start <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos service start mcp
+```
+
+### aos service status
+
+<p class="cmd-lead">Report whether a service is running; exits non-zero when it is not</p>
+
+```sh
+aos service status <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos service status mcp
+```
+
+### aos service stop
+
+<p class="cmd-lead">Stop a running service</p>
+
+```sh
+aos service stop <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos service stop mcp
+```

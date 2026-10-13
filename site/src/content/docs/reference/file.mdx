@@ -1,0 +1,165 @@
+---
+title: aos file
+description: Read, write, and inspect files
+sidebar:
+  label: file
+  order: 1
+---
+
+<p class="cmd-lead">Read, write, and inspect files</p>
+
+9 commands. Run `aos file --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos file append
+
+<p class="cmd-lead">Append stdin, or the given words, to a file</p>
+
+```sh
+aos file append <path> [text...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+
+```sh
+aos file append log.txt "done"
+```
+
+### aos file copy
+
+<p class="cmd-lead">Copy a file</p>
+
+```sh
+aos file copy <source> <destination>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<source>` | | Required positional argument |
+| `<destination>` | | Required positional argument |
+
+```sh
+aos file copy a.txt b.txt
+```
+
+### aos file delete
+
+<p class="cmd-lead">Delete a file, or a directory with --recursive</p>
+
+```sh
+aos file delete <path> [--recursive]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+| `--recursive` |  | Optional |
+
+```sh
+aos file delete /tmp/scratch --recursive
+```
+
+### aos file list
+
+<p class="cmd-lead">List a directory</p>
+
+```sh
+aos file list [path] [--all] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--all` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos file list
+aos file list ~/Downloads --json
+```
+
+### aos file mkdir
+
+<p class="cmd-lead">Create a directory, including parents</p>
+
+```sh
+aos file mkdir <path>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+
+```sh
+aos file mkdir ~/.config/aos/layouts
+```
+
+### aos file move
+
+<p class="cmd-lead">Move or rename a path</p>
+
+```sh
+aos file move <source> <destination>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<source>` | | Required positional argument |
+| `<destination>` | | Required positional argument |
+
+```sh
+aos file move old.txt new.txt
+```
+
+### aos file read
+
+<p class="cmd-lead">Print a file, optionally a line range</p>
+
+```sh
+aos file read <path> [--lines=<from>:<to>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+| `<to>` | | Optional positional argument |
+| `--lines` | `<from>` | Optional |
+
+```sh
+aos file read go.mod
+aos file read main.go --lines=10:40
+```
+
+### aos file stat
+
+<p class="cmd-lead">Print one path's size, mode, and modified time</p>
+
+```sh
+aos file stat <path> [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+| `--json` |  | Optional |
+
+```sh
+aos file stat go.mod --json
+```
+
+### aos file write
+
+<p class="cmd-lead">Write stdin, or the given words, to a file</p>
+
+```sh
+aos file write <path> [text...]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+
+```sh
+aos file write notes.txt "first line"
+cat in.txt | aos file write out.txt
+```

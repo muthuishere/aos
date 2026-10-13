@@ -1,0 +1,47 @@
+---
+title: aos remote
+description: Hand this desktop's screen and input to a browser on the LAN
+sidebar:
+  label: remote
+  order: 1
+---
+
+<p class="cmd-lead">Hand this desktop's screen and input to a browser on the LAN</p>
+
+2 commands. Run `aos remote --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos remote share
+
+<p class="cmd-lead">Share this screen and its mouse/keyboard over the LAN until interrupted</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos remote share [--monitor=<n>] [--port=<n>] [--fps=<n>] [--key=<k>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--monitor` | `<n>` | Optional |
+| `--port` | `<n>` | Optional |
+| `--fps` | `<n>` | Optional |
+| `--key` | `<k>` | Optional |
+
+```sh
+aos remote share
+aos remote share --monitor=2 --fps=8
+```
+
+### aos remote url
+
+<p class="cmd-lead">Print the URL of the share running on this machine</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos remote url
+```
+
+```sh
+aos remote url
+```

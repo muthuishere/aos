@@ -1,0 +1,41 @@
+---
+title: aos find
+description: Find a button, menu item, link or text inside a window
+sidebar:
+  label: find
+  order: 1
+---
+
+<p class="cmd-lead">Find a button, menu item, link or text inside a window</p>
+
+1 command. Run `aos find --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos find
+
+<p class="cmd-lead">Find text inside a window and print its global bounds and center</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--no-raise] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | One of these is required |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--text` | `<text>` | Required |
+| `--source` | `auto`, `accessibility`, `ocr` | Optional |
+| `--role` | `<role>` | Optional |
+| `--exact` |  | Optional |
+| `--all` |  | Optional |
+| `--no-raise` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos find --app=Calculator --text=7
+aos find Safari --text="Reload this page" --role=button --json
+aos find --title=Settings --text=Wi-Fi --source=ocr --all
+# exit 3 when the window or the text is not found
+```

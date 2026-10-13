@@ -1,0 +1,107 @@
+---
+title: aos pkg
+description: Native package manager, one verb set on every OS
+sidebar:
+  label: pkg
+  order: 1
+---
+
+<p class="cmd-lead">Native package manager, one verb set on every OS</p>
+
+7 commands. Run `aos pkg --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos pkg install
+
+<p class="cmd-lead">Install packages</p>
+
+```sh
+aos pkg install <package...>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<package...>` | | Required positional argument |
+
+```sh
+aos pkg install <package...>
+```
+
+### aos pkg list
+
+<p class="cmd-lead">List installed packages</p>
+
+```sh
+aos pkg list
+```
+
+```sh
+aos pkg list 
+```
+
+### aos pkg manager
+
+<p class="cmd-lead">Print which package manager this machine uses</p>
+
+```sh
+aos pkg manager
+```
+
+```sh
+aos pkg manager        # homebrew
+```
+
+### aos pkg refresh
+
+<p class="cmd-lead">Refresh the package index</p>
+
+```sh
+aos pkg refresh
+```
+
+```sh
+aos pkg refresh 
+```
+
+### aos pkg remove
+
+<p class="cmd-lead">Remove packages</p>
+
+```sh
+aos pkg remove <package...>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<package...>` | | Required positional argument |
+
+```sh
+aos pkg remove <package...>
+```
+
+### aos pkg search
+
+<p class="cmd-lead">Search for packages</p>
+
+```sh
+aos pkg search <term>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<term>` | | Required positional argument |
+
+```sh
+aos pkg search <term>
+```
+
+### aos pkg upgrade
+
+<p class="cmd-lead">Upgrade installed packages</p>
+
+```sh
+aos pkg upgrade
+```
+
+```sh
+aos pkg upgrade 
+```

@@ -1,0 +1,49 @@
+---
+title: aos serve
+description: Expose this machine's commands to other agents
+sidebar:
+  label: serve
+  order: 1
+---
+
+<p class="cmd-lead">Expose this machine's commands to other agents</p>
+
+2 commands. Run `aos serve --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos serve mcp
+
+<p class="cmd-lead">Serve every command as an MCP tool over streamable HTTP</p>
+
+```sh
+aos serve mcp [--addr=<host:port>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--addr` | `<host:port>` | Optional |
+| `--token` | `<k>` | Optional |
+| `--groups` | `<a,b>` | Optional. comma-separated |
+| `--gui` | `on`, `off`, `auto` | Optional |
+| `--quiet` |  | Optional |
+
+```sh
+aos serve mcp
+aos serve mcp --addr=127.0.0.1:9000 --groups=window,capture,exec
+aos serve mcp --gui=off   # screenless tools only
+```
+
+### aos serve tools
+
+<p class="cmd-lead">Print the MCP tool catalogue this machine would expose</p>
+
+```sh
+aos serve tools [--groups=<a,b>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--groups` | `<a,b>` | Optional. comma-separated |
+
+```sh
+aos serve tools --groups=window
+```

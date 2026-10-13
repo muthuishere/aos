@@ -1,0 +1,151 @@
+---
+title: aos draw
+description: Point at something on screen with a big arrow and a sign
+sidebar:
+  label: draw
+  order: 1
+---
+
+<p class="cmd-lead">Point at something on screen with a big arrow and a sign</p>
+
+5 commands. Run `aos draw --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos draw
+
+<p class="cmd-lead">Draw a click-through arrow + sign at a point, region, window, text or the mouse</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos draw (--at=<x,y> | --rect=<x,y,w,h> | <app> | --app=<name> | --title=<s> | --mouse) [--find=<text> [--role=<r>] [--source=<s>] [--exact] [--nth=<n>]] --text=<sign> [--style=arrow|ring|box] [--shape=bend|straight|zigzag|spiral] [--size=S|M|L] [--color=<name|#hex>] [--from=<side>] [--monitor=<n>] [--position=<side>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<app>` | | One of these is required |
+| `--at` | `<x,y>` | One of these is required. comma-separated |
+| `--rect` | `<x,y,w,h>` | One of these is required. comma-separated |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<s>` | One of these is required |
+| `--mouse` |  | One of these is required |
+| `--find` | `<text>` | Optional |
+| `--role` | `<r>` | Optional |
+| `--source` | `<s>` | Optional |
+| `--exact` |  | Optional |
+| `--nth` | `<n>` | Optional |
+| `--text` | `<sign>` | Required |
+| `--style` | `arrow`, `ring`, `box` | Optional |
+| `--shape` | `bend`, `straight`, `zigzag`, `spiral` | Optional |
+| `--size` | `S`, `M`, `L` | Optional |
+| `--color` | `name`, `#hex` | Optional |
+| `--from` | `<side>` | Optional |
+| `--monitor` | `<n>` | Optional |
+| `--position` | `<side>` | Optional |
+| `--duration` | `<seconds>` | Optional |
+| `--detach` |  | Optional |
+| `--animate` | `on`, `off` | Optional |
+| `--preview` | `<out.png>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos draw --app=Calculator --find=7 --style=ring --text="press 7"
+aos draw --at=640,400 --text="click here" --duration=5
+aos draw --rect=100,100,400,200 --style=box --text="this area" --preview=/tmp/draw.png
+aos draw --mouse --text="you are here" --detach
+aos draw stop
+# exit 3 when --find does not find the window or the text
+```
+
+### aos draw config
+
+<p class="cmd-lead">Show the draw defaults file, or create it with --init</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos draw config [--init] [--force]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--init` |  | Optional |
+| `--force` |  | Optional |
+
+```sh
+aos draw config
+aos draw config --init
+```
+
+### aos draw fonts
+
+<p class="cmd-lead">List the font names --font accepts</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos draw fonts
+```
+
+```sh
+aos draw fonts
+```
+
+### aos draw stop
+
+<p class="cmd-lead">Remove every detached drawing</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos draw stop [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos draw stop
+```
+
+### aos draw text
+
+<p class="cmd-lead">Show a styled text label (no arrow) inside a window, a monitor, a rect, or beside a point</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos draw text <text...> [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--font-scale=<k>] [--size=S|M|L|XL] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<text...>` | | Required positional argument |
+| `--app` | `<name>` | Optional |
+| `--title` | `<s>` | Optional |
+| `--monitor` | `<n>` | Optional |
+| `--rect` | `<x,y,w,h>` | Optional. comma-separated |
+| `--at` | `<x,y>` | Optional. comma-separated |
+| `--mouse` |  | Optional |
+| `--position` | `bottom-center`, `top-center`, `center`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right` | Optional |
+| `--margin` | `px`, `N%` | Optional |
+| `--offset` | `<dx,dy>` | Optional. comma-separated |
+| `--color` | `<text colour>` | Optional |
+| `--bg` | `auto`, `none`, `<colour>` | Optional |
+| `--font` | `<name>` | Optional |
+| `--font-scale` | `<k>` | Optional |
+| `--size` | `S`, `M`, `L`, `XL` | Optional |
+| `--weight` | `regular`, `bold` | Optional |
+| `--align` | `left`, `center`, `right` | Optional |
+| `--max-width` | `px`, `N%` | Optional |
+| `--duration` | `<seconds>` | Optional |
+| `--detach` |  | Optional |
+| `--preview` | `<out.png>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos draw text "Step 2: pick a file" --app=Finder --position=top --color=amber
+aos draw text "Done ✓" --monitor=2 --position=center --size=XL --color=green
+aos draw text "Line one\nLine two" --rect=100,100,800,500 --position=bottom-right --bg=none
+# default: bottom-center of the focused monitor (the recording's monitor while `capture video` runs), subtitle safe area (8% bottom, 5% sides)
+```

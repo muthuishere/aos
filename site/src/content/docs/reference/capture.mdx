@@ -1,0 +1,241 @@
+---
+title: aos capture
+description: Screenshots
+sidebar:
+  label: capture
+  order: 1
+---
+
+<p class="cmd-lead">Screenshots</p>
+
+10 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos capture screenshot
+
+<p class="cmd-lead">Take a screenshot</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos screenshot</code></span></p>
+
+```sh
+aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--monitor` | `<n>` | Optional |
+| `--region` | `<x,y,w,h>` | Optional. comma-separated |
+| `--app` | `<name>` | Optional |
+| `--copy` |  | Optional |
+| `--out` | `<path>` | Optional |
+
+```sh
+aos screenshot
+aos capture screenshot region --copy
+aos capture screenshot --monitor=2
+aos capture screenshot --app=Chrome --out=/tmp/term.png
+aos capture screenshot --region=0,0,800,600
+```
+
+### aos capture video devices
+
+<p class="cmd-lead">List the screens, microphones and system-audio sources ffmpeg can record</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video devices [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos capture video devices
+```
+
+### aos capture video focus
+
+<p class="cmd-lead">Point the camera at a place until unfocus (or --hold)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video focus (--rect=<x,y,w,h> | --at=<x,y> [--size=640x360] | --app=<name>|--title=<s> [--find=<text> [--role=<r>]]) [--hold=<duration>] [--zoom=<factor>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--rect` | `<x,y,w,h>` | One of these is required. comma-separated |
+| `--at` | `<x,y>` | One of these is required. comma-separated |
+| `--size` | `<640x360>` | Optional. default 640x360 |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<s>` | One of these is required |
+| `--find` | `<text>` | Optional |
+| `--role` | `<r>` | Optional |
+| `--hold` | `<duration>` | Optional |
+| `--zoom` | `<factor>` | Optional |
+
+```sh
+aos capture video focus --rect=100,100,800,450
+aos capture video focus --at=640,400 --size=800x450 --hold=4s
+aos capture video focus --app=Chrome --find="Sign in" --zoom=2
+```
+
+### aos capture video follow
+
+<p class="cmd-lead">Switch the live camera: follow the mouse, an app, smart, or off</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video follow mouse|app|smart|off [--app=<name>|--title=<s>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--app` | `<name>` | Optional |
+| `--title` | `<s>` | Optional |
+
+```sh
+aos capture video follow mouse
+aos capture video follow app --app=Chrome
+aos capture video follow off
+```
+
+### aos capture video mark
+
+<p class="cmd-lead">Add a labelled event to the recording (a camera target with --rect)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video mark <label...> [--rect=<x,y,w,h>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<label...>` | | Required positional argument |
+| `--rect` | `<x,y,w,h>` | Optional. comma-separated |
+
+```sh
+aos capture video mark "login works"
+aos capture video mark "the chart" --rect=200,150,800,450
+```
+
+### aos capture video start
+
+<p class="cmd-lead">Start recording the screen with ffmpeg (detached; ask the person first)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--monitor` | `<n>` | Optional |
+| `--app` | `<name>` | Optional |
+| `--title` | `<s>` | Optional |
+| `--region` | `<x,y,w,h>` | Optional. comma-separated |
+| `--fps` | `<30>` | Optional. default 30 |
+| `--audio` | `none`, `mic`, `system`, `both` | Optional |
+| `--mic` | `name`, `index` | Optional |
+| `--zoom` | `<2>` | Optional. default 2 |
+| `--out` | `<path.mp4>` | Optional |
+| `--max` | `<10m>` | Optional. default 10m |
+| `--indicator` | `<false>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos capture video start smart --audio=mic --out=~/Movies/demo.mp4
+aos capture video start monitor --monitor=2
+aos capture video start mouse --zoom=2
+aos capture video start app --app=Chrome
+aos capture video start window --app=Terminal
+aos capture video start region --region=0,0,1280,720 --max=2m
+# exit 2 when ffmpeg (or a loopback device for --audio=system) is missing
+```
+
+### aos capture video status
+
+<p class="cmd-lead">Is a recording running, and where is it going</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video status [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos capture video status
+```
+
+### aos capture video stop
+
+<p class="cmd-lead">Stop recording, finalize the mp4 and render \<out\>.final.mp4 with the auto camera</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video stop [--raw] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--raw` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos capture video stop
+aos capture video stop --raw --json
+```
+
+### aos capture video unfocus
+
+<p class="cmd-lead">Send the camera back to its automatic mode</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video unfocus
+```
+
+```sh
+aos capture video unfocus
+```
+
+### aos capture video zoom
+
+<p class="cmd-lead">Re-render an aos recording with the auto camera, from its events file</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture video zoom <in.mp4> [--events=<file>] [--out=<file>] [--pad=0.15] [--max-zoom=2.5] [--ease=0.6] [--hold-wide=1.0] [--zoom=2] [--follow=mouse|app|smart|off] [--size=1920x1080] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<in.mp4>` | | Required positional argument |
+| `--events` | `<file>` | Optional |
+| `--out` | `<file>` | Optional |
+| `--pad` | `<0.15>` | Optional. default 0.15 |
+| `--max-zoom` | `<2.5>` | Optional. default 2.5 |
+| `--ease` | `<0.6>` | Optional. default 0.6 |
+| `--hold-wide` | `<1.0>` | Optional. default 1.0 |
+| `--zoom` | `<2>` | Optional. default 2 |
+| `--follow` | `mouse`, `app`, `smart`, `off` | Optional |
+| `--size` | `<1920x1080>` | Optional. default 1920x1080 |
+| `--json` |  | Optional |
+
+```sh
+aos capture video zoom ~/Movies/demo.mp4
+aos capture video zoom demo.mp4 --max-zoom=2 --ease=0.8 --out=demo.cut.mp4
+aos capture video zoom demo.mp4 --follow=off
+```

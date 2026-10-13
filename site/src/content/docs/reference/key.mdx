@@ -1,0 +1,60 @@
+---
+title: aos key
+description: Keystrokes and typed text
+sidebar:
+  label: key
+  order: 1
+---
+
+<p class="cmd-lead">Keystrokes and typed text</p>
+
+2 commands. Run `aos key --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos key press
+
+<p class="cmd-lead">Press a key combination</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<combo>` | | Required positional argument |
+| `--app` | `<name>` | Optional |
+| `--title` | `<substring>` | Optional |
+| `--focus` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos key press cmd+shift+s
+aos key press enter --app=TextEdit   # posted to the app, no focus change
+```
+
+### aos key type
+
+<p class="cmd-lead">Type text; with --app/--title it goes to that window without needing focus</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<text...>` | | Required positional argument |
+| `--app` | `<name>` | Optional |
+| `--title` | `<substring>` | Optional |
+| `--verify` |  | Optional |
+| `--focus` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos key type "hello world"
+aos key type "hello" --app=TextEdit --verify   # posted to the app, read back from its text field
+aos key type "hello" --app=Chrome --focus      # real focus + verify, focus handed back after
+# exit 1 if --verify cannot see the text arrive; exit 3 if no window matches
+```

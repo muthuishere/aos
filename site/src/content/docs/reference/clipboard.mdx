@@ -1,0 +1,36 @@
+---
+title: aos clipboard
+description: Read and write the system clipboard
+sidebar:
+  label: clipboard
+  order: 1
+---
+
+<p class="cmd-lead">Read and write the system clipboard</p>
+
+2 commands. Run `aos clipboard --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos clipboard copy
+
+<p class="cmd-lead">Copy stdin, or the given words, to the clipboard</p>
+
+```sh
+aos clipboard copy [text...]
+```
+
+```sh
+echo hello | aos clipboard copy
+aos clipboard copy "some text"
+```
+
+### aos clipboard paste
+
+<p class="cmd-lead">Print the clipboard to stdout</p>
+
+```sh
+aos clipboard paste
+```
+
+```sh
+aos clipboard paste > note.txt
+```
