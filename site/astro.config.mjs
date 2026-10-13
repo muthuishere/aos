@@ -62,9 +62,16 @@ export default defineConfig({
 						{ label: 'Headless machines', slug: 'headless' },
 						{ label: 'Extending it', slug: 'extending' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
-						{ label: 'Showing where to click', slug: 'draw' },
 						{ label: 'Recording a demo', slug: 'capture-video' },
 						{ label: 'Observability', slug: 'observability' },
+					],
+				},
+				{
+					label: 'Drawing on screen',
+					items: [
+						{ label: 'Arrows & pointers', slug: 'drawing/arrows' },
+						{ label: 'Text labels', slug: 'drawing/text' },
+						{ label: 'Subtitles', slug: 'drawing/subtitles' },
 					],
 				},
 				{

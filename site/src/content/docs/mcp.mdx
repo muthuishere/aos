@@ -14,10 +14,10 @@ The [agent skill](/aos/agent-skill/) is the first choice. An agent with a shell 
 ```console
 $ aos serve mcp
 aos mcp  http://127.0.0.1:14320/mcp
-token           9c23b0efb0a002fe536a579adfd7cdb1
+token           YOUR_TOKEN
 tools           96
 connect         claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
-                  --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
+                  --header "Authorization: Bearer YOUR_TOKEN"
 ```
 
 Run the printed `claude mcp add` line to connect Claude Code. Every command available on this machine becomes one tool with the same summary, usage and examples as the CLI.

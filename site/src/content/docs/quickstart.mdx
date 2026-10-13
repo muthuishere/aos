@@ -77,10 +77,10 @@ import { Steps } from '@astrojs/starlight/components';
    ```console
    $ aos serve mcp
    aos mcp  http://127.0.0.1:14320/mcp
-   token           9c23b0efb0a002fe536a579adfd7cdb1
+   token           YOUR_TOKEN
    tools           96
    connect         claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
-                     --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
+                     --header "Authorization: Bearer YOUR_TOKEN"
    ```
 
    Run the printed `connect` line. Every command becomes one MCP tool. The token is minted per run and required. See [using it from an agent (MCP)](/aos/mcp/).

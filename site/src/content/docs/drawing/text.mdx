@@ -1,0 +1,54 @@
+---
+title: Text labels
+description: aos draw text shows a styled text label with no arrow inside a window, on a monitor, in a rect, or beside a point. It is click-through and takes no focus.
+---
+
+`aos draw text` puts a styled label on screen. There is no arrow. Use it for a step title, a status, or a note next to something.
+
+## Example
+
+```sh
+aos draw text "Your notes live here" --app=TextEdit --position=center --size=L --duration=7 --detach
+```
+
+The label appears in the middle of the TextEdit window, fades after 7 seconds, and the command returns at once.
+
+More placements:
+
+```sh
+aos draw text "Step 2: pick a file" --app=Finder --position=top-center --color=amber
+aos draw text "Done ✓" --monitor=2 --position=center --size=XL --color=green
+aos draw text "Line one\nLine two" --rect=100,100,800,500 --position=bottom-right --bg=none
+aos draw text "Look here" --at=640,400
+aos draw text "You are here" --mouse
+```
+
+With no target, the label sits bottom-center of the focused monitor, inside a subtitle-safe area (8% from the bottom, 5% from the sides). While `capture video` is recording, that means the recording's monitor.
+
+## Options
+
+| flag | what it does |
+|---|---|
+| `--app=<name>`, `--title=<s>`, `--monitor=<n>`, `--rect=<x,y,w,h>`, `--at=<x,y>`, `--mouse` | where to place it |
+| `--position=<where>` | `bottom-center`, `top-center`, `center`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right` |
+| `--margin=<px\|N%>` | distance from the edge of the target |
+| `--offset=<dx,dy>` | nudge in pixels |
+| `--size=S\|M\|L\|XL` | text size |
+| `--font=<name>`, `--font-scale=<k>`, `--weight=regular\|bold` | typography. `aos draw fonts` lists the names |
+| `--color=<text colour>`, `--bg=auto\|none\|<colour>` | text and background colours |
+| `--align=left\|center\|right`, `--max-width=<px\|N%>` | wrapping and alignment |
+| `--duration=<seconds>` | how long it stays |
+| `--detach` | return at once and let the label fade on its own |
+| `--preview=<out.png>` | render to a file instead of the screen |
+| `--json` | machine-readable output |
+
+`aos draw stop` removes every detached label and drawing.
+
+## Gotchas
+
+- **`\n` in the text starts a new line.**
+- **Without `--detach`, the command blocks** until the duration ends or you press Ctrl-C.
+- **Use `--preview` on headless machines and in tests.** It writes a PNG and never touches the screen.
+- **Defaults come from the draw config file.** `aos draw config --init` writes one you can edit.
+
+To point at a control with an arrow, see [arrows & pointers](/aos/drawing/arrows/). For a film-style caption that replaces itself, see [subtitles](/aos/drawing/subtitles/).
