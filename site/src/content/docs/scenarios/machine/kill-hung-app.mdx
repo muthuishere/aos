@@ -1,0 +1,38 @@
+---
+title: Kill a hung app
+description: Find the process by name and stop it, gently first, then by force.
+---
+
+**Goal.** An app stopped responding. Stop it without hunting through a process list.
+
+## Commands
+
+```sh
+aos process find Calculator
+aos process kill Calculator
+aos process kill Calculator --force
+```
+
+By process id, when the name is ambiguous:
+
+```sh
+aos process list --filter=chrome
+aos process kill 4821
+```
+
+Relaunch afterwards:
+
+```sh
+aos launch Calculator --wait
+```
+
+## What to tell an agent
+
+> Calculator is frozen. Kill it, force if needed, then open it again.
+
+## Gotchas
+
+- **`kill` by name only works when the name is unambiguous.** With several matches, aos refuses and shows them. Pick a pid.
+- **Plain `kill` asks politely.** Apps can ignore it. `--force` cannot be ignored and loses unsaved work.
+- **`process find` matches substrings.** `find Chrome` matches helper processes too.
+- **Killing an agent's own session** kills the agent. Check the pid belongs to the app, not to the terminal running it.

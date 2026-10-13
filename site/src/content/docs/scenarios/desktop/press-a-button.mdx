@@ -1,0 +1,47 @@
+---
+title: Press a button by name
+description: Find a button, menu item or link by its label and press it, without screenshots or coordinates.
+---
+
+**Goal.** Press "Equals" in Calculator, or "Wi-Fi" in Settings, by the label a person would read, not a pixel position.
+
+## Commands
+
+Find the control first:
+
+```sh
+aos find --app=Calculator --text=7
+aos find Safari --text="Reload this page" --role=button --json
+aos find --title=Settings --text=Wi-Fi --source=ocr --all
+```
+
+`find` prints the control's bounds and center. Exit 3 means the window or the text was not found.
+
+Press it in one step:
+
+```sh
+aos mouse click --app=Calculator --find=7 --role=button
+aos mouse click --app=Calculator --find=Equals
+```
+
+With `--find`, the click goes through the accessibility API. No pointer moves and no focus changes.
+
+Calculate 7 × 6 end to end:
+
+```sh
+aos mouse click --app=Calculator --find=7
+aos mouse click --app=Calculator --find=Multiply
+aos mouse click --app=Calculator --find=6
+aos mouse click --app=Calculator --find=Equals
+```
+
+## What to tell an agent
+
+> In Calculator, press 7, multiply, 6, equals. Use the button names, do not guess coordinates.
+
+## Gotchas
+
+- **Labels are the accessible names.** On macOS Calculator, × is "Multiply" and = is "Equals". `aos find --all` with a broad `--text` lists candidates.
+- **`--role` narrows the match.** Use `button`, `menuitem` or `link` when the same text appears in several places.
+- **OCR is the fallback.** `--source=ocr` finds text that has no accessibility node, such as text inside a canvas, but a click then needs the pointer.
+- **Needs Accessibility permission on macOS.** `aos permission check` tells you.

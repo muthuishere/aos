@@ -1,0 +1,56 @@
+---
+title: Give an MCP client typed tools
+description: Serve the commands as MCP tools for a client that wants schemas, scope what it sees, and keep the server up.
+---
+
+**Goal.** An MCP client such as Claude Code, Cursor or your own agent gets `window_move`, `capture_screenshot` and the rest as typed tools.
+
+## Commands
+
+Pin a token, then serve:
+
+```sh
+export AOS_MCP_TOKEN=$(openssl rand -hex 16)
+aos serve mcp
+```
+
+```console
+aos mcp  http://127.0.0.1:14320/mcp
+token           YOUR_TOKEN
+tools           96
+connect         claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
+                  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+Run the printed `connect` line for Claude Code. Any other client gets the URL and the bearer header.
+
+Offer less than everything:
+
+```sh
+aos serve tools --groups=window,capture        # preview the catalogue
+aos serve mcp --groups=window,capture,find     # no exec, no file
+aos serve mcp --gui=off                        # screenless tools only
+```
+
+Keep it running:
+
+```sh
+aos service create mcp --autostart --now -- aos serve mcp
+```
+
+## What to tell an agent
+
+Once connected, plain English works:
+
+> Move Chrome to the left half of monitor 2 and screenshot it.
+
+The client calls `window_move` and `capture_screenshot` itself.
+
+## Gotchas
+
+- **The token is required, even on loopback.** Every process on the machine can reach 127.0.0.1.
+- **A service needs a pinned token.** Set `AOS_MCP_TOKEN` in the service's environment or pass `--token`, or clients lose their token at each restart.
+- **Watchers and `remote share` are not tools.** They run until interrupted. Use them from a shell.
+- **Leaving out `exec` is the only sandbox.** There is no command allowlist inside `exec`.
+
+See also [MCP](/aos/mcp/).

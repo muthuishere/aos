@@ -1,0 +1,52 @@
+---
+title: Check machine health
+description: One pass over what aos can do here, plus battery, power, network and system facts.
+---
+
+**Goal.** Before handing a machine to an agent, or when something feels off, get the facts in one go.
+
+## Commands
+
+```sh
+aos doctor
+```
+
+```console
+ok   registry     97 of 99 commands available on darwin
+ok   telemetry    recording to /Users/you/.local/state/aos/telemetry
+ok   display      available; GUI commands will run
+ok   permissions  accessibility and screen capture granted
+ok   windows      16 windows visible
+ok   screenshot   captured 2895667 bytes
+ok   clipboard    round trip succeeded
+ok   packages     homebrew
+ok   plugins      0 external commands across 37 directories
+```
+
+Anything not `ok` prints what to run to fix it. Then the hardware and network:
+
+```sh
+aos system info
+aos battery status
+aos power status
+aos network status
+aos network ip
+aos display list
+```
+
+Script it:
+
+```sh
+aos doctor --json | jq '.[] | select(.status != "ok")'
+```
+
+## What to tell an agent
+
+> Run a health check on this machine and tell me anything that is not ok and how to fix it.
+
+## Gotchas
+
+- **`doctor` does real work.** It round-trips the clipboard and takes a screenshot. Do not be surprised by the brief flash.
+- **On a headless box, display and permission checks report accordingly.** That is expected, not a failure.
+- **`battery status` on a desktop** reports that no battery is present. `battery present` exits 1 there, which is useful in scripts.
+- **`network wifi` prints the joined network name.** It is blank on wired connections.

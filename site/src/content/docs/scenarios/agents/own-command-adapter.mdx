@@ -1,0 +1,54 @@
+---
+title: Add your own command with an adapter
+description: Turn a shell line you already run into an aos command that shows up in help, in the skill and over MCP.
+---
+
+**Goal.** `aos notify send "build passed"` posts to your Slack webhook, and the agent can call it like any built-in.
+
+## Commands
+
+```sh
+aos adapters path                  # where adapters live
+aos adapters example --write       # a working starter file
+```
+
+Save `~/.config/aos/adapters/notify.json`:
+
+```json
+{
+  "group": "notify",
+  "description": "Tell me things",
+  "commands": [
+    {
+      "name": "send",
+      "summary": "Post a message to my Slack webhook",
+      "args": "<text...>",
+      "run": "curl -sS -X POST -H 'Content-Type: application/json' -d \"{\\\"text\\\":\\\"$*\\\"}\" \"$SLACK_WEBHOOK_URL\""
+    }
+  ]
+}
+```
+
+Check and use it:
+
+```sh
+aos commands --check
+aos adapters list
+aos notify send "build passed"
+aos serve tools --groups=notify
+```
+
+## What to tell an agent
+
+> When the tests pass, notify me with aos notify send.
+
+The agent sees `notify send` in `aos commands` and in its MCP tool list, with the summary you wrote.
+
+## Gotchas
+
+- **Secrets stay in the environment.** `$SLACK_WEBHOOK_URL` expands when the command runs. Never write the value into the adapter file.
+- **A built-in always wins a name collision.** Pick a group name that is not already taken.
+- **`run` goes through the shell.** Your arguments are appended, quoted. Quote carefully inside `run`.
+- **A malformed file is reported, not skipped.** `aos commands --check` exits non-zero and says what is wrong.
+
+See also [extending it](/aos/extending/).

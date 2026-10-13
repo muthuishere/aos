@@ -1,0 +1,40 @@
+---
+title: Set volume and mute before a call
+description: Read and change the system output volume and mute state from a script or an agent.
+---
+
+**Goal.** Unmute and set the volume to a known level before a meeting, or mute everything when stepping away.
+
+## Commands
+
+```sh
+aos audio volume          # print the current level
+aos audio volume 40       # set it
+aos audio volume +5       # nudge up
+aos audio volume -10      # nudge down
+aos audio mute            # print the mute state
+aos audio mute off
+aos audio mute toggle
+```
+
+Before a call:
+
+```sh
+aos audio mute off && aos audio volume 40
+```
+
+Stepping away:
+
+```sh
+aos audio mute on
+```
+
+## What to tell an agent
+
+> Unmute and set the volume to 40 before my 3pm call.
+
+## Gotchas
+
+- **This is the system output.** Input mute for the microphone is handled by the meeting app.
+- **Volume is 0 to 100.** Relative changes clamp at the ends.
+- **No display needed.** Audio commands work over SSH and on a headless box with a sound device.

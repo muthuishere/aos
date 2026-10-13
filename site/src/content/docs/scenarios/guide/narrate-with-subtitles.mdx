@@ -1,0 +1,36 @@
+---
+title: Narrate what the agent is doing
+description: Show a caption at the bottom of the screen for each step, so the person watching knows what is happening without taking focus.
+---
+
+**Goal.** A long agent task runs on the desktop. The person wants to see what step it is on, like subtitles on a film.
+
+## Commands
+
+```sh
+aos subtitle show "Opening the export dialog…" --seconds=4
+aos subtitle show "Running the migration, this takes a minute" --seconds=60 --position=top-center
+aos subtitle show "Done ✓" --seconds=3 --wait
+aos subtitle stop
+```
+
+A new caption replaces the previous one. `--wait` blocks until the caption is gone, which is useful as a pause between steps.
+
+Check it works on this machine first:
+
+```sh
+aos subtitle test
+```
+
+## What to tell an agent
+
+> Narrate each step with a subtitle while you work. Keep them short.
+
+The bundled agent skill already suggests this for long tasks.
+
+## Gotchas
+
+- **Default position is bottom-center**, 8% up from the edge, clear of the dock and taskbar.
+- **Captions never take focus.** Keyboard input keeps going to the active app.
+- **They appear in recordings.** With `capture video` running, the narration is part of the video.
+- **One caption at a time.** For a label that stays next to something, use [`draw text`](/aos/drawing/text/) instead.
