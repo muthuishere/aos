@@ -1,72 +1,49 @@
 ---
 title: What it's not
-description: Eight things aos is regularly mistaken for, and what each confusion actually gets wrong.
+description: Eight things aos is often mistaken for, and what each one gets wrong.
 ---
 
-Most of what people need to know about a tool like this is what it declines to
-be. Each of these clears up a specific confusion.
+Knowing what aos does not do saves time. Each point below clears up one common confusion.
 
 ## Not an agent
 
-There is no model in it. Nothing here decides anything, plans anything, or
-retries on its own. It is the hands, not the brain.
-
-Bring your own agent — Claude Code, your own loop, a script. `aos serve
-mcp` is where the two meet.
+There is no model in it. Nothing decides, plans, or retries on its own. aos is the hands, not the brain. Bring your own agent, such as Claude Code, a script, or your own loop. The [skill](/aos/agent-skill/) and [MCP](/aos/mcp/) are where the two meet.
 
 ## Not a cloud service
 
-No account, no sign-in, no phone-home. Nothing leaves the machine unless you
-type a command that sends something.
+No account, no sign-in, no phone-home. Nothing leaves the machine unless you run a command that sends something.
 
-Telemetry exists, and it is OTLP-shaped JSON in a local file:
+Telemetry exists, and it is a local file:
 
 ```console
 $ aos obs path
 /Users/you/.local/state/aos/telemetry
 ```
 
-Delete it whenever you like. `AOS_TELEMETRY=off` stops it being written
-at all.
+Delete it whenever you like. `AOS_TELEMETRY=off` stops it being written.
 
 ## Not a screen-scraper
 
-Windows, monitors, input and capture go through OS APIs — CoreGraphics on
-macOS, Win32 on Windows, wmctrl and xdotool on Linux. There is no pixel guessing
-and no vision model reading a screenshot to find a button.
-
-`window list` returns real window records, with real geometry, from the window
-server:
+Windows, monitors, input and capture use OS APIs: CoreGraphics on macOS, Win32 on Windows, wmctrl and xdotool on Linux. `find` uses the accessibility tree first, and OCR only as a fallback. `window list` returns real window records with real geometry:
 
 ```console
 $ aos window list
 * Finder            mon 3  1379x890+2235+134  pathextra
-  Ghostty           mon 2  1900x940+0+30      Omarchy CLI cross-platform
+  Ghostty           mon 2  1900x940+0+30      aos
   Google Chrome     mon 3  1920x1050+1920+30  muthuishere/aos
 ```
 
 ## Not unrestricted system access
 
-That is what most desktop-automation MCP servers hand an agent: a shell, a
-click, a keystroke, and nothing in between. Every dangerous edge here is
-deliberately blunted, and the blunting is written down rather than assumed —
-see the [safety model](/aos/safety/).
-
-`remote share` is a good example of the pattern: it is marked *blocking*, and
-blocking commands are excluded from the MCP tool list, so an agent cannot open
-a desktop-control channel on someone's machine at all. A person starts it.
+Most desktop-automation MCP servers hand an agent a shell, a click and a keystroke with nothing in between. aos blunts the dangerous edges and writes down where. See the [safety model](/aos/safety/). One example: `remote share` runs until interrupted, so it is never an MCP tool. Only a person at a terminal can start it.
 
 ## Not omarchy, and not Linux-only
 
-The command *shape* is borrowed from the omarchy CLI — group/command routes,
-discoverable help, a machine-readable index. That is where the resemblance
-stops. The implementation is Go, and it runs on macOS, Windows and Linux.
-`docs/porting.md` in the repo maps the omarchy surface group by group so you can
-see exactly what was taken and what was not.
+The command shape comes from the omarchy CLI: group and command routes, discoverable help, a machine-readable index. That is where the resemblance stops. aos runs on macOS, Windows and Linux. `docs/porting.md` in the repo maps the omarchy surface group by group.
 
 ## Not a wrapper around tools you must install first
 
-One static binary:
+One binary:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
@@ -74,24 +51,14 @@ curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | s
 
 On Windows: `curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd`
 
-It uses native tools when they are present, and says so plainly when they are
-not — `doctor` reports what is missing and what to run about it, instead of
-failing at the moment you needed it.
+It uses native tools when they are present, such as ffmpeg for `capture video`. When one is missing, `aos doctor` says so and tells you what to run.
 
 ## Not desktop-only
 
-Most of the surface needs no display at all. `exec`, `file`, `pkg`,
-`network`, `system`, `power`, `battery`, `font`, `debug` and `serve` work the
-same on a server, in CI, or in a container. On Linux, `headless start` provides
-a display when something genuinely needs one.
+Most commands need no display. `exec`, `file`, `pkg`, `network`, `system`, `power`, `battery`, `font`, `debug` and `serve` work the same on a server, in CI, or in a container. On Linux, `aos headless start` provides a display when something needs one. See [headless machines](/aos/headless/).
 
-`aos commands` on a screenless machine lists only what will actually run,
-and `serve mcp --gui=auto` (the default) offers an agent only the tools that can
-succeed. Offering a tool that cannot run is worse than not offering it.
+`aos commands` on a screenless machine lists only what will run. `aos serve mcp` offers an agent only the tools that can succeed.
 
 ## Not a remote-desktop product
 
-`remote share` prints a LAN URL, is started by a person at a terminal, and is
-revoked when they press Ctrl-C. There is no tunnel and no relay — the library it
-is built on cannot open one. It is a way to watch a machine you already have
-access to, for as long as you are watching it.
+`remote share` prints a LAN URL, is started by a person, and stops when they press Ctrl-C. There is no tunnel and no relay. It is a way to watch a machine you already have access to, for as long as you are watching it. See [watching a machine](/aos/remote-share/).

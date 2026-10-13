@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Install aos, check the machine, run a command, and hand the whole surface to an agent over MCP.
+description: Install aos, check the machine, run a command, and hand it to an agent.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -21,14 +21,9 @@ import { Steps } from '@astrojs/starlight/components';
    curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
    ```
 
-   One binary, no root or administrator. It downloads the
-   latest [release](https://github.com/muthuishere/aos/releases/latest) and verifies it
-   against `checksums.txt`. To install from somewhere else — a copied release
-   folder, a mirror URL, or a single executable — pass
-   `--from <folder|url|exe>` (`sh install.sh --from ./dist`,
-   `install.cmd --from C:\path\to\aos.exe`). `--version` and `--dir` work too.
+   One binary, no root or administrator. See [installing](/aos/install/) for `--version`, `--dir` and offline installs with `--from`.
 
-2. **Ask the machine what works.**
+2. **Check the machine.**
 
    ```console
    $ aos doctor
@@ -43,10 +38,7 @@ import { Steps } from '@astrojs/starlight/components';
    ok   plugins      0 external commands across 37 directories
    ```
 
-   `doctor` does not check whether binaries are on `PATH`. It round-trips the
-   clipboard, captures a real screenshot and inspects the bytes, asks the window
-   backend for a list, and checks the permissions macOS needs. Anything not `ok`
-   prints what to run to fix it.
+   `doctor` does real work: it round-trips the clipboard, takes a screenshot, lists windows, and checks permissions. Anything not `ok` prints what to run to fix it.
 
 3. **Run something.**
 
@@ -64,45 +56,39 @@ import { Steps } from '@astrojs/starlight/components';
    aos window move Chrome --zone=1B
    aos capture screenshot --app=Chrome --out=/tmp/shot.png
    aos pkg install ripgrep
+   aos exec capture -- git status
    ```
 
-4. **Hand it to an agent — the skill first.**
+   Every group and command has `--help`. `aos commands` lists what this machine can run.
+
+4. **Hand it to an agent.**
+
+   You already did. The first `aos` command wrote the bundled agent skill to `~/.claude/skills/` and `~/.agents/skills/`. An agent with a shell now knows the CLI exists, what the exit codes mean, and which commands need a screen. Nothing is listening and nothing needs to start. It also works over SSH into any machine that has the binary.
+
+   To install the skill by hand, or to remove it:
 
    ```sh
    aos skill install
+   aos skill uninstall
    ```
-
-   It writes the agent skill bundled *inside the binary* to `~/.claude/skills/`
-   and `~/.agents/skills/`, so the instructions an agent reads can never describe
-   a different version than the one installed. `skill show` prints it without
-   installing; `skill uninstall` removes it.
-
-   That is the whole integration. The agent already has a shell, and now it knows
-   this CLI exists, what the exit codes mean, and which commands need a screen —
-   so it runs `aos` the way you do. Nothing to start, nothing listening, and it
-   works over SSH into any machine that has the binary.
 
 5. **Or serve it over MCP, if your agent prefers tools.**
 
    ```console
    $ aos serve mcp
    aos mcp  http://127.0.0.1:14320/mcp
-   token    9c23b0efb0a002fe536a579adfd7cdb1
+   token           9c23b0efb0a002fe536a579adfd7cdb1
+   tools           96
+   connect         claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
+                     --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
    ```
 
-   ```sh
-   claude mcp add --transport http aos http://127.0.0.1:14320/mcp \
-     --header "Authorization: Bearer 9c23b0efb0a002fe536a579adfd7cdb1"
-   ```
-
-   Every non-hidden, non-blocking command available on this machine becomes one
-   MCP tool, running the identical code path. The token is minted per run and
-   required — see [using it from an agent](/aos/mcp/).
+   Run the printed `connect` line. Every command becomes one MCP tool. The token is minted per run and required. See [using it from an agent (MCP)](/aos/mcp/).
 
 </Steps>
 
 ## Where to go next
 
-- [The command surface](/aos/command-surface/) — what the groups cover.
-- [Every command](/aos/reference/commands/) — the full reference, generated from the binary.
-- [Safety model](/aos/safety/) — what it refuses, and why.
+- [The command surface](/aos/command-surface/): what the groups cover.
+- [Every command](/aos/reference/commands/): the full reference, generated from the binary.
+- [Safety model](/aos/safety/): what it refuses, and why.

@@ -1,59 +1,38 @@
 ---
 title: Using it from an agent (the skill)
-description: Install the agent skill bundled inside the binary, and an agent that already has a shell can drive the machine — locally or over SSH — with nothing running.
+description: The agent skill is bundled in the aos binary and installs itself. An agent with a shell can then drive the machine, locally or over SSH, with no server running.
 ---
 
-This is the primary way an agent uses aos, and it needs no server.
+The agent skill is a short instruction file that tells an agent that aos exists, what its exit codes mean, and which commands need a screen. It is the main way an agent uses aos, and it needs no server.
 
-**You usually do not install it at all:** the first `aos` command you run writes the skill for you and keeps it current
-with the binary. Opt out with `AOS_NO_SKILL_AUTOINSTALL=1`, or remove it with `aos skill uninstall`. To install it
-explicitly (for example, into a fresh home directory):
+## Example
+
+The first `aos` command you run writes the skill to `~/.claude/skills/` and `~/.agents/skills/`. It is refreshed whenever the binary changes. To install it by hand, for example into a fresh home directory:
 
 ```sh
 aos skill install
 ```
 
-## Why the skill comes first
-
-An agent that can run shell commands already has everything it needs to drive
-this CLI. What it lacks is knowing the CLI exists, what its exit codes mean, and
-which commands need a screen. That is exactly what the skill supplies.
-
-So the skill path has properties MCP does not:
-
-- **Nothing is running.** No server, no port, no process to supervise, nothing
-  to restart when the machine wakes up.
-- **It works over SSH.** See below — this is the part that matters for servers.
-- **Nothing is filtered out.** Blocking commands like `watch clipboard` and
-  `remote share` are deliberately absent from the MCP tool list, because a
-  request/response call has no sensible end. From a shell they are just commands
-  an agent can run with `--max=1` or in the background.
-- **The output is the documentation.** `aos commands --json` and
-  `<group> --help` are always current, so the agent can ask the binary instead
-  of trusting a description of it.
-
-Use MCP when your agent wants typed tools with schemas rather than a terminal.
-Both run the identical code path, so it is a preference, not a trade-off.
-
-## It ships inside the binary
-
-The skill is compiled into the executable with `go:embed`, and `skill install`
-writes it out to **both** `~/.claude/skills/` and `~/.agents/skills/`.
-
-That is deliberate. A skill distributed separately from the binary drifts: the
-agent reads about a flag that this build does not have, or misses one it does.
-Because the file is written *by* the binary, the instructions an agent reads
-cannot describe a different version than the one installed.
-
 ```sh
-aos skill show          # print it without installing
-aos skill uninstall  # remove it
+aos skill show        # print the skill without installing it
+aos skill path        # print where it would be written
+aos skill uninstall   # remove it
 ```
 
-## Driving another machine over SSH
+Set `AOS_NO_SKILL_AUTOINSTALL=1` to stop the automatic install.
 
-Because the skill is instructions rather than a connection, an agent can use it
-against any machine it can reach — the binary just has to be there.
+## Why the skill is the first choice
+
+An agent that can run shell commands can already run `aos`. The skill fills in what it does not know:
+
+- **Nothing runs in the background.** No server, no port, no process to restart after a reboot.
+- **It works over SSH.** The skill is instructions, not a connection, so it applies to any machine with the binary.
+- **Every command is available.** Commands that run until interrupted, like `watch clipboard` and `remote share`, are left out of the MCP tool list. From a shell an agent can run them with `--max=1` or in the background.
+- **The help is always current.** `aos commands --json` and `aos <group> --help` come from the installed binary.
+
+Use [MCP](/aos/mcp/) when your agent wants typed tools with schemas instead of a terminal. Both paths run the same code.
+
+## Driving another machine over SSH
 
 ```sh
 ssh server aos system info
@@ -61,44 +40,33 @@ ssh server aos exec capture -- systemctl is-active nginx
 ssh server aos file read /etc/hostname
 ```
 
-Install it on the far machine the same way:
+Install aos on the far machine the same way as anywhere else:
 
 ```sh
 ssh server 'curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh'
 ```
 
-Two things are worth knowing before an agent does this:
-
-**A headless server refuses the desktop commands, clearly.** `ssh server aos
-window list` exits 2 saying it needs a display, rather than failing somewhere
-inside a display-server call. On Linux you can give it one with
-`aos headless start --wm`, after which later commands adopt that display
-automatically. See [headless machines](/aos/headless/).
-
-**The audit trail is per-machine.** Spans are written on the machine that ran
-the command, so `ssh server aos obs audit --since=24h` is how you see what an
-agent did *there*. That is usually what you want.
-
-MCP over SSH is the other shape of this — keep `serve mcp` on loopback and
-forward the port:
+For MCP over SSH, keep `serve mcp` on loopback and forward the port:
 
 ```sh
 ssh -L 14320:127.0.0.1:14320 server
 ```
 
-The token is still required through the tunnel, and now it never crosses the
-network in clear text.
+The token is still required through the tunnel.
 
 ## What the skill tells the agent
 
-The full text is `aos skill show`. In short: ask the binary rather than guess,
-read the exit code (`0` worked, `1` ran and failed or is a deliberate "no", `2`
-refused before doing anything), a table of commands by intent, and the handful
-of things that reliably bite — `exec capture` runs a program rather than a
-shell, `launch` passes unknown flags to the app on purpose, `file delete`
-refuses filesystem roots and `$HOME`, and blocking commands never return.
+Read it with `aos skill show`. In short:
 
-## For agents reading this site
+- Ask the binary for help instead of guessing flags.
+- Exit code `0` means it worked. `1` means it ran and failed, or refused on purpose. `2` means it refused before doing anything.
+- `exec capture` runs a program, not a shell line. Use `exec shell` for pipes.
+- `launch` passes unknown flags through to the app.
+- `file delete` refuses filesystem roots and `$HOME`.
+- Some commands run until stopped and never return on their own.
 
-This site publishes [`/aos/llms.txt`](/aos/llms.txt) and
-`llms-full.txt` — the same documentation in the form an agent prefers to read.
+## Gotchas
+
+- **A headless server refuses desktop commands.** `ssh server aos window list` exits 2 and says it needs a display. On Linux, `aos headless start --wm` provides one. See [headless machines](/aos/headless/).
+- **The audit trail is per machine.** `ssh server aos obs audit --since=24h` shows what an agent did on that server, not on your laptop.
+- **Agents reading this site** can use [`/aos/llms.txt`](/aos/llms.txt) and `llms-full.txt`, which hold the same documentation in one file.

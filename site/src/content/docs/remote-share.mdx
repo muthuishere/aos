@@ -1,43 +1,63 @@
 ---
 title: Watching a machine
-description: remote share hands this screen and its input to a browser on the LAN, for exactly as long as a person is watching.
+description: remote share streams this screen, mouse and keyboard to a browser on the same network, for as long as the command runs.
 ---
+
+`aos remote share` shows this machine's screen in a browser on the same network. You can also drive the mouse and keyboard from that browser.
+
+## Example
 
 ```sh
 aos remote share
-aos remote share --monitor=2 --fps=8
 ```
-
-It prints a LAN URL. Open it on a phone or another laptop and you see the
-screen, and can drive the mouse and keyboard.
 
 ```console
-$ aos remote url
-aos: no share is running; start one with `aos remote share`
+$ aos remote share
+Screen share and CONTROL are live on this machine.
+The link carries the access key, so the link IS the key — share it like one.
+
+  LAN       http://192.168.1.24:8765/?k=…
+  Local     http://127.0.0.1:8765/?k=…
+
+Press Ctrl-C to revoke the link and stop.
 ```
 
-## The shape of it is the point
+Open the LAN URL on a phone or another laptop. You see the screen live and can click and type. Press Ctrl-C in the terminal to end the share. The link stops working at that moment.
 
-`remote share` is **blocking**, and that is a security property rather than a UX
-one. Blocking commands are excluded from the MCP tool list, so an agent
-connected over MCP cannot open a desktop-control channel on someone's machine.
-A person starts the share at a terminal, watches it run, and revokes it with
-Ctrl-C. The link lives exactly as long as the process a human is looking at.
+To print the URL of a share that is already running, from another terminal:
 
-It also `NeedsDisplay`, so on a screenless box it is refused with a reason
-rather than starting a share of nothing.
+```sh
+aos remote url
+```
 
-## There is no tunnel
+## Options
 
-The URL is a LAN address. Nothing is relayed through a third party and nothing
-is punched out of the network — the engine it is built on cannot open a
-tunnel. If
-you want it reachable from elsewhere, that is an SSH tunnel you set up
-deliberately.
+| flag | what it does |
+|---|---|
+| `--monitor=<n>` | share one monitor instead of the main one |
+| `--port=<n>` | listen on a fixed port instead of a free one |
+| `--fps=<n>` | frames per second. Default 10. Lower it on slow Wi-Fi |
+| `--key=<k>` | pin the key in the URL so the link survives a restart |
 
-## Configuring the defaults
+```sh
+aos remote share --monitor=2 --fps=8
+aos remote share --port=9000 --key=my-long-stable-key
+```
 
-An optional `remote.json` in `~/.config/aos/` sets `key`, `port`, `fps`
-and `monitor`. It lives in aos's own config directory rather than in
-windowctl's environment on purpose: a key exported for the windowctl CLI should
-not silently become the key for a share an aos user started.
+## Defaults file
+
+Put a `remote.json` in the aos config directory (`~/.config/aos/` on macOS and Linux) to set defaults:
+
+```json
+{ "key": "my-long-stable-key", "port": 9000, "fps": 8, "monitor": 1 }
+```
+
+Precedence is flags, then the `AOS_REMOTE_KEY` environment variable, then `remote.json`, then the built-in defaults. A malformed `remote.json` is an error, not a silent fallback.
+
+## Gotchas
+
+- **The share runs until you stop it.** It is a foreground command. Run it in a terminal you can see, or in a background job you know how to kill.
+- **Agents cannot start it over MCP.** Commands that run until interrupted are left out of the MCP tool list, so only a person at a terminal can start a share.
+- **It needs a display.** On a screenless machine it exits 2 with a message instead of sharing an empty screen.
+- **The URL is a LAN address.** Nothing is relayed through a third party and no tunnel is opened. To reach it from elsewhere, set up an SSH tunnel yourself.
+- **Without a key, each run gets a new URL.** Set `--key`, `AOS_REMOTE_KEY`, or a key in `remote.json` to keep the same link across restarts.
