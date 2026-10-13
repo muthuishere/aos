@@ -72,6 +72,12 @@ Windows (installs to `%LOCALAPPDATA%\Programs\aos` and adds it to your user PATH
 curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main/install.cmd && install.cmd
 ```
 
+Any OS with Node 16+ (the binary lives inside the npm package, so `npm uninstall -g @muthuishere/aos` removes it):
+
+```sh
+npm i -g @muthuishere/aos      # or, without installing: npx @muthuishere/aos doctor
+```
+
 The installer downloads the release archive for your OS/arch, verifies it
 against `checksums.txt` (sha256), strips the macOS quarantine flag, and runs
 `aos --version` once, which also installs the agent skill. Options (same on

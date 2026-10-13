@@ -8,6 +8,7 @@ const repo = 'https://github.com/muthuishere/aos';
 const raw = 'https://raw.githubusercontent.com/muthuishere/aos/main';
 const installSh = `curl -fsSL ${raw}/install.sh | sh`;
 const installCmd = `curl -fsSL -o install.cmd ${raw}/install.cmd && install.cmd`;
+const installNpm = `npm i -g @muthuishere/aos`;
 
 const usps = [
 	{ t: 'Finds buttons by name, not pixels', d: 'aos reads the accessibility tree, so an agent presses "Equals" instead of guessing coordinates from a screenshot. No vision model, no brittle pixel loop.', c: 'aos mouse click --app=Calculator --find=Equals' },
@@ -94,9 +95,11 @@ const features = [
 					<div class="tabs" role="tablist">
 						<button role="tab" aria-selected="true" data-tab="sh">macOS / Linux</button>
 						<button role="tab" aria-selected="false" data-tab="cmd">Windows</button>
+						<button role="tab" aria-selected="false" data-tab="npm">npm</button>
 					</div>
 					<div class="cmdline" data-panel="sh"><code>{installSh}</code><button class="copy" data-copy={installSh}>Copy</button></div>
 					<div class="cmdline" data-panel="cmd" hidden><code>{installCmd}</code><button class="copy" data-copy={installCmd}>Copy</button></div>
+					<div class="cmdline" data-panel="npm" hidden><code>{installNpm}</code><button class="copy" data-copy={installNpm}>Copy</button></div>
 					<p class="note">The agent skill installs itself on first run (opt out: <code>AOS_NO_SKILL_AUTOINSTALL=1</code>). Then run <code>aos doctor</code>. <a href={`${base}/install/`}>More install options</a>.</p>
 				</div>
 

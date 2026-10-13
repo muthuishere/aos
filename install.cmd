@@ -12,7 +12,7 @@ rem   install.cmd /dir %USERPROFILE%\bin
 rem
 rem --from / --version / --dir work too. Environment equivalents: AOS_FROM,
 rem AOS_VERSION, AOS_INSTALL_DIR. Default dir: %LOCALAPPDATA%\Programs\aos,
-rem added to your user PATH.
+rem added to your user PATH (/no-path or AOS_NO_PATH=1 leaves PATH alone).
 rem
 rem A .cmd rather than a .ps1 on purpose: PowerShell's execution policy blocks
 rem unsigned script FILES by default, but not -Command, so the PowerShell below
@@ -30,6 +30,7 @@ $repo = 'muthuishere/aos'
 $from = if ($env:AOS_FROM) { $env:AOS_FROM } else { $env:AOS_DOWNLOAD_BASE }
 $version = $env:AOS_VERSION
 $dir = if ($env:AOS_INSTALL_DIR) { $env:AOS_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\aos' }
+$noPath = [bool]$env:AOS_NO_PATH
 
 function Fail($msg) { [Console]::Error.WriteLine("install: $msg"); exit 1 }
 
@@ -44,8 +45,10 @@ for ($i = 0; $i -lt $argv.Count; $i++) {
     if ($name -in @('from', 'version', 'dir')) {
         if ($null -eq $val) { $i++; if ($i -ge $argv.Count) { Fail "$a needs a value" }; $val = $argv[$i] }
         Set-Variable -Name $name -Value $val
+    } elseif ($name -eq 'no-path') {
+        $noPath = $true
     } elseif ($name -in @('h', 'help', '?')) {
-        Write-Host 'install.cmd [/from <folder|url|aos.exe>] [/version vX.Y.Z] [/dir <path>]'; exit 0
+        Write-Host 'install.cmd [/from <folder|url|aos.exe>] [/version vX.Y.Z] [/dir <path>] [/no-path]'; exit 0
     } else { Fail "unknown argument: $a" }
 }
 
@@ -131,7 +134,7 @@ try {
 
 Write-Host "    $target"
 $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-if (-not (($userPath -split ';') -contains $dir)) {
+if (-not $noPath -and -not (($userPath -split ';') -contains $dir)) {
     [Environment]::SetEnvironmentVariable('Path', ($(if ($userPath) { "$userPath;$dir" } else { $dir })), 'User')
     Write-Host "    added $dir to your user PATH (open a new terminal to pick it up)"
 }
