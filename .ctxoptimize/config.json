@@ -1,0 +1,9 @@
+{
+  "name": "aos",
+  "modules": [
+    {
+      "path": "site"
+    }
+  ],
+  "wiki": false
+}
