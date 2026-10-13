@@ -38,7 +38,7 @@ const features = [
 	</head>
 	<body>
 		<header class="nav wrap">
-			<a class="brand" href={`${base}/`}>aos</a>
+			<a class="brand" href={`${base}/`}><span class="brand-mark">aos</span><span class="brand-sub">agentic os operations</span></a>
 			<nav>
 				<a href={`${base}/quickstart/`}>Docs</a>
 				<a href={`${base}/reference/commands/`}>Commands</a>
@@ -73,7 +73,7 @@ const features = [
 					</div>
 					<div class="cmdline" data-panel="sh"><code>{installSh}</code><button class="copy" data-copy={installSh}>Copy</button></div>
 					<div class="cmdline" data-panel="cmd" hidden><code>{installCmd}</code><button class="copy" data-copy={installCmd}>Copy</button></div>
-					<p class="note">No Go, no root. The agent skill installs itself on first run (opt out: <code>AOS_NO_SKILL_AUTOINSTALL=1</code>). Then run <code>aos doctor</code>. <a href={`${base}/install/`}>More install options</a>.</p>
+					<p class="note">The agent skill installs itself on first run (opt out: <code>AOS_NO_SKILL_AUTOINSTALL=1</code>). Then run <code>aos doctor</code>. <a href={`${base}/install/`}>More install options</a>.</p>
 				</div>
 
 				<div class="cta">
@@ -166,7 +166,10 @@ const features = [
 			a { color: inherit; }
 			.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
 			.nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-			.brand { font-weight: 700; font-size: 20px; text-decoration: none; letter-spacing: -0.02em; }
+			.brand { display: inline-flex; align-items: baseline; gap: 12px; text-decoration: none; color: inherit; }
+			.brand-mark { font-weight: 800; font-size: 34px; letter-spacing: -0.05em; background: linear-gradient(120deg, var(--ink) 30%, #8b8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+			.brand-sub { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted, #8a8f98); }
+			@media (max-width: 560px) { .brand-sub { display: none; } }
 			.nav nav { display: flex; gap: 20px; font-size: 14.5px; }
 			.nav nav a { text-decoration: none; color: var(--muted); }
 			.nav nav a:hover { color: var(--ink); }
@@ -198,7 +201,7 @@ const features = [
 			.card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; min-width: 0; }
 			.card h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; }
 			.card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; flex: 1; }
-			.ex { display: block; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); padding: 9px 11px; border-radius: 8px; overflow-x: auto; white-space: nowrap; }
+			.ex { display: block; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); padding: 9px 11px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
 			.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 			.term { background: var(--code-bg); border-radius: 14px; overflow: hidden; border: 1px solid var(--hair); min-width: 0; }
 			.bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #ffffff14; }

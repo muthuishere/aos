@@ -60,7 +60,7 @@ $ aos skill install             # now an agent runs all of the above
 
 ## Install
 
-macOS / Linux (installs to `~/.local/bin`, no root, no Go):
+macOS / Linux (installs to `~/.local/bin`, no root):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
