@@ -80,7 +80,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | keep it running | `service create NAME --autostart --now -- <cmd>` · `start` · `status` · `stop` · `remove` · `list` |
 | tell the human | `subtitle show "what I am doing" --seconds=10 [--app=Safari]` — a film-style caption that never steals focus; `draw text "..." --position=top` for a label |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
-| record a demo | ASK FIRST, then `capture video start smart --audio=mic` … `capture video stop` → `<out>.final.mp4` with an auto-zoom camera; see `references/capture-video.md` |
+| record a demo | ASK FIRST (monitor, audio), then `capture video start smart --monitor=N --audio=mic` … `capture video stop` → `<out>.final.mp4`; follow `references/recording-a-demo.md` |
 | react to changes | `watch clipboard --max=1` · `watch window --max=1` · `watch file P --recursive --max=1` — one JSON line per event |
 
 `--app` and `--title` both select a window; a bare word is treated as an app name
@@ -88,16 +88,21 @@ and falls back to matching the title, so `window focus Chrome` works everywhere.
 
 ## Deeper references
 
-Load the one that matches the intent:
+`references/commands.md` is the complete, generated index of every public
+command with usage and examples. Load the guide that matches the intent:
 
-- `references/windows-and-layout.md` — window list, monitors (ACTIVE/FOCUSED),
-  zones `1A..2D` and `N:M` splits, move/resize/focus rules, layouts, recipes
-- `references/automation.md` — the visual loop, focus guard, open a terminal and
-  run a command, screen sharing and the public-tunnel confirmation rule
-- `references/find.md` — `aos find`: sources, ranking, roles, exit 3
-- `references/draw.md` — `aos draw`: targets, look, `--find`, detach/stop, verified pointing
-- `references/capture-video.md` — `aos capture video`: record the screen (ask first!), smart/mouse/app camera, mark/focus, auto-zoomed `.final.mp4`, events format
-- `references/permissions.md` — macOS Accessibility + Screen Recording
+| task | read |
+|---|---|
+| windows, monitors, zones, layouts | `references/windows-and-layout.md` |
+| visual loop, terminals, screen sharing rules | `references/automation.md` |
+| find a control by its text | `references/find.md` |
+| point at / label things on screen | `references/draw.md` |
+| record a demo (the full playbook) | `references/recording-a-demo.md` |
+| `capture video` flags, camera modes, events format | `references/capture-video.md` |
+| files, clipboard, exec, processes, services, packages, audio, battery, network, system power (which need a yes) | `references/system-and-files.md` |
+| wait for clipboard / file / window changes; audit what ran | `references/watch-and-observe.md` |
+| LAN share, headless Linux display, MCP server, adapters | `references/remote-headless-mcp.md` |
+| macOS Accessibility + Screen Recording | `references/permissions.md` |
 
 ## Screenshots are for looking, not just saving
 
@@ -107,6 +112,9 @@ that rect is how image coordinates become click coordinates: global = origin + p
 
 ## Things that will bite you
 
+- **Destructive commands need a yes first**: `system restart` / `shutdown` /
+  `logout`, `process kill`, `file delete`, `pkg remove`, `service remove`.
+  See `references/system-and-files.md`.
 - **`exec capture` runs a program, not a shell.** `echo` is a builtin on Windows;
   use `exec capture -- cmd /c echo hi`, or `exec shell` when you want pipes and
   globs. Put `--` before the child command so its flags are not read as ours.
