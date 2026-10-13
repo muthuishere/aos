@@ -1,0 +1,37 @@
+---
+title: Guide a human with arrows
+description: When the person should click, not the agent, point at the control with a click-through arrow and a sign.
+---
+
+**Goal.** The agent reaches a step it should not do itself, such as a payment confirmation or a permission dialog. It shows the person exactly where to click.
+
+## Commands
+
+```sh
+aos draw --app=Safari --find="Buy now" --text="Click here" --detach --duration=15
+aos draw --title="System Settings" --find=Allow --style=ring --text="Allow aos" --detach
+aos draw --rect=100,200,300,80 --style=box --text="Fill these in" --color=green --detach
+aos draw stop
+```
+
+The drawing is click-through. The person clicks straight through the arrow onto the button.
+
+Chain a few steps with a label for each:
+
+```sh
+aos draw text "Step 1 of 2: pick a file" --app=Finder --position=top-center --detach --duration=8
+aos draw --app=Finder --find=Downloads --text="Here" --detach --duration=8
+```
+
+## What to tell an agent
+
+> Do not click Buy now yourself. Point at it with an arrow and wait for me.
+
+## Gotchas
+
+- **Use `--detach`.** Without it, the command blocks until the duration ends, and the agent waits with it.
+- **`draw stop` clears everything detached.** Call it once the person has acted.
+- **`--find` needs Accessibility permission on macOS.** OCR is the fallback for text that has no accessibility node.
+- **Pair with a watcher to know when they clicked.** `aos watch window --max=1` returns when the focused window changes.
+
+See also [arrows & pointers](/aos/drawing/arrows/).

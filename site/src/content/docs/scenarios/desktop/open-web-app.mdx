@@ -1,0 +1,39 @@
+---
+title: Open a site as a web app
+description: Give a web app its own chromeless window, then place it like any other app.
+---
+
+**Goal.** Run Gmail, Slack or a dashboard in its own window with no tabs or address bar, and treat it like a native app.
+
+## Commands
+
+```sh
+aos webapp open https://mail.google.com
+aos webapp open https://app.slack.com
+```
+
+Then manage it like any window:
+
+```sh
+aos window list
+aos window move "Google Chrome" --zone=2B
+aos window focus --title=Gmail
+```
+
+Plain `open` hands a URL or file to the default handler instead:
+
+```sh
+aos open https://claude.ai
+aos open ~/Downloads
+aos open report.pdf
+```
+
+## What to tell an agent
+
+> Open Gmail as its own app window and put it in the top-right quarter.
+
+## Gotchas
+
+- **The window belongs to the browser.** `window list` shows it under the browser's app name. Use `--title` to target it by its page title.
+- **Chromeless mode needs a Chromium-based browser or Edge.** On a machine without one, `webapp open` says so.
+- **`open` does not wait.** If you want to act on the window afterwards, use `aos window wait <app>`.

@@ -1,0 +1,55 @@
+---
+title: Record a product demo
+description: Record the screen with your voice, and get a cut where the camera zooms to each action.
+---
+
+**Goal.** A shareable demo video, recorded in one take, where the viewer sees what matters without manual editing.
+
+## Commands
+
+Check the audio devices, then start:
+
+```sh
+aos capture video devices
+aos capture video start smart --audio=mic --out=~/Movies/demo.mp4
+```
+
+Walk through the product. Every `aos` command you or the agent runs is logged as a camera target. Add your own markers and steer the camera when needed:
+
+```sh
+aos subtitle show "Create a project" --seconds=4
+aos capture video mark "checkout works"
+aos capture video focus --app=Chrome --find="Sign in" --zoom=2 --hold=4s
+```
+
+Stop and render:
+
+```sh
+aos capture video stop
+```
+
+```console
+raw:    /Users/you/Movies/demo.mp4 (63.1s)
+final:  /Users/you/Movies/demo.final.mp4
+events: /Users/you/Movies/demo.events.json
+```
+
+Share `demo.final.mp4`. Re-render with different settings without recording again:
+
+```sh
+aos capture video zoom ~/Movies/demo.mp4 --max-zoom=2 --ease=0.8 --out=demo.cut.mp4
+```
+
+## What to tell an agent
+
+> Record a demo of the signup flow with my microphone. Narrate each step with subtitles, then stop and give me the final file.
+
+## Gotchas
+
+- **ffmpeg must be installed.** `aos doctor` checks.
+- **macOS needs Screen Recording permission** for the terminal: `aos permission request screen`.
+- **System audio on macOS needs a loopback device** such as BlackHole. `--audio=mic` works without one.
+- **The default cap is 10 minutes.** Pass `--max=30m` for longer sessions.
+- **Agents should ask before recording.** The skill tells them to.
+
+See also [recording a demo](/aos/capture-video/).

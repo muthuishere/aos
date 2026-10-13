@@ -1,0 +1,40 @@
+---
+title: Lock or sleep the machine at the end of the day
+description: Save a layout, mute, then lock or sleep, in one command an agent can run when you say "I'm done".
+---
+
+**Goal.** One phrase ends the day: windows saved, sound off, screen locked or machine asleep.
+
+## Commands
+
+```sh
+aos window save ~/.config/aos/layouts/today.json
+aos audio mute on
+aos system lock
+```
+
+Or sleep instead of lock:
+
+```sh
+aos system sleep
+```
+
+The rest of the group, for completeness:
+
+```sh
+aos system logout
+aos system restart
+aos system shutdown
+```
+
+`aos lock` is an alias for `aos system lock`.
+
+## What to tell an agent
+
+> I'm done for the day. Save my window layout, mute, and lock the screen.
+
+## Gotchas
+
+- **`restart` and `shutdown` are not undoable.** An agent should confirm before running them. There is no built-in prompt, because an agent would answer it.
+- **`lock` and `logout` need a logged-in desktop session.** On a headless box they refuse with a reason.
+- **Sleep ends any running share or recording.** Stop `remote share` and `capture video` first.

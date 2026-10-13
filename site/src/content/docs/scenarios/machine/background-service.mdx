@@ -1,0 +1,37 @@
+---
+title: Run a command as a background service
+description: Install any command as a per-user service that starts at login and survives reboots, without touching system services.
+---
+
+**Goal.** A sync job, a local server or `aos serve mcp` keeps running after the terminal closes and comes back after a reboot.
+
+## Commands
+
+```sh
+aos service create sync --autostart --now -- rclone sync ~/Documents remote:docs
+aos service create mcp --autostart --now -- aos serve mcp
+```
+
+Manage it:
+
+```sh
+aos service list
+aos service status sync     # exits non-zero unless it is running
+aos service stop sync
+aos service start sync
+aos service remove sync
+```
+
+Everything after `--` is the command and its arguments.
+
+## What to tell an agent
+
+> Install the MCP server as a service that starts at login, then confirm it is running.
+
+## Gotchas
+
+- **Per user, no sudo.** macOS gets a launchd user agent, Linux a `systemd --user` unit, Windows a Scheduled Task. The service runs as you.
+- **Names are namespaced `aos.<name>`.** `service list` and `service remove` only see services aos created. aos cannot delete a system service.
+- **Use absolute paths in the command.** A service does not have your shell's `PATH` or aliases.
+- **`--now` starts it at once.** Without it, the service is installed but idle until the next login or `service start`.
+- **For `serve mcp`, pin a token first** with `AOS_MCP_TOKEN` or `--token`, or clients lose their token at every restart.

@@ -1,0 +1,53 @@
+---
+title: Drive a headless Linux box
+description: Use aos on a server with no screen, and give it a virtual display when a desktop command needs one.
+---
+
+**Goal.** An agent works on a Linux server over SSH: files, packages, services, and occasionally something that needs a window.
+
+## Commands
+
+Install on the server and check what works:
+
+```sh
+ssh server 'curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh'
+ssh server aos doctor
+ssh server aos headless status
+```
+
+The screenless groups work as they are:
+
+```sh
+ssh server aos exec capture -- systemctl is-active nginx
+ssh server aos pkg install ripgrep
+ssh server aos file read /etc/hostname
+ssh server aos service create api --autostart --now -- /opt/api/serve
+```
+
+When something needs a display:
+
+```sh
+ssh server aos headless start --size=1920x1080 --wm
+ssh server aos window list
+ssh server aos capture screenshot --out=/tmp/shot.png
+ssh server aos headless stop
+```
+
+Later commands adopt the managed display on their own. To be explicit:
+
+```sh
+ssh server aos headless run aos window list
+```
+
+## What to tell an agent
+
+> On the server, check nginx is active, install ripgrep, and screenshot the dashboard app. Start a virtual display if you need one and stop it after.
+
+## Gotchas
+
+- **Desktop commands refuse clearly without a display.** They exit 2 and name the fix. That is the signal to run `headless start`.
+- **Xvfb must be installed.** `headless status` shows whether it is present.
+- **`headless start` and `stop` are Linux-only.** macOS and Windows need a real logged-in session.
+- **The audit trail is on the server.** `ssh server aos obs audit --since=24h` shows what the agent did there.
+
+See also [headless machines](/aos/headless/).

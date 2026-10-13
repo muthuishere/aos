@@ -1,0 +1,42 @@
+---
+title: Record a bug reproduction
+description: Record only the app with the bug, mark the moment it happens, and attach the video and the exact commands to the report.
+---
+
+**Goal.** A short video of the bug, plus a list of the exact steps, ready to paste into an issue.
+
+## Commands
+
+Record just the one window, with a time cap:
+
+```sh
+aos capture video start window --app=MyApp --max=2m --out=~/Desktop/bug.mp4
+```
+
+Reproduce it. Mark the moment:
+
+```sh
+aos mouse click --app=MyApp --find=Save
+aos capture video mark "crash after Save"
+aos capture screenshot --app=MyApp --out=~/Desktop/bug-state.png
+aos capture video stop --raw
+```
+
+`--raw` skips the zoom render. A bug video should show exactly what was on screen.
+
+Get the step list from the audit log:
+
+```sh
+aos obs audit --since=10m
+```
+
+## What to tell an agent
+
+> Record the MyApp window while you reproduce the bug. Mark the moment it fails, take a screenshot, stop, and give me the video plus the commands you ran.
+
+## Gotchas
+
+- **`window` mode records one window.** If the bug involves a dialog that opens as a separate window, use `app --app=MyApp` to follow every window of that app, or `monitor`.
+- **The marks are in the events file** next to the video, with timestamps.
+- **`obs audit` lists routes and exit codes, not argument values.** Keep the argument values from the session if the report needs them.
+- **Keep `--max` short.** It is a hard cap enforced by ffmpeg.

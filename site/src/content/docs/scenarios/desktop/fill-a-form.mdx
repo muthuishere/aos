@@ -1,0 +1,42 @@
+---
+title: Fill a form in a native app without stealing focus
+description: Type into a named app and press keys in it while you keep working somewhere else.
+---
+
+**Goal.** An agent fills in a form in TextEdit, a settings dialog or any native app, and you keep typing in your own window the whole time.
+
+## Commands
+
+Type into the app by name. Nothing changes focus:
+
+```sh
+aos key type "Jane Doe" --app=TextEdit
+aos key press tab --app=TextEdit
+aos key type "jane@example.com" --app=TextEdit
+aos key press enter --app=TextEdit
+```
+
+Check the text actually landed:
+
+```sh
+aos key type "hello" --app=TextEdit --verify
+```
+
+`--verify` reads the text back from the app's text field and exits 1 if it did not arrive.
+
+Some apps only accept input when they are focused. Hand focus over for the duration of the command and get it back after:
+
+```sh
+aos key type "hello" --app=Chrome --focus
+```
+
+## What to tell an agent
+
+> Fill in the name field in TextEdit with Jane Doe and the email with jane@example.com, without taking my focus. Verify the text arrived.
+
+## Gotchas
+
+- **Key names are lower case with `+`.** `cmd+shift+s`, `ctrl+a`, `enter`, `tab`, `esc`.
+- **`--app` posts events to that window.** The app must be running with a window. Exit 3 means no window matched.
+- **Focus-free input does not work in every app.** Some apps ignore posted events. Try `--focus` before concluding the field is unreachable.
+- **Point at the right field first.** Combine with `aos mouse click --app=TextEdit --find="Email"` to land in the field by its label.

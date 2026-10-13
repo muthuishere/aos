@@ -1,0 +1,40 @@
+---
+title: Open a meeting setup
+description: Launch the browser and a notes app, put them side by side, and set the volume, in one script.
+---
+
+**Goal.** One command before a call: the meeting page on the left, notes on the right, volume at a sane level.
+
+## Commands
+
+```sh
+aos launch "Google Chrome" --wait
+aos launch Notes --wait
+aos window move "Google Chrome" --zone=1A
+aos window move Notes --zone=1B
+aos audio mute off
+aos audio volume 40
+```
+
+Open the meeting link in its own chromeless window instead of a tab:
+
+```sh
+aos webapp open https://meet.google.com/abc-defg-hij
+```
+
+Put it all in a shell script, or save the window part as a layout:
+
+```sh
+aos window save ~/.config/aos/layouts/meeting.json
+aos window arrange ~/.config/aos/layouts/meeting.json
+```
+
+## What to tell an agent
+
+> Set me up for a call: open the meeting link, put it on the left half, put Notes on the right half, unmute, volume 40.
+
+## Gotchas
+
+- **`launch --wait` returns when the window exists.** Without it, `window move` can run before the app has drawn a window and fail.
+- **`webapp open` uses the browser's app mode.** The window shows up under the browser's app name in `aos window list`.
+- **Volume and mute are the system output.** The meeting app's own volume slider is separate.

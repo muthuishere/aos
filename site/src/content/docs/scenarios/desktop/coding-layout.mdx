@@ -1,0 +1,50 @@
+---
+title: Arrange a coding layout across monitors
+description: Put the editor, terminal and browser where you want them on two monitors, save it, and restore it with one command.
+---
+
+**Goal.** Editor on the big monitor, terminal and browser split on the second, every morning, without dragging windows.
+
+## Commands
+
+See what you have and what the zones mean:
+
+```sh
+aos display list
+aos window list
+aos window zones --monitor=2
+```
+
+Place the windows:
+
+```sh
+aos window move "Visual Studio Code" --monitor=1 --zone=1A
+aos window move Ghostty --monitor=2 --zone=1A
+aos window move "Google Chrome" --monitor=2 --zone=1B
+```
+
+Zone names: `1A` and `1B` are the left and right halves. `2A` to `2D` are the quarters. `1:3` is the first of three columns, `2:3` the second, and so on.
+
+Save the arrangement and restore it later:
+
+```sh
+aos window save ~/.config/aos/layouts/coding.json
+aos window arrange ~/.config/aos/layouts/coding.json
+```
+
+Or feed a layout inline:
+
+```sh
+echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos window arrange -
+```
+
+## What to tell an agent
+
+> Put VS Code full on monitor 1. Split monitor 2 with the terminal on the left and Chrome on the right. Then save that as my coding layout.
+
+## Gotchas
+
+- **App names match the window's app name.** Run `aos window list` to see the exact names. Partial matches work when they are unambiguous.
+- **A window has to exist before it can be moved.** `aos launch Chrome --wait` starts the app and waits for its window.
+- **Monitor numbers come from `aos display list`.** They can change when you plug a monitor in or out.
+- **On macOS the terminal needs Accessibility permission.** `aos permission request accessibility` asks for it.

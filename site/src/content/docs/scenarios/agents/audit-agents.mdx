@@ -1,0 +1,45 @@
+---
+title: Audit what agents did
+description: See every command an agent asked this machine to run, what failed, and how much each route is used.
+---
+
+**Goal.** After a session, know exactly what the agent did, separately from what you typed yourself.
+
+## Commands
+
+```sh
+aos obs audit --since=24h --source=mcp     # what agents asked for, oldest first
+aos obs audit --since=1h --failed          # only the failures
+aos obs tail --limit=20                    # the most recent spans
+aos obs stats --since=7d                   # calls, errors and latency per route
+aos obs summary --since=7d                 # how much the machine is used, and by what
+```
+
+```console
+$ aos obs tail --limit=3
+01:05:30  ok   cli        15ms  network status
+01:05:35  err  cli         0ms  file delete
+01:05:36  err  cli         0ms  file delete
+```
+
+Export for a collector, or find the file:
+
+```sh
+aos obs export --since=24h > spans.json
+aos obs path
+```
+
+## What to tell an agent
+
+> Show me everything you ran on this machine today, and which commands failed.
+
+The agent runs `obs audit --source=mcp` for its own MCP calls, or without the filter for skill-driven shell calls.
+
+## Gotchas
+
+- **Skill-driven calls show as `cli`.** An agent running `aos` from a shell is indistinguishable from you in the source column. Use `--since` and the time of the session to separate them.
+- **Arguments are never recorded.** A span holds the route, exit code, duration and argument count. The clipboard text, paths and message bodies stay out of the log.
+- **Spans are per machine.** For a server, run `obs audit` there.
+- **`AOS_TELEMETRY=off` stops recording.** Then there is nothing to audit.
+
+See also [observability](/aos/observability/).

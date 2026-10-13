@@ -65,6 +65,26 @@ export default defineConfig({
 						{ label: 'Watching a machine', slug: 'remote-share' },
 						{ label: 'Recording a demo', slug: 'capture-video' },
 						{ label: 'Observability', slug: 'observability' },
+						{
+							label: 'Scenarios: desktop',
+							collapsed: true,
+							items: [{ autogenerate: { directory: 'scenarios/desktop' } }],
+						},
+						{
+							label: 'Scenarios: guiding and recording',
+							collapsed: true,
+							items: [{ autogenerate: { directory: 'scenarios/guide' } }],
+						},
+						{
+							label: 'Scenarios: the machine',
+							collapsed: true,
+							items: [{ autogenerate: { directory: 'scenarios/machine' } }],
+						},
+						{
+							label: 'Scenarios: agents',
+							collapsed: true,
+							items: [{ autogenerate: { directory: 'scenarios/agents' } }],
+						},
 					],
 				},
 				{

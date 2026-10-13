@@ -1,0 +1,37 @@
+---
+title: Take a window screenshot for an agent to inspect
+description: Capture one app's window, a region or a monitor to a file so an agent can look at what it did.
+---
+
+**Goal.** After acting on an app, the agent wants to see the result. Capture only that window, so the image is small and unambiguous.
+
+## Commands
+
+```sh
+aos capture screenshot --app=Safari --out=/tmp/safari.png
+aos capture screenshot --monitor=2 --out=/tmp/second.png
+aos capture screenshot --region=0,0,800,600 --out=/tmp/corner.png
+aos capture screenshot region --copy        # select a region, put it on the clipboard
+```
+
+The command prints the file path and the captured bounds:
+
+```console
+$ aos capture screenshot --app=Finder --out=/tmp/shot.png
+/tmp/shot.png  1730x933+2045+94
+```
+
+`aos screenshot` is an alias for `aos capture screenshot`.
+
+## What to tell an agent
+
+> Screenshot the Safari window to /tmp/safari.png and tell me what page is open.
+
+An agent that can read images then opens the file. Claude Code does this with its Read tool.
+
+## Gotchas
+
+- **`--app` captures the window, not the screen around it.** A window that is partly off screen is captured as it is.
+- **The window does not need to be in front.** aos captures it directly. On macOS this needs Screen Recording permission: `aos permission request screen`.
+- **Without `--out`, the file goes to a default location** and its path is printed. Pass `--out` when a script needs to know the name.
+- **To find something in the window, use `find` instead.** A screenshot is for looking. `aos find` returns exact coordinates by label.
