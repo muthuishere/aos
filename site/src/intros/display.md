@@ -1,0 +1,1 @@
+Attached monitors. `list` prints each monitor with its geometry and which one is primary, active (has the pointer) and focused (has the frontmost window). `active` and `focused` print just the id, for scripts that pass it to `--monitor`. Monitor numbers can change when displays are plugged in or out.

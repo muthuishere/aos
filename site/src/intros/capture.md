@@ -1,0 +1,1 @@
+Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them.

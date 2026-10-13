@@ -2,6 +2,7 @@
 title: Recording a demo
 description: capture video records the screen with ffmpeg and renders a second cut where the camera zooms to whatever you or your agent are working on.
 ---
+import Shot from '../../components/Shot.astro';
 
 `aos capture video` records the screen and renders a zoomed cut that follows the action.
 
@@ -20,6 +21,11 @@ events: /Users/you/Movies/demo.events.json
 ```
 
 `demo.final.mp4` is the one to share. It is 1920x1080. It starts wide, zooms in on what you are working on, and pulls back out when nothing is happening. `demo.mp4` is the untouched recording. Stop never deletes it. If rendering fails, the error is printed and the raw file stays.
+
+<div class="shot-grid">
+<Shot name="demo-rec" alt="A recording in progress with the REC indicator" caption="aos capture video start smart" />
+<Shot name="demo-camera" alt="The final cut, zoomed in on the action" caption="demo.final.mp4" />
+</div>
 
 ## Modes
 

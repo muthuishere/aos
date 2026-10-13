@@ -1,0 +1,1 @@
+The agent skill bundled in the binary. It installs itself to `~/.claude/skills/` and `~/.agents/skills/` on the first run and is refreshed with the binary; these commands install, print, locate or remove it by hand. See [using it from an agent (the skill)](/aos/agent-skill/).

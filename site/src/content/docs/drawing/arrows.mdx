@@ -2,8 +2,10 @@
 title: Arrows & pointers
 description: aos draw puts a click-through arrow, ring or box with a sign on the real screen, next to a button, a region, a point or the mouse. Nothing takes focus.
 ---
+import Shot from '../../../components/Shot.astro';
 
 `aos draw` points at something on screen so a person can click it. Every drawing is click-through, so clicks land on the app underneath.
+
 
 ## Example
 
@@ -12,6 +14,8 @@ aos draw --app=Calculator --find=Equals --text="Click here"
 ```
 
 A big arrow with the sign "Click here" appears next to the Equals button in Calculator. It stays until the command exits.
+
+<Shot name="arrow-default" alt="A bent red arrow with the sign Click here pointing at a button" caption="aos draw --rect=860,576,200,56 --text='Click here', rendered with --preview" />
 
 More targets:
 
@@ -22,6 +26,21 @@ aos draw --at=640,400 --text="Here" --shape=straight
 aos draw --mouse --text="You are here"
 aos draw --app=Finder --find=Downloads --text="Open this" --detach --duration=10
 ```
+
+<div class="shot-grid">
+<Shot name="arrow-ring" alt="A ring around the button with the sign This one" caption="--style=ring" />
+<Shot name="arrow-box" alt="A green box around a form area with the sign Fill these in" caption="--style=box --color=green" />
+<Shot name="arrow-shape-straight" alt="A straight arrow" caption="--shape=straight" />
+<Shot name="arrow-shape-zigzag" alt="A zigzag arrow" caption="--shape=zigzag" />
+<Shot name="arrow-shape-spiral" alt="A spiral arrow" caption="--shape=spiral" />
+<Shot name="arrow-shape-bend" alt="A bent arrow, the default" caption="--shape=bend" />
+<Shot name="arrow-size-S" alt="A small arrow" caption="--size=S" />
+<Shot name="arrow-size-L" alt="A large arrow" caption="--size=L" />
+<Shot name="arrow-color-amber" alt="An amber arrow" caption="--color=amber" />
+<Shot name="arrow-color-hex" alt="A pink arrow from a hex colour" caption="--color=#ff2d55" />
+<Shot name="arrow-from-top" alt="An arrow coming from above the target" caption="--from=top" />
+<Shot name="arrow-at" alt="An arrow at a point with no target box" caption="--at=960,500 --shape=straight" />
+</div>
 
 ## Options
 

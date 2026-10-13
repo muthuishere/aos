@@ -2,6 +2,7 @@
 title: The command surface
 description: What the command groups cover, how a command line is read, and how to ask aos what this machine can run.
 ---
+import Shot from '../../components/Shot.astro';
 
 import registry from '../../data/registry.json';
 
@@ -20,6 +21,8 @@ aos has {registry.commands} commands in {registry.groups} groups. The full list 
 | **Watch** | `watch` prints one JSON line per change to the clipboard, the focused window, or a file |
 | **Agents** | `serve` (MCP) · `service` (keep a command running) · `headless` (run without a screen) · `completion` (shell completions) |
 | **Itself** | `doctor` · `commands` · `obs` · `adapters` · `skill` · `version` |
+
+<Shot name="commands-list" alt="The first lines of aos commands" caption="aos commands | head -8" />
 
 ## How a command line is read
 

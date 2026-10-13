@@ -2,8 +2,11 @@
 title: Record a product demo
 description: Record the screen with your voice, and get a cut where the camera zooms to each action.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** A shareable demo video, recorded in one take, where the viewer sees what matters without manual editing.
+
+<Shot name="demo-rec" alt="A recording in progress, with the REC indicator" caption="aos capture video start smart --monitor=1" />
 
 ## Commands
 
@@ -39,6 +42,8 @@ Share `demo.final.mp4`. Re-render with different settings without recording agai
 ```sh
 aos capture video zoom ~/Movies/demo.mp4 --max-zoom=2 --ease=0.8 --out=demo.cut.mp4
 ```
+
+<Shot name="demo-camera" alt="The final cut: the camera has zoomed in on the action" caption="demo.final.mp4 after aos capture video stop" />
 
 ## What to tell an agent
 

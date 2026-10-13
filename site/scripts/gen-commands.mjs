@@ -15,7 +15,7 @@
 // Wired into `npm run build` via the `prebuild` script.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +23,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..');
 const refDir = resolve(here, '..', 'src', 'content', 'docs', 'reference');
 const dataOut = resolve(here, '..', 'src', 'data', 'registry.json');
+// Hand-written introductions, one Markdown file per group, kept outside the
+// generated tree so a regeneration never wipes them. A group without one gets
+// only the generated lead line.
+const introDir = resolve(here, '..', 'src', 'intros');
 
 // Find the main package rather than hard-coding its name: the command has been
 // renamed once already, and a docs generator that breaks on a rename is a
@@ -302,6 +306,13 @@ for (const g of names) {
 	L.push('');
 	L.push(`${cmds.length} command${cmds.length === 1 ? '' : 's'}. Run \`${bin} ${g} --help\` for the same list from the binary, or [see every group](../commands/).`);
 	L.push('');
+	const intro = join(introDir, `${g}.md`);
+	if (existsSync(intro)) {
+		L.push(readFileSync(intro, 'utf8').trim());
+		L.push('');
+		L.push('## Commands');
+		L.push('');
+	}
 	for (const c of cmds) {
 		L.push(commandSection(c));
 	}

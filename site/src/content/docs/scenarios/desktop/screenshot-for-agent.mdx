@@ -2,8 +2,11 @@
 title: Take a window screenshot for an agent to inspect
 description: Capture one app's window, a region or a monitor to a file so an agent can look at what it did.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** After acting on an app, the agent wants to see the result. Capture only that window, so the image is small and unambiguous.
+
+<Shot name="screenshot-out" alt="capture screenshot prints the file and the captured bounds" caption="aos capture screenshot --app=Finder --out=/tmp/shot.png" />
 
 ## Commands
 

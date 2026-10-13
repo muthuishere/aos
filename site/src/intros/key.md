@@ -1,0 +1,1 @@
+Keystrokes and typed text. With `--app` or `--title`, input goes to that window without changing focus, so you keep working elsewhere. `type --verify` reads the text back from the app and fails if it did not arrive. `--focus` hands real focus over for the duration when an app ignores posted input. Key names are lower case joined with `+`, such as `cmd+shift+s`.

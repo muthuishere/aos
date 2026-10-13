@@ -2,6 +2,7 @@
 title: Using it from an agent (MCP)
 description: serve mcp exposes every aos command as an MCP tool over HTTP on loopback, guarded by a token. Scope what an agent sees, and keep the server running as a service.
 ---
+import Shot from '../../components/Shot.astro';
 
 `aos serve mcp` turns every command on this machine into an MCP tool. Use it when your agent wants typed tools with schemas instead of a shell.
 
@@ -43,6 +44,8 @@ window_focus                 Bring a window to the front
 window_list                  List open windows
 window_move                  Move a window to a zone, a split, or absolute bounds
 ```
+
+<Shot name="serve-tools" alt="The MCP tool catalogue for two groups" caption="aos serve tools --groups=window,capture" />
 
 ## The token
 

@@ -1,0 +1,1 @@
+Diagnostics for a bug report. `debug` prints the platform, version, plugin directories and command counts; `debug tools` reports which helper programs such as ffmpeg, wmctrl or xdotool are installed. For a health check with fixes, use `aos doctor` instead.

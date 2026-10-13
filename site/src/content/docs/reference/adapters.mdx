@@ -10,6 +10,88 @@ sidebar:
 
 3 commands. Run `aos adapters --help` for the same list from the binary, or [see every group](../commands/).
 
+## What an adapter is
+
+An adapter is a small JSON file that turns a shell line you already run into an aos command. It gets a group, a name, a one-line summary and optional usage, and from then on it behaves like a built-in: it appears in `aos commands` and `aos <group> --help`, the agent skill can see it, and `aos serve mcp` exposes it as a typed tool. No program to write, nothing to compile.
+
+## Where the files live
+
+```sh
+aos adapters path
+```
+
+| OS | directory |
+|---|---|
+| macOS, Linux | `~/.config/aos/adapters/` |
+| Windows | `%USERPROFILE%\.config\aos\adapters\` |
+
+Set `AOS_CONFIG_DIR` to move the whole config directory. Every `*.json` file in the adapters directory is one group.
+
+## The file format, annotated
+
+`aos adapters example` prints a starter. This is that file with each field explained:
+
+```json
+{
+  "group": "my",                       // the first word after `aos`
+  "description": "My own commands",    // the group's line in `aos --help`
+  "commands": [
+    {
+      "name": "hello",                             // `aos my hello`
+      "summary": "Say hello, to prove adapters work",
+      "args": "[name]",                            // usage shown in help; free text
+      "examples": ["aos my hello world"],          // shown in help and to agents
+      "run": "echo hello"                          // the shell line; your args are appended, quoted
+    },
+    {
+      "name": "notes",
+      "summary": "Open today's note",
+      "run": "$EDITOR ~/notes/$(date +%F).md",
+      "platforms": ["darwin", "linux"]             // omit for every OS
+    }
+  ]
+}
+```
+
+| field | required | meaning |
+|---|---|---|
+| `group` | yes | the group word. Must not be a built-in group |
+| `description` | yes | one line for the group in help |
+| `commands[].name` | yes | the command word |
+| `commands[].summary` | yes | one line in help and in the MCP tool description |
+| `commands[].args` | no | usage text, such as `<text...>` |
+| `commands[].examples` | no | example invocations |
+| `commands[].run` | yes | the shell line. Arguments you pass are appended, each quoted |
+| `commands[].platforms` | no | `darwin`, `linux`, `windows`. Omit for all |
+
+`run` goes through the platform shell, so `$VARS`, pipes and `$(...)` work. Keep secrets in the environment and reference them as `$NAME`, never as a literal in the file.
+
+## How agents see it
+
+An agent running `aos commands --json` sees your adapter with `"source": "adapter"`. Over MCP it is a tool named `<group>_<name>`, with your summary as the description. The bundled skill tells agents to ask the binary for its command list, so a new adapter is visible to an agent on its next command.
+
+```sh
+aos commands | grep '^  my '
+aos serve tools --groups=my
+```
+
+## List and validate
+
+```sh
+aos adapters list       # what this machine has loaded, and from where
+aos commands --check    # lint every adapter; exits non-zero and names the problem
+```
+
+## Gotchas
+
+- **A built-in always wins.** An adapter group or route that collides with a shipped command is ignored for that route.
+- **A malformed file is reported, not skipped.** Run `aos commands --check` after editing.
+- **Quoting happens twice.** Your arguments are quoted when appended, and `run` is itself shell. Test with odd input such as spaces and quotes.
+- **Adapters are per machine.** They live in your config directory and are not synced anywhere. The published command reference lists only built-ins.
+- **For a real program, use a plugin instead.** An executable named `aos-<group>-<name>` on `PATH` joins the CLI the same way. See [extending it](/aos/extending/).
+
+## Commands
+
 ### aos adapters example
 
 <p class="cmd-lead">Print a starter adapter, ready to save and edit</p>

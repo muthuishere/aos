@@ -2,8 +2,11 @@
 title: Record a bug reproduction
 description: Record only the app with the bug, mark the moment it happens, and attach the video and the exact commands to the report.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** A short video of the bug, plus a list of the exact steps, ready to paste into an issue.
+
+<Shot name="bug-rec" alt="Recording the window while reproducing" caption="aos capture video start window --app=MyApp" />
 
 ## Commands
 
@@ -29,6 +32,8 @@ Get the step list from the audit log:
 ```sh
 aos obs audit --since=10m
 ```
+
+<Shot name="obs-failed" alt="The failed commands from the last hour, for the report" caption="aos obs audit --since=1h --failed" />
 
 ## What to tell an agent
 

@@ -2,6 +2,7 @@
 title: Observability
 description: Every aos command records one span in a local file. Use obs to see what was run, by whom, how often, and how it failed. Nothing is sent anywhere.
 ---
+import Shot from '../../components/Shot.astro';
 
 `aos obs` shows what this machine has been asked to do. Every command, typed at a terminal or called as an MCP tool, records one OpenTelemetry-shaped span in a local file.
 
@@ -24,6 +25,8 @@ $ aos obs tail --limit=3
 01:05:35  err  cli         0ms  file delete
 01:05:36  err  cli         0ms  file delete
 ```
+
+<Shot name="obs-tail" alt="The most recent spans, newest last" caption="aos obs tail --limit=8" />
 
 ## Commands
 

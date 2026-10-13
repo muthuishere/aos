@@ -1,0 +1,1 @@
+One pass over what this machine can and cannot do, with the fix for each gap. It does real work: it round-trips the clipboard, takes a screenshot, lists windows, checks permissions and looks for ffmpeg. `--json` gives a list of checks with a `status` field, so a script can pick out what is not `ok`.

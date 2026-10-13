@@ -1,0 +1,1 @@
+Run aos on a machine with no screen. `status` says whether a display is available and where it came from. On Linux, `start` launches a virtual display with Xvfb and an optional window manager, later commands adopt it automatically, and `stop` tears it down. `run` executes one command against the managed display explicitly. See [headless machines](/aos/headless/).

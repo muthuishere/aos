@@ -1,0 +1,1 @@
+Share this screen, mouse and keyboard with a browser on the same network. `share` prints a LAN URL, runs until Ctrl-C, and is never an MCP tool, so only a person can start it. `url` prints the link of a running share. There is no tunnel or relay. See [watching a machine](/aos/remote-share/).

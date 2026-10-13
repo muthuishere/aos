@@ -1,6 +1,7 @@
 ---
 // Landing page: outside the Starlight layout, plain HTML + CSS, no extra deps.
 import registry from '../data/registry.json';
+import showcase from '../data/showcase.json';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const repo = 'https://github.com/muthuishere/aos';
@@ -43,6 +44,21 @@ const features = [
 		<title>aos — let your AI use your computer, without taking it over</title>
 		<meta name="description" content={`One CLI that lets AI agents and people control the desktop on macOS, Windows and Linux. ${registry.commands} commands across ${registry.groups} groups.`} />
 		<link rel="icon" href={`${base}/favicon.svg`} />
+		<meta property="og:title" content="aos — let your AI use your computer, without taking it over" />
+		<meta property="og:description" content={`One CLI that lets AI agents and people control the desktop on macOS, Windows and Linux. ${registry.commands} commands across ${registry.groups} groups.`} />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content={`https://muthuishere.github.io${base}/social/watch-1200x630.png`} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={`https://muthuishere.github.io${base}/social/watch-1200x630.png`} />
+		<script is:inline>
+			// Follow the theme chosen on the docs pages (Starlight stores it in localStorage).
+			try {
+				const t = localStorage.getItem('starlight-theme');
+				if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+			} catch {}
+		</script>
 	</head>
 	<body>
 		<header class="nav wrap">
@@ -56,7 +72,7 @@ const features = [
 
 		<main>
 			<section class="hero wrap">
-				<svg class="lines" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+				<div class="lines-wrap" aria-hidden="true"><svg class="lines" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" focusable="false">
 					<defs>
 						<pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" /></pattern>
 						<radialGradient id="fade"><stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></radialGradient>
@@ -69,7 +85,7 @@ const features = [
 					<circle class="dot" r="3.5"><animateMotion dur="9s" begin="2s" repeatCount="indefinite"><mpath href="#trace2" /></animateMotion></circle>
 					<path class="arrow" d="M1040 330 C 1010 400, 960 430, 905 428" />
 					<path class="arrow head" d="M922 414 L903 428 L924 440" />
-				</svg>
+				</svg></div>
 				<p class="eyebrow">macOS · Windows · Linux · one binary</p>
 				<h1>Let your AI use your computer, without taking it over.</h1>
 				<p class="sub">aos is a CLI and an agent skill. Install it once, and your agent can arrange your windows, open apps, click, type, show you where to click, and record what it did, on macOS, Windows and Linux.</p>
@@ -117,10 +133,31 @@ const features = [
 				<div class="grid">
 					{features.map((f) => (
 						<article class="card">
-							<img class="thumb" src={`${base}/cards/${f.img}.webp`} alt="" width="640" height="360" loading="lazy" decoding="async" />
+							<a class="thumb-link" data-zoom href={`${base}/cards/full/${f.img}.webp`} data-caption={f.t} title={`${f.t}: view full size`}>
+								<img class="thumb" src={`${base}/cards/${f.img}.webp`} alt={`${f.t}: ${f.c}`} width="640" height="360" loading="lazy" decoding="async" />
+							</a>
 							<h3>{f.t}</h3>
 							<p>{f.d}</p>
 							<code class="ex">{f.c}</code>
+						</article>
+					))}
+				</div>
+			</section>
+
+			<section class="wrap block">
+				<h2>Beyond windows: your whole machine</h2>
+				<p class="lead">Clipboard, files, processes, packages, audio, the audit log. Every one is a command with the same exit codes, and most of them need no screen at all.</p>
+				<div class="panels">
+					{showcase.panels.map((p) => (
+						<article class="panel" id={`panel-${p.id}`}>
+							<div class="panel-brand"><span class="brand-mark small">aos</span></div>
+							<h3>{p.title}</h3>
+							<div class="rows">
+								{p.rows.map((r) => (
+									<div class="row"><b>$</b> <span class="c">{r.cmd}</span>{r.out && <span class="o">{r.out}</span>}</div>
+								))}
+							</div>
+							<p class="panel-foot">{showcase.footer}</p>
 						</article>
 					))}
 				</div>
@@ -158,15 +195,23 @@ const features = [
 
 		<style is:global>
 			:root {
+				color-scheme: light dark;
 				--bg: #fbfbfa; --ink: #121212; --muted: #5f6368; --hair: #e6e6e3; --card: #fff;
 				--code-bg: #0f1115; --code-ink: #e6e8ec; --acc: #4f46e5; --acc-ink: #fff; --acc-soft: #eef0ff;
 			}
+			/* Dark: the system preference, unless the docs theme switch said light. */
 			@media (prefers-color-scheme: dark) {
-				:root {
+				:root:not([data-theme='light']) {
 					--bg: #0b0c0f; --ink: #f2f3f5; --muted: #9aa0a8; --hair: #23262d; --card: #13151a;
 					--code-bg: #07080a; --code-ink: #e6e8ec; --acc: #8b85ff; --acc-ink: #0b0c0f; --acc-soft: #1b1c33;
 				}
 			}
+			:root[data-theme='dark'] {
+				--bg: #0b0c0f; --ink: #f2f3f5; --muted: #9aa0a8; --hair: #23262d; --card: #13151a;
+				--code-bg: #07080a; --code-ink: #e6e8ec; --acc: #8b85ff; --acc-ink: #0b0c0f; --acc-soft: #1b1c33;
+			}
+			:root[data-theme='dark'] { color-scheme: dark; }
+			:root[data-theme='light'] { color-scheme: light; }
 			* { box-sizing: border-box; }
 			html, body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: hidden;
 				font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
@@ -175,7 +220,11 @@ const features = [
 			.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
 			.nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
 			.brand { display: inline-flex; align-items: baseline; gap: 12px; text-decoration: none; color: inherit; }
-			.brand-mark { font-weight: 800; font-size: 34px; letter-spacing: -0.05em; background: linear-gradient(120deg, var(--ink) 30%, #8b8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+			.brand-mark { font-weight: 800; font-size: 34px; letter-spacing: -0.05em; color: var(--ink); }
+			@supports (background-clip: text) or (-webkit-background-clip: text) {
+				.brand-mark { background: linear-gradient(120deg, var(--ink) 30%, #8b8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+			}
+			@media (forced-colors: active) { .brand-mark { background: none; color: CanvasText; } }
 			.brand-sub { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted, #8a8f98); }
 			@media (max-width: 560px) { .brand-sub { display: none; } }
 			.nav nav { display: flex; gap: 20px; font-size: 14.5px; }
@@ -207,16 +256,27 @@ const features = [
 			.lead { color: var(--muted); font-size: 18px; margin: 0 0 32px; max-width: 40em; }
 			.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 			.card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; min-width: 0; }
-			.thumb { display: block; width: calc(100% + 40px); height: auto; margin: -20px -20px 14px; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 13px 13px 0 0; border-bottom: 1px solid var(--hair); background: #07080a; }
+			.thumb-link { display: block; margin: -20px -20px 14px; border-radius: 13px 13px 0 0; outline-offset: -3px; }
+			.thumb-link:focus-visible { outline: 2px solid var(--acc); }
+			.thumb { display: block; width: 100%; height: auto; margin: 0; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 13px 13px 0 0; border-bottom: 1px solid var(--hair); background: #07080a; }
 			.card h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; }
 			.card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; flex: 1; }
 			.ex { display: block; font-size: 12.5px; background: var(--code-bg); color: var(--code-ink); padding: 9px 11px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+			.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr)); gap: 16px; }
+			.panel { background: radial-gradient(700px 360px at 20% -10%, var(--acc-soft) 0%, var(--card) 60%); border: 1px solid var(--hair); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+			.panel-brand .brand-mark.small { font-size: 22px; }
+			.panel h3 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -0.02em; }
+			.panel .rows { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+			.panel .row { background: var(--code-bg); border: 1px solid #ffffff14; border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--code-ink); }
+			.panel .row b { color: var(--acc); font-weight: 600; }
+			.panel .row .o { display: block; color: #9aa0a8; }
+			.panel-foot { margin: 0; font-size: 12px; color: var(--muted); border-top: 1px solid var(--hair); padding-top: 10px; }
 			.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 			.term { background: var(--code-bg); border-radius: 14px; overflow: hidden; border: 1px solid var(--hair); min-width: 0; }
 			.bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #ffffff14; }
 			.bar span { width: 10px; height: 10px; border-radius: 50%; background: #ffffff26; }
 			.bar em { font-style: normal; font-size: 12.5px; color: #9aa0a8; margin-left: 8px; }
-			.term pre { margin: 0; padding: 18px; color: var(--code-ink); font-size: 14px; line-height: 1.7; overflow-x: auto; }
+			.term pre { margin: 0; padding: 18px; color: var(--code-ink); font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 			.term b { color: var(--acc); }
 			.small { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 			.card.link { text-decoration: none; transition: border-color .15s; }
@@ -236,7 +296,8 @@ const features = [
 			   (a nod to `aos draw`), and sections that rise in once. */
 			.hero { position: relative; isolation: isolate; }
 			body { overflow-x: hidden; }
-			.lines { position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; margin-left: -50vw; height: 100%; z-index: -1; pointer-events: none; }
+			.lines-wrap { position: absolute; inset: 0; left: 50%; width: 100vw; max-width: 100vw; margin-left: -50vw; overflow: hidden; z-index: -1; pointer-events: none; }
+			.lines { display: block; width: 100%; height: 100%; }
 			.lines .grid path { stroke: currentColor; stroke-width: .5; opacity: .12; }
 			.lines .grid { color: inherit; }
 			.lines pattern path { stroke: currentColor; stroke-width: .6; opacity: .14; }
@@ -257,7 +318,16 @@ const features = [
 				.reveal { opacity: 1; transform: none; transition: none; }
 				.cmdline code::after { animation: none; }
 			}
+			/* Lightbox (public/lightbox.js) */
+			dialog.lb { border: 0; padding: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; }
+			dialog.lb::backdrop { background: #000c; backdrop-filter: blur(6px); }
+			.lb-fig { margin: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; box-sizing: border-box; }
+			.lb-img { max-width: 100%; max-height: calc(100vh - 90px); border-radius: 12px; box-shadow: 0 40px 120px -20px #000; }
+			.lb-cap { color: #e6e8ec; font-size: 14px; }
+			.lb-close { position: fixed; top: 14px; right: 18px; font: 28px/1 sans-serif; color: #fff; background: #ffffff1a; border: 1px solid #ffffff33; border-radius: 999px; width: 44px; height: 44px; cursor: pointer; }
+			.lb-close:focus-visible { outline: 2px solid var(--acc); }
 		</style>
+		<script is:inline defer src={`${base}/lightbox.js`}></script>
 
 		<script is:inline>
 			(() => {

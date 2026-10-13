@@ -2,8 +2,11 @@
 title: Check machine health
 description: One pass over what aos can do here, plus battery, power, network and system facts.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** Before handing a machine to an agent, or when something feels off, get the facts in one go.
+
+<Shot name="doctor" alt="aos doctor with every check ok" caption="aos doctor" />
 
 ## Commands
 
@@ -39,6 +42,8 @@ Script it:
 ```sh
 aos doctor --json | jq '.[] | select(.status != "ok")'
 ```
+
+<Shot name="hardware" alt="Battery, power, network and system facts" caption="aos battery status; aos power status; aos network status; aos system info" />
 
 ## What to tell an agent
 

@@ -1,0 +1,1 @@
+What this machine has been asked to do. Every command records one span with the route, the source (`cli` or `mcp`), the exit code, the duration and the number of arguments, never their values. `audit` lists commands in order, `stats` and `summary` aggregate, `tail` shows the latest, `export` emits OTLP JSON. See [observability](/aos/observability/).

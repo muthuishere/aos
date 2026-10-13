@@ -1,0 +1,1 @@
+Running processes. `list` and `find` filter by substring and have `--json`. `kill` takes a pid, or a name when exactly one process matches; with several matches it refuses and lists them. `--force` sends a signal the process cannot ignore.

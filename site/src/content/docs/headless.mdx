@@ -2,6 +2,7 @@
 title: Headless machines
 description: Most of aos works with no display. On Linux, headless start creates a virtual display for the commands that need one.
 ---
+import Shot from '../../components/Shot.astro';
 
 Most aos commands need no screen. On a server, in CI, or in a container, `exec`, `file`, `pkg`, `network`, `system`, `power`, `battery`, `font`, `debug` and `serve` work the same as on a laptop.
 
@@ -30,6 +31,8 @@ aos headless stop
 ```
 
 Later `aos` commands find the managed display on their own. There is no `export DISPLAY` step.
+
+<Shot name="headless" alt="headless status on a desktop, and the refusal a screenless server gives" caption="aos headless status; ssh server aos window list" />
 
 ## Options for `headless start`
 

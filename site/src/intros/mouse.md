@@ -1,0 +1,1 @@
+Pointer position and clicks. `click --app=X --find=Label` presses a control through the accessibility API, with no pointer movement and no focus change. Coordinates are global screen pixels; `--monitor` makes them relative to one monitor.

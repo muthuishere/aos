@@ -1,0 +1,77 @@
+{
+  "footer": "One CLI for you and your agent · macOS · Windows · Linux · muthuishere.github.io/aos",
+  "panels": [
+    {
+      "id": "watch",
+      "title": "Watch your machine at the OS level. One JSON line per change.",
+      "rows": [
+        { "cmd": "aos watch clipboard", "out": "{\"event\":\"clipboard\",\"seq\":1,\"length\":7,\"digest\":\"4b559aab5a29\",…}" },
+        { "cmd": "aos watch window --max=1", "out": "{\"event\":\"window\",\"app\":\"Google Chrome\",\"title\":\"aos docs\",\"monitor\":3,…}" },
+        { "cmd": "aos watch file ./src --recursive", "out": "{\"event\":\"file\",\"kind\":\"created\",\"path\":\"./src/x.go\",\"size\":0,…}" }
+      ]
+    },
+    {
+      "id": "clipboard",
+      "title": "The clipboard, in and out of a pipeline.",
+      "rows": [
+        { "cmd": "echo \"hello from aos\" | aos clipboard copy", "out": "" },
+        { "cmd": "aos clipboard paste", "out": "hello from aos" },
+        { "cmd": "aos watch clipboard --max=1 --content", "out": "{\"event\":\"clipboard\",\"seq\":1,\"length\":14,\"text\":\"hello from aos\"}" }
+      ]
+    },
+    {
+      "id": "files",
+      "title": "Files with exit codes an agent can trust.",
+      "rows": [
+        { "cmd": "aos file stat package.json --json", "out": "{\"name\":\"package.json\",\"size\":499,\"mode\":\"-rw-r--r--\",\"dir\":false,\"modified\":\"2026-10-13T06:02:13+05:30\"}" },
+        { "cmd": "aos file read notes.md --lines=1:3", "out": "# Monday\n- call the bank\n- ship the docs" },
+        { "cmd": "aos file delete /", "out": "aos: refusing to delete /" }
+      ]
+    },
+    {
+      "id": "process",
+      "title": "Processes and services, without sudo.",
+      "rows": [
+        { "cmd": "aos process find Finder --json", "out": "[{\"pid\":2424,\"name\":\"Finder\",\"cpu\":0,\"memory_mb\":97.4,\"user\":\"you\"}]" },
+        { "cmd": "aos process kill Calculator", "out": "" },
+        { "cmd": "aos service create mcp --autostart --now -- aos serve mcp", "out": "name    mcp\nlabel   aos.mcp\nstate   running" }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "Audio, battery, network, lock. Same verbs on every OS.",
+      "rows": [
+        { "cmd": "aos audio volume 40 && aos audio mute off", "out": "40" },
+        { "cmd": "aos battery status && aos network status", "out": "100%  charged\ninterface  en0\naddress    192.168.1.24\nwifi       HomeNet" },
+        { "cmd": "aos system lock", "out": "" }
+      ]
+    },
+    {
+      "id": "audit",
+      "title": "Every command this machine was asked to run, recorded.",
+      "rows": [
+        { "cmd": "aos obs tail --limit=3", "out": "06:55:20  ok   cli        56ms  process find\n06:55:21  err  cli        47ms  process kill\n06:55:21  ok   cli       351ms  doctor" },
+        { "cmd": "aos obs audit --since=24h --source=mcp", "out": "2026-10-13 06:02:59  mcp  window move   121ms  ok\n2026-10-13 06:03:07  mcp  key type      306ms  ok" },
+        { "cmd": "aos obs export --since=1h > spans.json", "out": "" }
+      ]
+    },
+    {
+      "id": "pkg",
+      "title": "One package verb set over brew, winget, apt and more.",
+      "rows": [
+        { "cmd": "aos pkg manager", "out": "homebrew" },
+        { "cmd": "aos pkg search ripgrep", "out": "ripgrep\nripgrep-all" },
+        { "cmd": "aos pkg install ripgrep", "out": "" }
+      ]
+    },
+    {
+      "id": "remote",
+      "title": "Watch it from your phone. Hand it to an agent over MCP.",
+      "rows": [
+        { "cmd": "aos remote share", "out": "LAN    http://192.168.1.24:8765/?k=…\nPress Ctrl-C to revoke the link and stop." },
+        { "cmd": "aos serve mcp", "out": "aos mcp  http://127.0.0.1:14320/mcp\ntoken    YOUR_TOKEN\ntools    96" },
+        { "cmd": "aos serve tools --groups=window", "out": "window_list    List open windows\nwindow_move    Move a window to a zone, a split, or bounds" }
+      ]
+    }
+  ]
+}

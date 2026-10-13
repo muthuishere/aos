@@ -2,6 +2,7 @@
 title: Using it from an agent (the skill)
 description: The agent skill is bundled in the aos binary and installs itself. An agent with a shell can then drive the machine, locally or over SSH, with no server running.
 ---
+import Shot from '../../components/Shot.astro';
 
 The agent skill is a short instruction file that tells an agent that aos exists, what its exit codes mean, and which commands need a screen. It is the main way an agent uses aos, and it needs no server.
 
@@ -20,6 +21,8 @@ aos skill uninstall   # remove it
 ```
 
 Set `AOS_NO_SKILL_AUTOINSTALL=1` to stop the automatic install.
+
+<Shot name="skill-show" alt="The start of the bundled skill" caption="aos skill show | head -8" />
 
 ## Why the skill is the first choice
 

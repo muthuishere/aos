@@ -1,0 +1,1 @@
+A film-style caption over the screen, bottom-center by default, for narrating what an agent is doing without taking focus. A new caption replaces the last one; `stop` clears it; `test` shows a sample. See [subtitles](/aos/drawing/subtitles/).

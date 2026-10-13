@@ -1,0 +1,9 @@
+---
+// Starlight `Head` override: the default head plus the lightbox script that
+// the Shot component and the landing page share.
+import Default from '@astrojs/starlight/components/Head.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Default />
+<script is:inline defer src={`${base}/lightbox.js`}></script>

@@ -1,0 +1,1 @@
+Locate a button, menu item, link or text inside a window by its label, and get its bounds and center. It reads the accessibility tree first and falls back to OCR. Use it on its own to inspect, or let `mouse click --find` and `draw --find` do the lookup for you. Exit 3 means nothing matched.

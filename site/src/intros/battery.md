@@ -1,0 +1,1 @@
+Battery facts for laptops. `status` prints the charge and whether it is charging, `percent` prints a bare number for scripts, and `present` exits 0 or 1 so a script can branch on whether there is a battery at all. On a desktop, `present` exits 1 and the others say no battery.

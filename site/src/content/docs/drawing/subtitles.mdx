@@ -2,6 +2,7 @@
 title: Subtitles
 description: aos subtitle shows a film-style caption at the bottom of the screen for a few seconds, so an agent can narrate what it is doing without taking focus.
 ---
+import Shot from '../../../components/Shot.astro';
 
 `aos subtitle show` puts a caption on screen, white on a translucent dark pill, bottom-center by default. A new caption replaces the last one. It is how an agent narrates what it is doing.
 
@@ -14,6 +15,8 @@ aos subtitle show "running the migration" --seconds=30 --position=top-center
 aos subtitle show "step 1 of 3" --seconds=4 --wait
 aos subtitle stop
 ```
+
+<Shot name="subtitle-default" alt="A caption at the bottom-center of the screen on a translucent pill" caption="aos subtitle show 'Opening the export dialog…', rendered with --preview" />
 
 Check that subtitles work on this machine:
 
@@ -36,6 +39,14 @@ aos subtitle test
 | `--wait` | block until the caption has gone |
 | `--preview=<out.png>` | render to a file instead of the screen |
 | `--json` | machine-readable output |
+
+<div class="shot-grid">
+<Shot name="subtitle-top" alt="A caption at the top of the screen" caption="--position=top-center" />
+<Shot name="subtitle-xl" alt="A large green caption" caption="--size=XL --color=green" />
+<Shot name="subtitle-bg-none" alt="A caption with no pill" caption="--bg=none" />
+<Shot name="subtitle-over-window" alt="A caption at the bottom of one window" caption="--rect=<window> --position=bottom-center" />
+<Shot name="subtitle-left" alt="A bold caption on the left" caption="--position=left --size=L --weight=bold" />
+</div>
 
 ## Gotchas
 

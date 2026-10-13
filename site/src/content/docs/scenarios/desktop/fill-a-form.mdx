@@ -2,8 +2,11 @@
 title: Fill a form in a native app without stealing focus
 description: Type into a named app and press keys in it while you keep working somewhere else.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** An agent fills in a form in TextEdit, a settings dialog or any native app, and you keep typing in your own window the whole time.
+
+<Shot name="form-type" alt="Text typed into TextEdit while the terminal keeps focus" caption="aos key type --app=TextEdit" />
 
 ## Commands
 
@@ -29,6 +32,8 @@ Some apps only accept input when they are focused. Hand focus over for the durat
 ```sh
 aos key type "hello" --app=Chrome --focus
 ```
+
+<Shot name="form-verify" alt="The verify step reads the text back from TextEdit" caption="aos key type --app=TextEdit --verify" />
 
 ## What to tell an agent
 

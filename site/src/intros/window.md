@@ -1,0 +1,1 @@
+Desktop windows on every platform: list them with geometry, focus one, move it to a zone or exact bounds, resize it, wait for one to appear, and save or apply a whole layout. Zones are `1A`/`1B` for halves, `2A` to `2D` for quarters and `M:N` for the M-th of N columns; `zones` shows them on a real monitor.

@@ -10,6 +10,10 @@ sidebar:
 
 4 commands. Run `aos headless --help` for the same list from the binary, or [see every group](../commands/).
 
+Run aos on a machine with no screen. `status` says whether a display is available and where it came from. On Linux, `start` launches a virtual display with Xvfb and an optional window manager, later commands adopt it automatically, and `stop` tears it down. `run` executes one command against the managed display explicitly. See [headless machines](/aos/headless/).
+
+## Commands
+
 ### aos headless run
 
 <p class="cmd-lead">Run a command against the managed virtual display</p>

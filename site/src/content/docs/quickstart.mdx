@@ -2,6 +2,7 @@
 title: Quickstart
 description: Install aos, check the machine, run a command, and hand it to an agent.
 ---
+import Shot from '../../components/Shot.astro';
 
 import { Steps } from '@astrojs/starlight/components';
 
@@ -39,6 +40,8 @@ import { Steps } from '@astrojs/starlight/components';
    ```
 
    `doctor` does real work: it round-trips the clipboard, takes a screenshot, lists windows, and checks permissions. Anything not `ok` prints what to run to fix it.
+
+   <Shot name="doctor" alt="aos doctor with every check ok" caption="aos doctor" />
 
 3. **Run something.**
 

@@ -1,0 +1,1 @@
+Run programs. `run` streams the output to the terminal, `capture` returns stdout, stderr and the exit code as one JSON object an agent can parse, and `shell` runs a line through the platform shell so pipes and globs work. `run` and `capture` execute the program directly, not a shell, so use `shell` when you need `|` or `$VAR`. There is no sandbox.
