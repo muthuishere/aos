@@ -11,6 +11,7 @@
 #   sh install.sh --dir ~/bin
 #
 # Environment equivalents: AOS_FROM, AOS_VERSION, AOS_INSTALL_DIR
+# (AOS_NO_PATH=1 skips the PATH hint)
 # (AOS_DOWNLOAD_BASE is accepted as an alias of AOS_FROM).
 #
 # Read it first if you like -- the right instinct for anything piped to a shell:
@@ -152,8 +153,8 @@ else
 fi
 
 say "    ${DIR}/aos"
-case ":$PATH:" in
-    *":$DIR:"*) ;;
+case "${AOS_NO_PATH:+skip}:$PATH:" in
+    skip*|*":$DIR:"*) ;;
     *) say ""
        say "$DIR is not on your PATH. Add this to your shell profile:"
        say "    export PATH=\"$DIR:\$PATH\"" ;;

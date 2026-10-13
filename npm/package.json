@@ -1,0 +1,48 @@
+{
+  "name": "@muthuishere/aos",
+  "version": "0.0.0",
+  "description": "Hands for your AI agent: one CLI to drive macOS, Windows and Linux (windows, mouse, keyboard, screenshots, files, processes, services).",
+  "license": "MIT",
+  "homepage": "https://muthuishere.github.io/aos/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muthuishere/aos.git",
+    "directory": "npm"
+  },
+  "bugs": "https://github.com/muthuishere/aos/issues",
+  "keywords": [
+    "cli",
+    "automation",
+    "ai-agent",
+    "mcp",
+    "desktop",
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "bin": {
+    "aos": "bin/aos.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "install.sh",
+    "install.cmd"
+  ],
+  "scripts": {
+    "prepack": "node lib/copy-installers.js",
+    "postinstall": "node lib/postinstall.js"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "engines": {
+    "node": ">=16"
+  }
+}

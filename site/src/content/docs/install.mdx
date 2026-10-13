@@ -21,6 +21,15 @@ curl -fsSL -o install.cmd https://raw.githubusercontent.com/muthuishere/aos/main
 
 This puts `aos.exe` in `%LOCALAPPDATA%\Programs\aos` and adds it to your user `PATH`. It is a `.cmd` file because PowerShell blocks unsigned script files by default, and a `.cmd` runs everywhere. Both `/from` and `--from` styles work, and likewise `/version` and `/dir`.
 
+## npm (any OS)
+
+```sh
+npm i -g @muthuishere/aos
+npx @muthuishere/aos doctor      # or run it without installing
+```
+
+The package runs the same `install.sh` / `install.cmd` to fetch the matching release (sha256-verified), but puts the binary inside the package folder instead of on your `PATH`, so `npm uninstall -g @muthuishere/aos` removes it cleanly. With `--ignore-scripts`, pnpm or bun (which skip install scripts), the binary is fetched the first time you run `aos`. Behind a proxy, set `HTTPS_PROXY` or `npm config set https-proxy`.
+
 ## Options
 
 | option | what it does |
