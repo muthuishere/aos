@@ -2,6 +2,7 @@
 title: Text labels
 description: aos draw text shows a styled text label with no arrow inside a window, on a monitor, in a rect, or beside a point. It is click-through and takes no focus.
 ---
+import Shot from '../../../components/Shot.astro';
 
 `aos draw text` puts a styled label on screen. There is no arrow. Use it for a step title, a status, or a note next to something.
 
@@ -12,6 +13,8 @@ aos draw text "Your notes live here" --app=TextEdit --position=center --size=L -
 ```
 
 The label appears in the middle of the TextEdit window, fades after 7 seconds, and the command returns at once.
+
+<Shot name="text-pos-center" alt="A label in the middle of a window" caption="aos draw text --position=center, rendered with --preview" />
 
 More placements:
 
@@ -24,6 +27,18 @@ aos draw text "You are here" --mouse
 ```
 
 With no target, the label sits bottom-center of the focused monitor, inside a subtitle-safe area (8% from the bottom, 5% from the sides). While `capture video` is recording, that means the recording's monitor.
+
+<div class="shot-grid">
+<Shot name="text-pos-top-left" alt="A label at top-left of the window" caption="--position=top-left" />
+<Shot name="text-pos-top-center" alt="A label at top-center of the window" caption="--position=top-center" />
+<Shot name="text-pos-top-right" alt="A label at top-right of the window" caption="--position=top-right" />
+<Shot name="text-pos-left" alt="A label at left of the window" caption="--position=left" />
+<Shot name="text-pos-right" alt="A label at right of the window" caption="--position=right" />
+<Shot name="text-pos-bottom-left" alt="A label at bottom-left of the window" caption="--position=bottom-left" />
+<Shot name="text-pos-bottom-center" alt="A label at bottom-center of the window" caption="--position=bottom-center" />
+<Shot name="text-pos-bottom-right" alt="A label at bottom-right of the window" caption="--position=bottom-right" />
+<Shot name="text-default" alt="A label at the bottom-center of the monitor, the default" caption="no target: bottom-center of the focused monitor" />
+</div>
 
 ## Options
 
@@ -43,6 +58,21 @@ With no target, the label sits bottom-center of the focused monitor, inside a su
 | `--json` | machine-readable output |
 
 `aos draw stop` removes every detached label and drawing.
+
+<div class="shot-grid">
+<Shot name="text-size-S" alt="Size S" caption="--size=S" />
+<Shot name="text-size-M" alt="Size M" caption="--size=M" />
+<Shot name="text-size-L" alt="Size L" caption="--size=L" />
+<Shot name="text-size-XL" alt="Size XL" caption="--size=XL" />
+<Shot name="text-color" alt="Green text" caption="--color=green" />
+<Shot name="text-bg-none" alt="Text with no background pill" caption="--bg=none" />
+<Shot name="text-bg-color" alt="Custom background and text colours" caption="--bg=#1b1c33 --color=#c3c0ff" />
+<Shot name="text-bold" alt="Bold text" caption="--weight=bold" />
+<Shot name="text-font" alt="A different font" caption="--font='Avenir Next Condensed'" />
+<Shot name="text-multiline" alt="Two lines of text" caption="'Line one\nLine two'" />
+<Shot name="text-margin" alt="A label inset by ten percent" caption="--margin=10%" />
+<Shot name="text-maxwidth" alt="A long label wrapped at forty percent of the window" caption="--max-width=40% --align=left" />
+</div>
 
 ## Gotchas
 

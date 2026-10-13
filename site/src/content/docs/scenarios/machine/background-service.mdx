@@ -2,8 +2,11 @@
 title: Run a command as a background service
 description: Install any command as a per-user service that starts at login and survives reboots, without touching system services.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** A sync job, a local server or `aos serve mcp` keeps running after the terminal closes and comes back after a reboot.
+
+<Shot name="service" alt="service list and service status before the service is installed" caption="aos service list; aos service status mcp" />
 
 ## Commands
 

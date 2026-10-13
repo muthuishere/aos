@@ -1,0 +1,19 @@
+---
+// A screenshot on a docs page: a 640px thumbnail that opens the full-size
+// image in the lightbox (public/lightbox.js, loaded by Head.astro).
+// `name` is a file under public/shots/, without extension.
+interface Props {
+	name: string;
+	alt: string;
+	caption?: string;
+}
+const { name, alt, caption } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<figure class="shot">
+	<a data-zoom href={`${base}/shots/full/${name}.webp`} data-caption={caption} title={caption}>
+		<img src={`${base}/shots/${name}.webp`} alt={alt} width="640" height="360" loading="lazy" decoding="async" />
+	</a>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>

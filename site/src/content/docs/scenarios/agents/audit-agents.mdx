@@ -2,8 +2,11 @@
 title: Audit what agents did
 description: See every command an agent asked this machine to run, what failed, and how much each route is used.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** After a session, know exactly what the agent did, separately from what you typed yourself.
+
+<Shot name="obs-tail" alt="The most recent spans, newest last" caption="aos obs tail --limit=8" />
 
 ## Commands
 
@@ -28,6 +31,8 @@ Export for a collector, or find the file:
 aos obs export --since=24h > spans.json
 aos obs path
 ```
+
+<Shot name="obs-failed" alt="Only the failures from the last hour" caption="aos obs audit --since=1h --failed" />
 
 ## What to tell an agent
 

@@ -1,0 +1,1 @@
+Run any command as a managed per-user service that starts at login and survives reboots: a launchd user agent on macOS, a `systemd --user` unit on Linux, a Scheduled Task on Windows. Names are prefixed `aos.`, and aos only ever lists or removes its own services. No sudo.

@@ -1,0 +1,1 @@
+Read, write and inspect files with exit codes an agent can trust. `read` takes a line range, `write` and `append` take words or stdin, `list` and `stat` have `--json`. `delete` refuses filesystem roots, your home directory and system directories, and needs `--recursive` for a directory.

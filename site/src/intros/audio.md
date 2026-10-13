@@ -1,0 +1,1 @@
+Output volume and mute for the system sound device. `volume` with no argument prints the level 0 to 100; with a number it sets it, and `+n` or `-n` nudges it. `mute` prints or changes the mute state. These work without a display, so they are fine over SSH.

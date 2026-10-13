@@ -1,0 +1,1 @@
+Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three.

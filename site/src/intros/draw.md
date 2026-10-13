@@ -1,0 +1,1 @@
+Click-through drawings on the real screen for a person to follow: an arrow, ring or box with a sign at a point, a region, a window or a control found by its label, and `draw text` for a label with no arrow. Nothing takes focus and clicks pass through to the app underneath. See [arrows & pointers](/aos/drawing/arrows/) and [text labels](/aos/drawing/text/).

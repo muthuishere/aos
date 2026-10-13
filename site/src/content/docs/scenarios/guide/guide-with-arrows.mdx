@@ -2,8 +2,11 @@
 title: Guide a human with arrows
 description: When the person should click, not the agent, point at the control with a click-through arrow and a sign.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** The agent reaches a step it should not do itself, such as a payment confirmation or a permission dialog. It shows the person exactly where to click.
+
+<Shot name="arrow-done" alt="A red arrow with the sign Done pointing at the result in TextEdit" caption="aos draw --app=TextEdit --find=... --text='Done'" />
 
 ## Commands
 
@@ -22,6 +25,8 @@ Chain a few steps with a label for each:
 aos draw text "Step 1 of 2: pick a file" --app=Finder --position=top-center --detach --duration=8
 aos draw --app=Finder --find=Downloads --text="Here" --detach --duration=8
 ```
+
+<Shot name="arrow-windows" alt="The same arrow on Windows 11, pointing at the Calculator result" caption="aos draw --title=Calculator --find=Equals --text='Same aos'" />
 
 ## What to tell an agent
 

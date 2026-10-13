@@ -2,6 +2,7 @@
 title: Extending it
 description: Add your own commands with a JSON adapter or an executable on PATH. Both show up in help and as MCP tools. Neither can replace a built-in.
 ---
+import Shot from '../../components/Shot.astro';
 
 You can add commands to aos without changing the binary. There are two ways. Both appear in `aos commands`, in `--help`, and as MCP tools.
 
@@ -19,6 +20,8 @@ aos adapters list             # what this machine has loaded
 $ aos adapters path
 /Users/you/.config/aos/adapters
 ```
+
+<Shot name="adapter-list" alt="Where adapters live and what is loaded" caption="aos adapters path; aos adapters list" />
 
 A file `~/.config/aos/adapters/notes.json`:
 

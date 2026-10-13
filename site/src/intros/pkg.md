@@ -1,0 +1,1 @@
+The native package manager behind one verb set: brew on macOS, winget, scoop or choco on Windows, apt, pacman, yay or dnf on Linux. `manager` prints which one this machine uses. Some operations ask for elevated rights on Linux.

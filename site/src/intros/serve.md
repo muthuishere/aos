@@ -1,0 +1,1 @@
+Expose the commands to an MCP client. `mcp` serves every available non-blocking command as a typed tool over HTTP on loopback, guarded by a per-run or pinned token. `tools` previews the catalogue without starting a server. See [using it from an agent (MCP)](/aos/mcp/).

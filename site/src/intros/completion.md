@@ -1,0 +1,1 @@
+Tab completion for your shell, generated from the live command tree so adapters and plugins are included. Print the script and source it from your shell profile; the command tells you how for bash, zsh, fish and PowerShell.

@@ -2,6 +2,7 @@
 title: Installing
 description: One line on macOS, Linux and Windows. Install from GitHub, a local folder, a mirror URL, a single release archive or a bare executable.
 ---
+import Shot from '../../components/Shot.astro';
 
 aos is one executable. There is nothing else to install and no administrator step.
 
@@ -63,6 +64,8 @@ install.cmd /from .\aos.exe
 ```sh
 aos doctor
 ```
+
+<Shot name="doctor" alt="aos doctor with every check ok" caption="aos doctor" />
 
 `doctor` says what this machine can and cannot do, including permissions, display, and ffmpeg for `capture video`, and how to fix each gap.
 

@@ -2,8 +2,11 @@
 title: Watch the clipboard and react
 description: Get one JSON line whenever the clipboard changes, and run something on each change.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** Every time you copy a URL, an agent or script does something with it, such as saving it to a list or opening it.
+
+<Shot name="watch-clipboard" alt="One JSON line for the next clipboard change, with the text included" caption="aos watch clipboard --max=1 --content" />
 
 ## Commands
 
@@ -14,14 +17,14 @@ aos watch clipboard --max=1 --content
 ```
 
 ```console
-{"event":"clipboard","at":"2026-10-13T06:36:30+05:30","seq":1,"length":14,"digest":"4b559aab5a29","content":"hello from aos"}
+{"event":"clipboard","at":"2026-10-13T06:36:30+05:30","seq":1,"length":14,"digest":"4b559aab5a29","text":"hello from aos"}
 ```
 
 React to each change in a shell loop:
 
 ```sh
 aos watch clipboard --content | while read -r line; do
-  text=$(printf '%s' "$line" | jq -r .content)
+  text=$(printf '%s' "$line" | jq -r .text)
   case "$text" in
     http*) printf '%s\n' "$text" >> ~/links.txt ;;
   esac
@@ -31,7 +34,7 @@ done
 Wait for exactly the next copy, then act once:
 
 ```sh
-aos watch clipboard --max=1 --content | jq -r .content | aos file append ~/links.txt
+aos watch clipboard --max=1 --content | jq -r .text | aos file append ~/links.txt
 ```
 
 ## What to tell an agent

@@ -2,8 +2,11 @@
 title: Arrange a coding layout across monitors
 description: Put the editor, terminal and browser where you want them on two monitors, save it, and restore it with one command.
 ---
+import Shot from '../../../../components/Shot.astro';
 
 **Goal.** Editor on the big monitor, terminal and browser split on the second, every morning, without dragging windows.
+
+<Shot name="layout-after" alt="Calculator moved into zone 2D on monitor 1 while the terminal shows the command" caption="aos window move Calculator --zone=2D --monitor=1" />
 
 ## Commands
 
@@ -37,6 +40,8 @@ Or feed a layout inline:
 ```sh
 echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos window arrange -
 ```
+
+<Shot name="zones" alt="Output of aos window zones for a 1920x1080 monitor" caption="aos window zones" />
 
 ## What to tell an agent
 

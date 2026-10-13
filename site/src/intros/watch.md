@@ -1,0 +1,1 @@
+Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.

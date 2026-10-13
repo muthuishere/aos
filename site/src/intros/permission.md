@@ -1,0 +1,1 @@
+The OS permissions the window and input commands need. On macOS that is Accessibility for input and window control and Screen Recording for screenshots and capture. `check` reports, `request` asks the system to prompt. Other platforms report granted.

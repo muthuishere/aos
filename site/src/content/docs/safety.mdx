@@ -2,6 +2,7 @@
 title: Safety model
 description: What aos refuses to do, and what it does not protect against.
 ---
+import Shot from '../../components/Shot.astro';
 
 aos hands a machine to an agent. These are the limits built into the commands, not warnings in a README.
 
@@ -30,6 +31,8 @@ aos: refusing to delete /Users/you
 ```
 
 There is no confirmation prompt, because an agent would answer it.
+<Shot name="file-delete-refused" alt="file delete refusing the root and the home directory" caption="aos file delete /" />
+
 
 ## `serve mcp` listens on loopback only
 

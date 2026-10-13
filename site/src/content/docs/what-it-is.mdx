@@ -2,6 +2,7 @@
 title: What it is
 description: One CLI over the machine that an agent drives the same way you do, through an installed agent skill or over MCP. macOS, Windows and Linux.
 ---
+import Shot from '../../components/Shot.astro';
 
 import registry from '../../data/registry.json';
 
@@ -21,6 +22,11 @@ aos draw --app=Calculator --find=Equals --text="Click here"
 ```
 
 Each line works the same on macOS, Windows and Linux. `--app=Chrome` finds the same window on all three. `pkg install` uses brew, winget, scoop, choco, apt, pacman, yay or dnf, whichever the machine has.
+
+<div class="shot-grid">
+<Shot name="button-press" alt="A Calculator button pressed by name" caption="aos mouse click --app=Calculator --find=7" />
+<Shot name="arrow-done" alt="A big arrow with the sign Done pointing at the result" caption="aos draw --text='Done'" />
+</div>
 
 ## Two ways in for an agent
 

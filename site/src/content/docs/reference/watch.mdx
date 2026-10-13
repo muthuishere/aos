@@ -10,6 +10,10 @@ sidebar:
 
 3 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
+Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
+
+## Commands
+
 ### aos watch clipboard
 
 <p class="cmd-lead">Print a JSON line whenever the clipboard text changes</p>
