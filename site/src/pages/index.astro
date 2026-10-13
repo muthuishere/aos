@@ -259,8 +259,12 @@ const features = [
 			.lead { color: var(--muted); font-size: 18px; margin: 0 0 32px; max-width: 40em; }
 			.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 			.card { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; min-width: 0; }
-			.thumb-link { display: block; margin: -20px -20px 14px; border-radius: 13px 13px 0 0; outline-offset: -3px; }
+			.thumb-link { position: relative; cursor: zoom-in; display: block; margin: -20px -20px 14px; border-radius: 13px 13px 0 0; outline-offset: -3px; }
 			.thumb-link:focus-visible { outline: 2px solid var(--acc); }
+			.thumb-link::after { content: "\2922"; position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; opacity: 0; transition: opacity .15s; }
+			.thumb-link:hover::after, .thumb-link:focus-visible::after { opacity: 1; }
+			@media (hover: none) { .thumb-link::after { opacity: .85; } }
+			.thumb-link:hover .thumb { filter: brightness(1.1); }
 			.thumb { display: block; width: 100%; height: auto; margin: 0; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; border-radius: 13px 13px 0 0; border-bottom: 1px solid var(--hair); background: #07080a; }
 			.card h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; }
 			.card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; flex: 1; }
