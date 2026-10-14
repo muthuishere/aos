@@ -264,7 +264,7 @@ func DefaultSocketPath(env func(string) string) string {
 
 func socketFix() string {
 	return "Fix: on the machine with the screen run `aos serve mcp --socket ~/.aos/serve.sock`, and add to ~/.ssh/config there:\n" +
-		"    RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock\n" +
+		"    RemoteForward /tmp/aos-%r.sock %d/.aos/serve.sock\n" +
 		"or pass --host=local to act on this machine."
 }
 

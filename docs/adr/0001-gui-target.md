@@ -80,7 +80,7 @@ SSH alone never points back to the client. Without the forwarded socket, aos run
 **SSH setup.** On the Mac, `aos serve mcp --socket ~/.aos/serve.sock` runs, as a login item or started by hand. Add one line to `~/.ssh/config`:
 
 ```
-RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock
+RemoteForward /tmp/aos-%r.sock %d/.aos/serve.sock
 ```
 
 No `SetEnv` is needed: sshd rejects unknown variables unless the server allows them, so aos looks for the socket at the conventional path instead (see *Detection*).

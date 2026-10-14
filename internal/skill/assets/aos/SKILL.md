@@ -102,6 +102,7 @@ command with usage and examples. Load the guide that matches the intent:
 | files, clipboard, exec, processes, services, packages, audio, battery, network, system power (which need a yes) | `references/system-and-files.md` |
 | wait for clipboard / file / window changes; audit what ran | `references/watch-and-observe.md` |
 | LAN share, headless Linux display, MCP server, adapters | `references/remote-headless-mcp.md` |
+| WSL → Windows desktop, SSH → the person's laptop (the host) | `references/host-wsl-ssh.md` |
 | macOS Accessibility + Screen Recording | `references/permissions.md` |
 
 ## Screenshots are for looking, not just saving
@@ -166,14 +167,15 @@ Screen commands (`window`, `display`, `mouse`, `key`, `find`, `draw`,
 `audio`, `remote share`, `lock`/`sleep`, ...) run on the **host**: the machine
 whose screen the person sees. Everything else (`exec`, `file`, `process`,
 `pkg`, `system info`, ...) runs where you are. Output and exit codes are the
-same either way; `aos doctor` shows a `host:` line.
+same either way; `aos doctor` shows a `host:` line. Full setup and
+fixes: `references/host-wsl-ssh.md`.
 
 - **WSL**: the host is Windows. aos runs `aos.exe` from `%LOCALAPPDATA%\aos`
   (install.sh inside WSL puts it there) and translates paths, so
   `aos screenshot --out=~/s.png` lands in WSL.
 - **SSH**: on the person's machine run `aos serve mcp --socket=~/.aos/serve.sock`
-  and add `RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock` to that host's
-  entry in `~/.ssh/config`. Files given with `--out` come back over the socket;
+  and add `RemoteForward /tmp/aos-%r.sock %d/.aos/serve.sock` to that host's
+  entry in `~/.ssh/config` (`%d` = home; ssh does not expand `~` there). Files given with `--out` come back over the socket;
   streams (`watch clipboard`) and local input files are refused with a reason.
 - Override with `--host=local|windows-host|<socket>`, `AOS_HOST`, or
   `host = ...` in `~/.config/aos/config`. If the host cannot be reached the

@@ -3,7 +3,11 @@ title: WSL and SSH (the host)
 description: Screen commands run on the machine whose screen you see. From WSL that is Windows; over SSH it is the machine you connected from.
 ---
 
-An agent's shell is often not on the machine with the screen. aos calls the machine with the screen the **host**. Screen commands run there, and commands about the agent's own machine run where the agent is. The command line, JSON output and exit codes are the same either way.
+An agent's shell is often not on the machine with the screen. An agent in WSL is looking at Windows, and an agent on a server you reached over SSH is working for the person at the laptop. aos calls the machine with the screen the **host**.
+
+- **Screen commands** run on the host.
+- **Commands about the agent's own machine** run where the agent is.
+- **The command line, JSON output and exit codes are identical either way**, so an agent does not need to know which case it is in.
 
 | Follows the host | Always local |
 |---|---|
@@ -12,38 +16,104 @@ An agent's shell is often not on the machine with the screen. aos calls the mach
 | `launch`, `open`, `webapp`, `remote`, `audio`, `permission`, `font` | `skill`, `adapters`, `obs`, `serve`, `headless`, `debug`, `doctor` |
 | `system lock`, `system sleep` | `system logout`, `system restart`, `system shutdown` (never forwarded) |
 
-`aos doctor` prints a `host:` line saying where screen commands go.
+## WSL: control the Windows desktop
 
-## WSL
-
-Inside WSL the host is Windows. aos runs `aos.exe` from `%LOCALAPPDATA%\aos`, and translates path arguments with `wslpath`, so files land back in WSL:
+### 1. Install inside WSL
 
 ```console
-$ aos window list                 # the Windows desktop's windows
+$ curl -fsSL https://raw.githubusercontent.com/muthuishere/aos/main/install.sh | sh
+#   or
+$ npm i -g @muthuishere/aos
+```
+
+Inside WSL, the installer puts the Linux build on your `PATH` and also installs `aos.exe` into `%LOCALAPPDATA%\aos` on Windows. If you already installed aos on Windows with `install.cmd`, aos finds that copy as well.
+
+### 2. Check it
+
+```console
+$ aos doctor | grep host
+ok   host         windows-host (/mnt/c/Users/you/AppData/Local/aos/aos.exe, via auto: WSL)
+$ aos window list                 # windows on the Windows desktop
 $ aos screenshot --out=~/s.png    # a Windows screenshot, saved in WSL
 ```
 
-Running `install.sh` inside WSL installs both builds. The npm package uses the same script, so it does too.
+That is all. aos translates path arguments with `wslpath`, so files land back in WSL.
 
-## SSH
+### If it does not work
 
-On the machine with the screen, start the socket server (by hand, or as a login item with `aos service create`):
+| Symptom | Fix |
+|---|---|
+| `… aos.exe was not found (tried …)` | Run `install.sh` again inside WSL, or install on Windows with `install.cmd`. |
+| `… Windows programs cannot be started from here` | WSL's Windows interop is off. Set `[interop] enabled=true` in `/etc/wsl.conf`, then run `wsl --shutdown` from Windows. |
+| `doctor` warns about a version mismatch | Run the installer again so both sides match. |
+| You want WSL's own Linux desktop | Add `--host=local` to the command. |
+
+## SSH: an agent on a server controls your screen
+
+The agent runs on a server. Your laptop has the screen. SSH carries the screen commands back to the laptop, the same way ssh-agent forwarding works. No network port is opened.
+
+### 1. On your laptop (the machine with the screen)
+
+Install aos, then start the socket server. Keep it running, or make it a service that starts at login:
 
 ```console
 $ aos serve mcp --socket=~/.aos/serve.sock
+#   or start it at every login:
+$ aos service create aos-host --autostart --now -- aos serve mcp --socket=~/.aos/serve.sock
 ```
 
-Then add one line to that machine's `~/.ssh/config`, under the server you connect to:
+Add the forward to `~/.ssh/config`, under the server you connect to. `ssh_config` does not expand `~` here, so use `%d`, which stands for your local home folder:
 
 ```
-RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock
+Host myserver
+  RemoteForward /tmp/aos-%r.sock %d/.aos/serve.sock
 ```
 
-In the SSH session, aos finds `/tmp/aos-$USER.sock`, checks that it answers, and sends screen commands through it. `--out` files come back to the path you gave. No network port is opened, and the socket is `0600`.
+### 2. On the server, once
 
-- The person at the screen sees a caption, "aos controlled from <machine>", and `aos obs audit` there lists every call.
-- Only screen commands are accepted over the socket. It is not remote exec.
-- Commands that stream (`watch clipboard`, `watch window`, `remote share`), video files, and commands that read a local file are refused with the reason. For a layout, pipe it: `aos window arrange - < layout.json`.
+Install aos as usual. Then let a new SSH session replace the socket an old session left behind. Add this line to `/etc/ssh/sshd_config` and restart sshd:
+
+```
+StreamLocalBindUnlink yes
+```
+
+Without it, the second time you connect SSH warns `remote port forwarding failed`, and aos stays local until you delete `/tmp/aos-$USER.sock`.
+
+### 3. Check it
+
+```console
+laptop$ ssh myserver
+server$ aos doctor | grep host
+ok   host         /tmp/aos-you.sock (via auto: SSH)
+server$ aos screenshot --out=shot.png    # your laptop's screen, saved on the server
+server$ aos draw --at=400,300 --text="click here"
+```
+
+The arrow appears on your laptop, along with a caption, "aos controlled from myserver". On the laptop, `aos obs audit` lists every call.
+
+### What gets through
+
+- **Only screen commands.** The laptop refuses `exec`, `file`, `process` and every other local command sent over the socket. This is not remote exec.
+- `--out` files, such as screenshots, `--preview` images and saved layouts, come back to the path you gave on the server.
+- **Refused, each with a reason:**
+  - commands that stream: `watch clipboard`, `watch window`, `remote share`
+  - video files
+  - commands that read a file on the server. For a layout, pipe it in instead: `aos window arrange - < layout.json`
+
+### Security
+
+- The socket is created `0600` in a `0700` folder, and the file permission is the only gate.
+- On the server, aos only uses a socket that you own and that nobody else can read, so another user cannot plant one at `/tmp/aos-you.sock` and capture your screenshots.
+- Files that come back over the socket are written `0600` and never through a symlink.
+
+### If it does not work
+
+| Symptom | Fix |
+|---|---|
+| `doctor` says `host local (via auto)` over SSH | Check that the laptop's server is running and the `RemoteForward` line is under the right `Host`. On the server, check `ls -l /tmp/aos-$USER.sock`. |
+| `remote port forwarding failed` | An old socket is in the way. Set `StreamLocalBindUnlink yes` on the server, or `rm /tmp/aos-$USER.sock` and reconnect. |
+| `… is not owned by you; refusing it` or `… must be 0600` | Someone else created that path. Remove it and reconnect. |
+| `an aos server is already listening` | The laptop's server is already running. Nothing to do. |
 
 ## Choosing the host by hand
 
@@ -54,4 +124,4 @@ First match wins:
 3. `host = auto|local|windows-host|<socket path>` in `~/.config/aos/config`
 4. auto: Windows inside WSL, the forwarded socket over SSH, otherwise this machine
 
-If the host cannot be reached, the command fails and says how to fix it. It never falls back to the local machine, because a screenshot of the wrong screen is worse than an error.
+If the host cannot be reached, the command fails and tells you how to fix it. It never falls back to the local machine, because a screenshot of the wrong screen is worse than an error.
