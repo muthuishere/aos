@@ -31,8 +31,12 @@ type Command struct {
 	// screenshots. On a headless machine it is refused with an explanation
 	// instead of failing deep inside a display-server call.
 	NeedsDisplay bool
-	Platforms    []string // nil means every platform; else darwin/windows/linux
-	Run          Runner
+	// FollowsHost marks a screen command: it runs on the host, the machine
+	// whose screen the user sees (ADR 0001), which may not be this one. Add
+	// sets it from hostTable; a command may also set it itself.
+	FollowsHost bool
+	Platforms   []string // nil means every platform; else darwin/windows/linux
+	Run         Runner
 
 	// Binary is set for commands discovered from an external executable
 	// instead of compiled in. Run is nil in that case.
@@ -140,6 +144,9 @@ func (r *Registry) Add(cmds ...*Command) {
 		if existing := r.Lookup(cmd.Group, cmd.Name); existing != nil {
 			r.warnings = append(r.warnings, fmt.Sprintf("duplicate route %q", cmd.Route()))
 			continue
+		}
+		if follows, _ := HostSide(cmd.Route()); follows && cmd.Binary == "" {
+			cmd.FollowsHost = true
 		}
 		g.Commands = append(g.Commands, cmd)
 		r.routes[cmd.Route()] = cmd

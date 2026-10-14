@@ -11,7 +11,10 @@
 #   sh install.sh --dir ~/bin
 #
 # Environment equivalents: AOS_FROM, AOS_VERSION, AOS_INSTALL_DIR
-# (AOS_NO_PATH=1 skips the PATH hint)
+# (AOS_NO_PATH=1 skips the PATH hint; AOS_NO_WINDOWS_HOST=1 skips the WSL step)
+#
+# Inside WSL it also installs the Windows build into %LOCALAPPDATA%\aos, because
+# screen commands run there: the screen you see is the Windows one.
 # (AOS_DOWNLOAD_BASE is accepted as an alias of AOS_FROM).
 #
 # Read it first if you like -- the right instinct for anything piped to a shell:
@@ -153,6 +156,45 @@ else
 fi
 
 say "    ${DIR}/aos"
+
+# --- WSL: screen commands run on Windows (ADR 0001), so put aos.exe in
+# %LOCALAPPDATA%\aos where the Linux aos looks for it.
+is_wsl() {
+    [ -n "${WSL_DISTRO_NAME:-}" ] || [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]
+}
+install_windows_host() {
+    local_app=$( (cd /mnt/c 2>/dev/null; cmd.exe /c 'echo %LOCALAPPDATA%') 2>/dev/null | tr -d '\r')
+    case "$local_app" in ""|*%*) warn "WSL: cannot run cmd.exe, so aos.exe was not installed on Windows; run install.cmd there"; return 0 ;; esac
+    win_dir="$(wslpath -u "$local_app")/aos"
+    zip=""
+    if [ "${have_sums:-0}" = 1 ]; then
+        zip=$(awk '{print $2}' "$tmp/checksums.txt" | grep "^aos_.*_windows_${arch}\.zip\$" | { [ -n "$VERSION" ] && grep "_${VERSION#v}_" || cat; } | head -n1 || true)
+    elif [ -n "$VERSION" ]; then
+        zip="aos_${VERSION#v}_windows_${arch}.zip"
+    fi
+    if [ -z "$zip" ] || ! fetch "$zip" "$tmp/$zip"; then
+        warn "WSL: no Windows build at $base, so aos.exe was not installed; run install.cmd on Windows"
+        return 0
+    fi
+    if [ "${have_sums:-0}" = 1 ]; then
+        want=$(awk -v f="$zip" '$2 == f {print $1}' "$tmp/checksums.txt")
+        [ -n "$want" ] && [ "$want" = "$(sha256 "$tmp/$zip")" ] || die "checksum mismatch for $zip -- refusing to install"
+    fi
+    mkdir -p "$tmp/w" "$win_dir"
+    if command -v unzip >/dev/null 2>&1; then
+        unzip -oq "$tmp/$zip" -d "$tmp/w"
+    else
+        powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath '$(wslpath -w "$tmp/$zip")' -DestinationPath '$(wslpath -w "$tmp/w")'" >/dev/null
+    fi
+    [ -f "$tmp/w/aos.exe" ] || die "$zip does not contain aos.exe"
+    cp "$tmp/w/aos.exe" "$win_dir/aos.exe"
+    say "    $win_dir/aos.exe  (the Windows host: screen commands run there)"
+}
+if [ "$os" = linux ] && [ -z "${AOS_NO_WINDOWS_HOST:-}" ] && [ -n "${base:-}" ] && is_wsl; then
+    step "WSL detected: installing the Windows build too"
+    install_windows_host
+fi
+
 case "${AOS_NO_PATH:+skip}:$PATH:" in
     skip*|*":$DIR:"*) ;;
     *) say ""

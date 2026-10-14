@@ -68,6 +68,11 @@ func describeInvocation(r *Registry, args []string) (string, int) {
 }
 
 func dispatch(c *Ctx, args []string) int {
+	args, hostFlag, err := stripHostFlag(args)
+	if err != nil {
+		c.Warnf("aos: %v\n", err)
+		return 2
+	}
 	if len(args) == 0 || isHelpFlag(args[0]) {
 		PrintRootHelp(c.Stdout, c.Registry)
 		return 0
@@ -106,6 +111,19 @@ func dispatch(c *Ctx, args []string) int {
 		}
 		PrintCommandHelp(c.Stdout, cmd, c.GOOS, HasDisplay(c.Env, c.GOOS))
 		return 0
+	}
+
+	// Screen commands run on the host, which may be another machine. This
+	// comes before the platform and display checks: those are the host's.
+	if cmd.FollowsHost && !c.Local {
+		host, err := c.ResolveHost(hostFlag)
+		if err != nil {
+			c.Warnf("aos: %q runs on the machine with the screen: %v\n", cmd.Route(), err)
+			return 2
+		}
+		if host.Kind != HostLocal {
+			return c.runOnHost(host, cmd, args[:len(args)-len(rest)], rest)
+		}
 	}
 
 	if !cmd.Supports(c.GOOS) {

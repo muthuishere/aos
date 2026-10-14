@@ -28,6 +28,8 @@ func Invoke(base *Ctx, argv []string, stdin string) Result {
 		Version:  base.Version,
 		Source:   "mcp",
 		Recorder: base.Recorder,
+		HostDeps: base.HostDeps,
+		Local:    true,
 	}
 	exit := Run(ctx, argv)
 	return Result{Exit: exit, Stdout: stdout.String(), Stderr: stderr.String()}

@@ -64,6 +64,7 @@ func runDoctor(c *cli.Ctx, args []string) error {
 	// outright, then what is degraded, then what is merely informational.
 	results := []checkResult{
 		checkRegistry(c),
+		checkHost(c),
 		checkTelemetry(c),
 		checkDisplay(c),
 		checkPermissions(c),
@@ -136,6 +137,28 @@ func checkRegistry(c *cli.Ctx) checkResult {
 	}
 	return checkResult{"registry", statusOK,
 		fmt.Sprintf("%d of %d commands available on %s", available, total, c.GOOS), ""}
+}
+
+// checkHost reports where screen commands go (ADR 0001): this machine, the
+// Windows side of WSL, or the machine at the end of an SSH socket.
+func checkHost(c *cli.Ctx) checkResult {
+	host, err := c.ResolveHost("")
+	if err != nil {
+		detail, remedy, _ := strings.Cut(err.Error(), "\n")
+		return checkResult{"host", statusFail, detail, strings.TrimPrefix(remedy, "Fix: ")}
+	}
+	if host.Kind == cli.HostWindowsHost {
+		out, err := exec.Command(host.Exe, "version").Output()
+		if err != nil {
+			return checkResult{"host", statusFail, host.String() + ": does not run: " + err.Error(),
+				"re-run install.sh inside WSL to reinstall aos.exe"}
+		}
+		if v := strings.TrimSpace(string(out)); v != c.Version {
+			return checkResult{"host", statusWarn, fmt.Sprintf("%s is %s, this aos is %s", host.String(), v, c.Version),
+				"re-run install.sh inside WSL so both sides match"}
+		}
+	}
+	return checkResult{"host", statusOK, host.String(), ""}
 }
 
 func checkTelemetry(c *cli.Ctx) checkResult {

@@ -24,6 +24,12 @@ type Ctx struct {
 	// Recorder is where spans go. Nil means telemetry is off; every call on it
 	// is a no-op, so nothing branches on it.
 	Recorder *obs.Recorder
+	// HostDeps is how host resolution reaches WSL, wslpath and aos.exe. Nil
+	// means the real ones; tests swap in fakes.
+	HostDeps *HostDeps
+	// Local pins every command to this machine. It is set for calls arriving
+	// over MCP: the server is the host, so it never delegates again.
+	Local bool
 }
 
 // NewCtx builds a context bound to the real process.
