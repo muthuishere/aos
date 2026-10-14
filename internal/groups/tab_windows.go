@@ -5,17 +5,22 @@ package groups
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 // Windows: every app's tabs come from UI Automation (Edge, Chrome, Windows
 // Terminal, Notepad all expose TabItem elements). Opening goes through each
-// app's own command line, then the new tab is found by listing again.
+// app's own command line (see tab_winopen.go), then the new tab is found by
+// listing again.
 func init() {
 	tabProviders = func() []tabProvider {
-		ax := newAXTabs("uia", "ctrl+w", nil)
+		ax := newAXTabs("uia", windowsCloseChord, nil)
 		ax.opener = func(ctx context.Context, req tabOpenRequest) (string, error) {
 			return openWindowsTab(ctx, ax, req)
 		}
@@ -23,45 +28,37 @@ func init() {
 	}
 }
 
-// windowsOpenArgs builds the command line that opens a tab: the browser's
-// own exe for a URL, `wt` for Windows Terminal.
-func windowsOpenArgs(req tabOpenRequest) (string, []string, error) {
-	app := strings.ToLower(strings.TrimSuffix(req.App, ".exe"))
-	switch {
-	case strings.Contains(app, "edge"):
-		return browserArgs("msedge", req), nil, nil
-	case strings.Contains(app, "chrome"):
-		return browserArgs("chrome", req), nil, nil
-	case strings.Contains(app, "brave"):
-		return browserArgs("brave", req), nil, nil
-	case strings.Contains(app, "terminal") || app == "wt":
-		args := []string{"-w", "0"}
-		if req.NewWindow {
-			args = []string{"-w", "new"}
+// browserExePath finds a browser through App Paths, where browsers register
+// instead of on PATH, then the usual install folders.
+func browserExePath(exe string) (string, error) {
+	key := `SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\` + exe
+	for _, root := range []registry.Key{registry.CURRENT_USER, registry.LOCAL_MACHINE} {
+		k, err := registry.OpenKey(root, key, registry.QUERY_VALUE)
+		if err != nil {
+			continue
 		}
-		args = append(args, "new-tab")
-		if req.CWD != "" {
-			args = append(args, "-d", req.CWD)
+		p, _, err := k.GetStringValue("")
+		k.Close()
+		if p = strings.Trim(p, `"`); err == nil && p != "" {
+			if _, err := os.Stat(p); err == nil {
+				return p, nil
+			}
 		}
-		if req.Command != "" {
-			args = append(args, "cmd", "/k", req.Command)
+	}
+	sub := map[string]string{
+		"msedge.exe": `Microsoft\Edge\Application`,
+		"chrome.exe": `Google\Chrome\Application`,
+		"brave.exe":  `BraveSoftware\Brave-Browser\Application`,
+	}[exe]
+	for _, env := range []string{"ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"} {
+		if base := os.Getenv(env); base != "" && sub != "" {
+			p := filepath.Join(base, sub, exe)
+			if _, err := os.Stat(p); err == nil {
+				return p, nil
+			}
 		}
-		return "wt", args, nil
 	}
-	return "", nil, errTabUnsupported{fmt.Sprintf("aos opens tabs on Windows in Edge, Chrome, Brave and Windows Terminal, not %q", req.App)}
-}
-
-// browserArgs uses `cmd /c start` so the exe is found through App Paths,
-// where browsers register themselves instead of on PATH.
-func browserArgs(exe string, req tabOpenRequest) string {
-	parts := []string{`start "" ` + exe}
-	if req.NewWindow {
-		parts = append(parts, "--new-window")
-	}
-	if req.URL != "" {
-		parts = append(parts, `"`+req.URL+`"`)
-	}
-	return strings.Join(parts, " ")
+	return "", fmt.Errorf("%s is not installed (not in App Paths or Program Files)", exe)
 }
 
 func openWindowsTab(ctx context.Context, ax *axTabs, req tabOpenRequest) (string, error) {
@@ -71,23 +68,20 @@ func openWindowsTab(ctx context.Context, ax *axTabs, req tabOpenRequest) (string
 	if req.Background {
 		return "", errTabUnsupported{"--background is not supported on Windows"}
 	}
+	name, args, err := windowsOpenCommand(req, browserExePath)
+	if err != nil {
+		return "", err
+	}
 	before := map[string]bool{}
 	for _, t := range appTabs(ax, req.App) {
 		before[t.Title] = true
 	}
-	line, wtArgs, err := windowsOpenArgs(req)
-	if err != nil {
-		return "", err
+	// No context: a browser started here must outlive this command.
+	cmd := exec.Command(name, args...)
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("%s: %v", req.App, err)
 	}
-	var cmd *exec.Cmd
-	if wtArgs != nil {
-		cmd = exec.CommandContext(ctx, "wt", wtArgs...)
-	} else {
-		cmd = exec.CommandContext(ctx, "cmd", "/c", line)
-	}
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("%s: %v %s", req.App, err, strings.TrimSpace(string(out)))
-	}
+	go func() { _ = cmd.Wait() }()
 	// The tab appears asynchronously; report the active tab of the app once
 	// it shows up, which is the one just opened.
 	deadline := time.Now().Add(3 * time.Second)

@@ -1258,7 +1258,7 @@ Type text or press a key in a terminal tab without focusing it
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab send --id=<tab id> (--text=<text> | --key=<combo>)
+aos tab send --id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<substring>]
 aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"
 aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --key=enter
 aos tab send --id=iterm:31:1 --key=ctrl+c
@@ -1271,9 +1271,11 @@ Close one tab (never the whole window)
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact]
+aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact] [--expect-title=<substring>]
 aos tab close --id=chrome:1658108662:1658109078
 aos tab close --title=example --app=Chrome
+aos tab close --id=safari:22718:2 --expect-title=Example
+# exit 3 when no tab matches, 4 when several do (name one with --id)
 ```
 
 

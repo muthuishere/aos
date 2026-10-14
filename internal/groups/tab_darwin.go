@@ -11,7 +11,7 @@ func init() {
 		for _, f := range scripted {
 			out = append(out, f)
 		}
-		out = append(out, newAXTabs("ax", "cmd+w", func(app string) bool {
+		out = append(out, newAXTabs("ax", macCloseChord, func(app string) bool {
 			for _, f := range scripted {
 				if _, ok := f.apps[f.scripted(app)]; ok {
 					return true

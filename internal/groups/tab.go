@@ -64,7 +64,7 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "send",
 				Summary: "Type text or press a key in a terminal tab without focusing it",
-				Args:    "--id=<tab id> (--text=<text> | --key=<combo>)",
+				Args:    "--id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<substring>]",
 				Examples: []string{
 					`aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"`,
 					"aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --key=enter",
@@ -76,10 +76,12 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "close",
 				Summary: "Close one tab (never the whole window)",
-				Args:    "(--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact]",
+				Args:    "(--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact] [--expect-title=<substring>]",
 				Examples: []string{
 					"aos tab close --id=chrome:1658108662:1658109078",
 					"aos tab close --title=example --app=Chrome",
+					"aos tab close --id=safari:22718:2 --expect-title=Example",
+					"# exit 3 when no tab matches, 4 when several do (name one with --id)",
 				},
 				Platforms: platforms,
 				Run:       runTabClose,
@@ -549,9 +551,15 @@ func printTabs(c *cli.Ctx, tabs []Tab) {
 	}
 }
 
-// pickTab resolves focus/close flags to exactly one tab: the active one
-// among several matches, else the first. Exit 3 when nothing matches.
-func pickTab(f tabFilter) (Tab, error) {
+// exitAmbiguous is what close and send exit with when the flags match more
+// than one tab: acting on a guess there destroys or types into the wrong
+// thing. Distinct from 3 (nothing matched).
+const exitAmbiguous = 4
+
+// pickTab resolves flags to exactly one tab. Exit 3 when nothing matches.
+// Several matches: focus (strict false) takes the active one, else the
+// first; close and send (strict true) refuse with exit 4 and the candidates.
+func pickTab(f tabFilter, strict bool) (Tab, error) {
 	if f.Title == "" && f.URL == "" && f.CWD == "" && f.ID == "" {
 		return Tab{}, fmt.Errorf("name a tab: --id, --title, --url or --cwd")
 	}
@@ -570,6 +578,13 @@ func pickTab(f tabFilter) (Tab, error) {
 			msg += "\n  " + e.Error()
 		}
 		return Tab{}, &cli.ExitError{Code: exitNotFound, Message: msg}
+	}
+	if strict && len(tabs) > 1 {
+		msg := fmt.Sprintf("%d tabs match %s; name one with --id (or narrow with --exact / --app):", len(tabs), describeTabFilter(f))
+		for _, t := range tabs {
+			msg += fmt.Sprintf("\n  %s  %s  %s", t.ID, t.App, t.Title)
+		}
+		return Tab{}, &cli.ExitError{Code: exitAmbiguous, Message: msg}
 	}
 	return bestTab(tabs), nil
 }
@@ -629,7 +644,7 @@ func runTabFocus(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	t, err := pickTab(f)
+	t, err := pickTab(f, false)
 	if err != nil {
 		return err
 	}
@@ -686,6 +701,9 @@ func runTabOpen(c *cli.Ctx, args []string) error {
 	}
 	if len(set.Rest) == 1 {
 		req.URL = set.Rest[0]
+	}
+	if err := checkTabURL(req.URL); err != nil {
+		return err
 	}
 	if req.App == "" {
 		return fmt.Errorf("--app is required: the browser or terminal to open the tab in")
@@ -753,11 +771,11 @@ func knownTabApps() string {
 }
 
 func runTabSend(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "text", "key")
+	set, err := parseArgs(args, "id", "text", "key", "expect-title")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "text", "key"); err != nil {
+	if err := set.Reject("id", "text", "key", "expect-title"); err != nil {
 		return err
 	}
 	id, text, key := set.String("id", ""), set.String("text", ""), set.String("key", "")
@@ -767,8 +785,11 @@ func runTabSend(c *cli.Ctx, args []string) error {
 	if (text == "") == (key == "") {
 		return fmt.Errorf("give exactly one of --text or --key")
 	}
-	t, err := pickTab(tabFilter{ID: id})
+	t, err := pickTab(tabFilter{ID: id}, true)
 	if err != nil {
+		return err
+	}
+	if err := expectTitle(t, set.String("expect-title", "")); err != nil {
 		return err
 	}
 	if t.ID != id {
@@ -784,19 +805,22 @@ func runTabSend(c *cli.Ctx, args []string) error {
 }
 
 func runTabClose(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "kind", "title", "url", "id")
+	set, err := parseArgs(args, "app", "kind", "title", "url", "id", "expect-title")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "kind", "title", "url", "id", "exact"); err != nil {
+	if err := set.Reject("app", "kind", "title", "url", "id", "exact", "expect-title"); err != nil {
 		return err
 	}
 	f, err := tabFilterFrom(set)
 	if err != nil {
 		return err
 	}
-	t, err := pickTab(f)
+	t, err := pickTab(f, true)
 	if err != nil {
+		return err
+	}
+	if err := expectTitle(t, set.String("expect-title", "")); err != nil {
 		return err
 	}
 	p, err := providerFor(t)
@@ -841,4 +865,17 @@ func tabKeyChord(combo string) (key string, mods []string, err error) {
 		key = "escape"
 	}
 	return key, mods, nil
+}
+
+// expectTitle guards a destructive action on an id taken from an earlier
+// list. Index ids (Safari, iTerm2, Terminal) shift when an earlier tab
+// closes and Ghostty reuses tab ids, so the id alone can point at a different
+// tab by now; --expect-title makes the action refuse (exit 3) unless the tab
+// there still shows that title.
+func expectTitle(t Tab, want string) error {
+	if want == "" || textMatches(t.Title, want, false) {
+		return nil
+	}
+	return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+		"%s now shows %q, not %q; the tabs changed since you listed them (list again)", t.ID, t.Title, want)}
 }

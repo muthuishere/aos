@@ -47,7 +47,7 @@ when you switch tabs; the native id does not.
 | Ghostty 1.3+ | JXA | title, cwd, panes | tab and pane | `--cwd`, `--command` | `--text`, `--key` | yes |
 | iTerm2 | JXA | title, cwd, panes | tab and pane | `--cwd`, `--command` | `--text`, enter, ctrl+letter | yes |
 | Terminal.app | JXA | title | yes | new window only | `--text` (runs it as a command) | only a window's single, idle tab |
-| anything else | accessibility (AXTab) | title | yes (press/click) | no | no | cmd+w after verified focus |
+| anything else | accessibility (AXTab) | title | yes (press/click) | no | no | cmd+w, best-effort (below) |
 
 Apps that are not running are skipped, never launched. Each provider gets
 1.5 s; one that times out is reported on stderr and the rest still print.
@@ -62,10 +62,27 @@ Terminal, Notepad. Titles only, no URLs (Edge's "- Memory usage - NN MB" suffix
 is stripped). Focus selects the tab, close sends ctrl+w after verifying the
 window is in front. `open` uses the app's own command line (`msedge`/`chrome`
 `--new-window URL`, `wt -w 0 new-tab -d DIR`). `send` is refused.
+No URL or folder passes through `cmd.exe`: the browser exe is found in App
+Paths and gets the URL as one argument after `--`; `wt.exe` gets argv with
+`;` escaped. `--command` for Windows Terminal is a shell command by design
+(`cmd /k <command>`). Close uses ctrl+w in browsers and Notepad,
+ctrl+shift+w in Windows Terminal, and refuses apps it does not know.
+
+## Accessibility close is best-effort
+
+It selects the tab, re-checks that the tab's window is frontmost right
+before pressing the shortcut (no key is sent otherwise), and reports success
+only when the window's tab count dropped. A window that jumps in front in
+between can still receive the key.
 
 ## Errors
 
 - Exit 3: no tab matched (`focus`, `close`, `send`). List again.
+- Exit 4: `close` / `send` matched several tabs; the message lists them. Use
+  `--id` or `--exact`. (`focus` takes the selected match, else the first.)
+- Stale ids: index ids (Safari, iTerm2, Terminal) shift when an earlier tab
+  closes, and Ghostty reuses tab ids. `--expect-title=<substring>` on
+  `close` / `send` refuses (exit 3) unless the tab there still has that title.
 - `macOS blocked aos from controlling <App> (Automation permission)`: the first
   call to each app shows a macOS prompt; if it was denied, turn it on in System
   Settings > Privacy & Security > Automation, or `tccutil reset AppleEvents`.

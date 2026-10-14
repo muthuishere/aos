@@ -121,6 +121,13 @@ $ aos tab close --title=aos-bg-test --app=chrome
 closed chrome:1658109204:1658109212  aos-bg-test
 ```
 
+If the flags match more than one tab, `close` (and `send`) refuse with exit 4 and list the candidates; name one with `--id` or `--exact`. Index ids (Safari, iTerm2, Terminal) shift when an earlier tab closes, so pass `--expect-title` to make sure the id still points at the tab you listed:
+
+```console
+$ aos tab close --id=safari:22718:2 --expect-title=Example
+closed safari:22718:2  Example Domains
+```
+
 ## What each app supports
 
 | app | list | focus | open | send | close |
@@ -130,8 +137,10 @@ closed chrome:1658109204:1658109212  aos-bg-test
 | Ghostty 1.3+ | title, folder, panes | tab and pane | folder, command | text, keys | yes |
 | iTerm2 | title, folder, panes | tab and pane | folder, command | text, enter, ctrl+letter | yes |
 | Terminal.app | title | yes | new window only | text (run as a command) | a window's only tab, when idle |
-| any other app (macOS) | title, from the accessibility tree | yes | no | no | cmd+w after checking focus |
-| any app (Windows) | title, from UI Automation | yes | Edge, Chrome, Brave, Windows Terminal | no | ctrl+w after checking focus |
+| any other app (macOS) | title, from the accessibility tree | yes | no | no | cmd+w, best-effort |
+| any app (Windows) | title, from UI Automation | yes | Edge, Chrome, Brave, Windows Terminal | no | ctrl+w (browsers, Notepad), ctrl+shift+w (Windows Terminal), best-effort |
+
+Accessibility close is best-effort: aos re-checks that the tab's window is in front immediately before pressing the shortcut, and reports success only when the tab count dropped. Apps whose shortcut it does not know are refused. On Windows no URL or folder goes through `cmd.exe`; `--command` for Windows Terminal is a shell command by design.
 
 Linux is not supported yet; `aos tab` exits 2 there.
 

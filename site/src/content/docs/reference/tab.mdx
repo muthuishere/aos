@@ -17,7 +17,7 @@ sidebar:
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact]
+aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact] [--expect-title=<substring>]
 ```
 
 | flag | values | meaning |
@@ -28,10 +28,13 @@ aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<
 | `--app` | `<name>` | Optional |
 | `--kind` | `<kind>` | Optional |
 | `--exact` |  | Optional |
+| `--expect-title` | `<substring>` | Optional |
 
 ```sh
 aos tab close --id=chrome:1658108662:1658109078
 aos tab close --title=example --app=Chrome
+aos tab close --id=safari:22718:2 --expect-title=Example
+# exit 3 when no tab matches, 4 when several do (name one with --id)
 ```
 
 ### aos tab focus
@@ -117,7 +120,7 @@ aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab send --id=<tab id> (--text=<text> | --key=<combo>)
+aos tab send --id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<substring>]
 ```
 
 | flag | values | meaning |
@@ -125,6 +128,7 @@ aos tab send --id=<tab id> (--text=<text> | --key=<combo>)
 | `--id` | `<tab id>` | Required |
 | `--text` | `<text>` | One of these is required |
 | `--key` | `<combo>` | One of these is required |
+| `--expect-title` | `<substring>` | Optional |
 
 ```sh
 aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"

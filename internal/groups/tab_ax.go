@@ -17,20 +17,28 @@ import (
 // titles only — no URLs, no cwd — and is slower, so on macOS it only covers
 // apps no scripted provider handles. Ids are <source>:<aos window id>:<index>.
 type axTabs struct {
-	source  string                // "ax" or "uia"
-	skip    func(app string) bool // apps another provider owns
-	closeOn string                // the close-tab chord: cmd+w / ctrl+w
-	opener  func(context.Context, tabOpenRequest) (string, error)
-	texts   func(string) ([]engine.TextItem, error)
-	windows func() ([]engine.Window, error)
+	source     string                  // "ax" or "uia"
+	skip       func(app string) bool   // apps another provider owns
+	closeChord func(app string) string // the app's close-tab shortcut, "" when unknown
+	opener     func(context.Context, tabOpenRequest) (string, error)
+	texts      func(string) ([]engine.TextItem, error)
+	windows    func() ([]engine.Window, error)
+	// Seams for tests: the real ones press keys and raise windows.
+	pressKey  func(combo string) error
+	sleep     func(time.Duration)
+	selectTab func(context.Context, Tab) error
 }
 
-func newAXTabs(source, closeOn string, skip func(string) bool) *axTabs {
-	return &axTabs{
-		source: source, closeOn: closeOn, skip: skip,
-		texts:   engine.WindowTexts,
-		windows: func() ([]engine.Window, error) { return engine.ListWindows(engine.Filter{}) },
+func newAXTabs(source string, closeChord func(string) string, skip func(string) bool) *axTabs {
+	a := &axTabs{
+		source: source, closeChord: closeChord, skip: skip,
+		pressKey: engine.PressKey,
+		sleep:    time.Sleep,
+		texts:    engine.WindowTexts,
+		windows:  func() ([]engine.Window, error) { return engine.ListWindows(engine.Filter{}) },
 	}
+	a.selectTab = a.focus
+	return a
 }
 
 func (a *axTabs) owns(slug string) bool { return slug == a.source }
@@ -172,26 +180,69 @@ func (a *axTabs) focus(_ context.Context, t Tab) error {
 	return engine.ClickAt(t.center.X, t.center.Y)
 }
 
-// close selects the tab, checks its window really is in front, then sends
-// the app's close-tab shortcut: one tab, never the whole window.
+// close selects the tab, then sends the app's close-tab shortcut. It is
+// best-effort, because a key press goes to whatever is frontmost:
+//   - apps whose shortcut aos does not know are refused, not guessed (in a
+//     terminal ctrl+w reaches the shell);
+//   - the frontmost window is re-checked immediately before the key, and the
+//     key is not sent unless it is the tab's window;
+//   - success is reported only when the window's tab count dropped.
 func (a *axTabs) close(ctx context.Context, t Tab) error {
-	if err := a.focus(ctx, t); err != nil {
-		return err
+	chord := a.closeChord(t.App)
+	if chord == "" {
+		return errTabUnsupported{fmt.Sprintf("aos does not know %s's close-tab shortcut; focus the tab (`aos tab focus --id=%s`) and close it yourself", t.App, t.ID)}
 	}
-	time.Sleep(200 * time.Millisecond)
-	ws, err := a.windows()
+	before, err := a.texts(t.Window)
 	if err != nil {
 		return err
 	}
-	for _, w := range ws {
-		if w.Focused {
-			if w.ID != t.Window {
-				return fmt.Errorf("%s: its window did not come to the front; not sending %s", t.App, a.closeOn)
+	w, err := a.windowOf(t)
+	if err != nil {
+		return err
+	}
+	count := len(axTabsOf(a.source, w, before))
+	if err := a.selectTab(ctx, t); err != nil {
+		return err
+	}
+	a.sleep(80 * time.Millisecond) // let the selection land before checking focus
+	front, err := a.frontmost()
+	if err != nil {
+		return err
+	}
+	if front != t.Window {
+		return fmt.Errorf("%s: its window is not in front (front is %q); not sending %s", t.App, front, chord)
+	}
+	if err := a.pressKey(chord); err != nil {
+		return err
+	}
+	for i := 0; i < 10; i++ {
+		a.sleep(100 * time.Millisecond)
+		items, err := a.texts(t.Window)
+		if err != nil {
+			if _, gone := a.windowOf(t); gone != nil {
+				return nil // the window closed with its last tab
 			}
-			return engine.PressKey(a.closeOn)
+			continue
+		}
+		if len(axTabsOf(a.source, w, items)) < count {
+			return nil
 		}
 	}
-	return fmt.Errorf("%s: could not confirm its window is in front; not sending %s", t.App, a.closeOn)
+	return fmt.Errorf("%s: sent %s but the tab count did not drop; the tab may still be open", t.App, chord)
+}
+
+// frontmost is the focused window's aos id.
+func (a *axTabs) frontmost() (string, error) {
+	ws, err := a.windows()
+	if err != nil {
+		return "", err
+	}
+	for _, w := range ws {
+		if w.Focused {
+			return w.ID, nil
+		}
+	}
+	return "", nil
 }
 
 func (a *axTabs) send(_ context.Context, t Tab, _, _ string) error {
