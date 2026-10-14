@@ -25,7 +25,7 @@ const (
 var hostTable = map[string]bool{
 	// Screen, input and the person sitting at it.
 	"window": true, "display": true, "mouse": true, "key": true, "find": true,
-	"draw": true, "subtitle": true, "capture": true,
+	"draw": true, "subtitle": true, "capture": true, "tab": true,
 	"clipboard": true, "watch clipboard": true, "watch window": true,
 	"launch": true, "open": true, "webapp": true,
 	"remote": true, "audio": true, "permission": true, "font": true,
@@ -321,7 +321,14 @@ func (c *Ctx) findWindowsAOS() (string, error) {
 var (
 	pathFlags  = map[string]bool{"out": true, "preview": true, "events": true, "file": true}
 	pathRoutes = map[string]bool{"window arrange": true, "window save": true, "open": true, "capture video zoom": true}
+	// routePathFlags are path flags only on one route: --cwd is a folder for
+	// `tab open`, but other commands may use the name differently.
+	routePathFlags = map[string]map[string]bool{"tab open": {"cwd": true}}
 )
+
+func isPathFlag(route, name string) bool {
+	return pathFlags[name] || routePathFlags[route][name]
+}
 
 // toWindowsArgs rewrites path arguments into Windows paths with wslpath -w, so
 // output files land back in WSL.
@@ -329,7 +336,7 @@ func (c *Ctx) toWindowsArgs(cmd *Command, args []string) ([]string, error) {
 	out := make([]string, 0, len(args))
 	positional := pathRoutes[cmd.Route()]
 	for _, arg := range args {
-		if name, value, ok := strings.Cut(arg, "="); ok && strings.HasPrefix(name, "--") && pathFlags[strings.TrimPrefix(name, "--")] && value != "" {
+		if name, value, ok := strings.Cut(arg, "="); ok && strings.HasPrefix(name, "--") && isPathFlag(cmd.Route(), strings.TrimPrefix(name, "--")) && value != "" {
 			win, err := c.wslToWindows(value)
 			if err != nil {
 				return nil, err

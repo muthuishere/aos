@@ -20,10 +20,11 @@ func init() {
 			&cli.Command{
 				Group: "window", Name: "list",
 				Summary: "List open windows",
-				Args:    "[--app=<name>] [--title=<substring>] [--json]",
+				Args:    "[--app=<name>] [--title=<substring>] [--kind=browser|terminal|editor|files|other] [--json]",
 				Examples: []string{
 					"aos window list",
 					"aos window list --app=Chrome",
+					"aos window list --kind=terminal",
 				},
 				Run: runWindowList,
 			},
@@ -112,12 +113,23 @@ func matchFrom(set *argSet) (engine.Match, error) {
 	return match, nil
 }
 
+// kindWindow is a window as `window list` prints it: the engine's window
+// plus what kind of app owns it (browser, terminal, editor, files, other).
+type kindWindow struct {
+	engine.Window
+	Kind string `json:"Kind"`
+}
+
 func runWindowList(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "title")
+	set, err := parseArgs(args, "app", "title", "kind")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "title", "json"); err != nil {
+	if err := set.Reject("app", "title", "kind", "json"); err != nil {
+		return err
+	}
+	kind := strings.ToLower(set.String("kind", ""))
+	if err := checkKind(kind); err != nil {
 		return err
 	}
 
@@ -137,9 +149,16 @@ func runWindowList(c *cli.Ctx, args []string) error {
 		}
 	}
 
-	windows, err := engine.ListWindows(filter)
+	listed, err := engine.ListWindows(filter)
 	if err != nil {
 		return err
+	}
+	windows := []kindWindow{}
+	for _, w := range listed {
+		k := windowKind(w.App)
+		if kind == "" || k == kind {
+			windows = append(windows, kindWindow{Window: w, Kind: k})
+		}
 	}
 
 	if set.Has("json") {
@@ -163,8 +182,8 @@ func runWindowList(c *cli.Ctx, args []string) error {
 		if w.Focused {
 			focus = "*"
 		}
-		c.Printf("%s %-*s  mon %d  %dx%d%s%s  %s\n",
-			focus, width, w.App, w.Monitor,
+		c.Printf("%s %-*s  %-8s  mon %d  %dx%d%s%s  %s\n",
+			focus, width, w.App, w.Kind, w.Monitor,
 			w.Bounds.W, w.Bounds.H, signed(w.Bounds.X), signed(w.Bounds.Y),
 			w.Title)
 	}

@@ -1,0 +1,137 @@
+---
+title: aos tab
+description: Browser and terminal tabs - list, focus, open, send, close
+sidebar:
+  label: tab
+  order: 1
+---
+
+<p class="cmd-lead">Browser and terminal tabs: list, focus, open, send, close</p>
+
+5 commands. Run `aos tab --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos tab close
+
+<p class="cmd-lead">Close one tab (never the whole window)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact] [--expect-title=<substring>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--app` | `<name>` | Optional |
+| `--kind` | `<kind>` | Optional |
+| `--exact` |  | Optional |
+| `--expect-title` | `<substring>` | Optional |
+
+```sh
+aos tab close --id=chrome:1658108662:1658109078
+aos tab close --title=example --app=Chrome
+aos tab close --id=safari:22718:2 --expect-title=Example
+# exit 3 when no tab matches, 4 when several do (name one with --id)
+```
+
+### aos tab focus
+
+<p class="cmd-lead">Raise a tab's window and select the tab</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab focus (--title=<substring> | --url=<substring> | --cwd=<substring> | --id=<tab id>) [--app=<name>] [--kind=<kind>] [--exact]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--title` | `<substring>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--cwd` | `<substring>` | One of these is required |
+| `--id` | `<tab id>` | One of these is required |
+| `--app` | `<name>` | Optional |
+| `--kind` | `<kind>` | Optional |
+| `--exact` |  | Optional |
+
+```sh
+aos tab focus --url=github.com/muthuishere/aos/pulls
+aos tab focus --title=Inbox --app=Chrome
+aos tab focus --cwd=os-cli --kind=terminal
+# exit 3 when no tab matches
+```
+
+### aos tab list
+
+<p class="cmd-lead">List the tabs of every browser and terminal window</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab list [--app=<name>] [--kind=browser|terminal|editor|files|other] [--window=<aos window id>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--app` | `<name>` | Optional |
+| `--kind` | `browser`, `terminal`, `editor`, `files`, `other` | Optional |
+| `--window` | `<aos window id>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos tab list
+aos tab list --kind=browser --json
+aos tab list --app=Ghostty
+```
+
+### aos tab open
+
+<p class="cmd-lead">Open a browser tab on a URL, or a terminal tab in a folder</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--background]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<url>` | | Optional positional argument |
+| `--app` | `<name>` | Required |
+| `--window` | `<id>` | Optional |
+| `--new-window` |  | Optional |
+| `--cwd` | `<dir>` | Optional |
+| `--command` | `<cmd>` | Optional |
+| `--background` |  | Optional |
+
+```sh
+aos tab open https://example.com --app=Chrome
+aos tab open https://example.com --app=Safari --new-window
+aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
+```
+
+### aos tab send
+
+<p class="cmd-lead">Type text or press a key in a terminal tab without focusing it</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab send --id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<substring>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | Required |
+| `--text` | `<text>` | One of these is required |
+| `--key` | `<combo>` | One of these is required |
+| `--expect-title` | `<substring>` | Optional |
+
+```sh
+aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"
+aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --key=enter
+aos tab send --id=iterm:31:1 --key=ctrl+c
+```
