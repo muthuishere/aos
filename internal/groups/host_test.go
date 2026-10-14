@@ -3,12 +3,17 @@ package groups
 import (
 	"bytes"
 	"context"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/client/transport"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/muthuishere/aos/internal/cli"
 )
 
@@ -110,5 +115,109 @@ func TestSocketHostRoundTrip(t *testing.T) {
 	resp := cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: []string{"exec", "run", "id"}})
 	if resp.Exit == 0 {
 		t.Fatal("exec was run for a remote caller")
+	}
+}
+
+// The socket must not be remote exec: no spelling of the host flag, no
+// unresolvable route, and no local command gets through aos_invoke, and the
+// server lists no tool for a local command.
+func TestSocketHostRefusesLocalCommands(t *testing.T) {
+	ran := map[string]int{}
+	record := func(route string) cli.Runner {
+		return func(c *cli.Ctx, args []string) error { ran[route]++; return nil }
+	}
+	host := cli.NewRegistry()
+	for _, g := range []string{"window", "exec", "system", "capture", "subtitle"} {
+		host.Describe(g, g)
+	}
+	host.Add(
+		&cli.Command{Group: "window", Name: "list", Summary: "s", Run: record("window list")},
+		&cli.Command{Group: "exec", Name: "capture", Summary: "s", Run: record("exec capture")},
+		&cli.Command{Group: "system", Name: "restart", Summary: "s", Run: record("system restart")},
+		&cli.Command{Group: "capture", Name: "screenshot", Summary: "s", Aliases: []string{"screenshot"}, Run: record("capture screenshot")},
+		&cli.Command{Group: "subtitle", Name: "show", Summary: "s", Run: record("subtitle show")},
+	)
+	var sink bytes.Buffer
+	hostCtx := &cli.Ctx{Registry: host, Stdout: &sink, Stderr: &sink, Env: func(string) string { return "" }, GOOS: "darwin"}
+
+	for _, argv := range [][]string{
+		{"--host=local", "exec", "capture", "echo", "PWNED"},
+		{"--host", "local", "exec", "capture", "echo", "PWNED"},
+		{"--host=local", "system", "restart"},
+		{"system", "restart"},
+		{"nosuch", "command"},
+		{"--host"},
+	} {
+		if resp := cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: argv}); resp.Exit == 0 {
+			t.Errorf("%v: exit 0, want refused", argv)
+		}
+	}
+	if ran["exec capture"]+ran["system restart"] != 0 {
+		t.Fatalf("local commands ran for a remote caller: %v", ran)
+	}
+
+	// The caption follows the resolved route: the screenshot alias is a
+	// capture, so no caption lands in it; window list gets one.
+	cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: []string{"screenshot"}, From: "alias-test"})
+	if ran["capture screenshot"] != 1 || ran["subtitle show"] != 0 {
+		t.Fatalf("alias: %v", ran)
+	}
+	cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: []string{"window", "list"}, From: "alias-test"})
+	if ran["subtitle show"] != 1 {
+		t.Fatalf("caption not shown for window list: %v", ran)
+	}
+
+	// Tools: only screen commands, plus aos_invoke.
+	dir, err := os.MkdirTemp("/tmp", "aos-sock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	socket := filepath.Join(dir, "s.sock")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	set, _ := parseArgs([]string{"--quiet", "--gui=on"}, "gui")
+	go func() { _ = serveSocket(ctx, hostCtx, set, socket) }()
+	for i := 0; i < 100; i++ {
+		if _, err := os.Stat(socket); err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	hc := &http.Client{Transport: &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, "unix", socket)
+	}}}
+	mc, err := client.NewStreamableHttpClient("http://aos/mcp", transport.WithHTTPBasicClient(hc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mc.Close()
+	if err := mc.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	init := mcp.InitializeRequest{}
+	init.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+	if _, err := mc.Initialize(ctx, init); err != nil {
+		t.Fatal(err)
+	}
+	list, err := mc.ListTools(ctx, mcp.ListToolsRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, tool := range list.Tools {
+		names = append(names, tool.Name)
+	}
+	got := strings.Join(names, ",")
+	for _, banned := range []string{"exec_capture", "system_restart"} {
+		if strings.Contains(got, banned) {
+			t.Errorf("socket lists %s: %s", banned, got)
+		}
+	}
+	for _, want := range []string{"window_list", cli.SocketInvokeTool} {
+		if !strings.Contains(got, want) {
+			t.Errorf("socket is missing %s: %s", want, got)
+		}
 	}
 }

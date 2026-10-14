@@ -69,6 +69,9 @@ func dialSocket(ctx context.Context, socket string) (*client.Client, error) {
 
 // pingSocket checks that an aos MCP server answers on the socket.
 func pingSocket(socket string) error {
+	if err := checkSocket(socket); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	mc, err := dialSocket(ctx, socket)
@@ -167,7 +170,7 @@ func (c *Ctx) runOnSocket(host Host, cmd *Command, words, rest []string) int {
 		}
 		raw, err := base64.StdEncoding.DecodeString(data)
 		if err == nil {
-			err = os.WriteFile(local, raw, 0o644)
+			err = writeReturnedFile(local, raw)
 		}
 		if err != nil {
 			c.Warnf("aos: could not write %s: %v\n", local, err)
@@ -224,14 +227,27 @@ func ServeSocketInvoke(base *Ctx, req SocketRequest) SocketResponse {
 	if len(req.Argv) == 0 {
 		return SocketResponse{Exit: 2, Stderr: "aos: empty command\n"}
 	}
-	if cmd, _, err := base.Registry.Resolve(req.Argv); err == nil && cmd != nil && !cmd.FollowsHost {
-		// Only screen commands are delegated; refusing the rest keeps the
-		// socket from becoming remote exec on the person's machine.
+	// Only screen commands are run for a remote caller; anything else would
+	// make the socket remote exec on the person's machine. The host flag is
+	// stripped first so it cannot hide the route, and a route that does not
+	// resolve is refused rather than handed to dispatch.
+	argv, _, err := stripHostFlag(req.Argv, false)
+	if err != nil {
+		return SocketResponse{Exit: 2, Stderr: fmt.Sprintf("aos: %v\n", err)}
+	}
+	cmd, _, err := base.Registry.Resolve(argv)
+	if err != nil || cmd == nil {
+		return SocketResponse{Exit: 2, Stderr: "aos: not a screen command; refused for a remote caller\n"}
+	}
+	if !cmd.FollowsHost {
 		return SocketResponse{Exit: 2, Stderr: fmt.Sprintf("aos: %q is not a screen command and is not run for a remote caller\n", cmd.Route())}
 	}
-	if req.From != "" && !strings.HasPrefix(req.Argv[0], "capture") && req.Argv[0] != "screenshot" && req.Argv[0] != "find" {
+	req.Argv = argv
+	if req.From != "" && cmd.Group != "capture" && cmd.Group != "find" {
 		showControlledCaption(base, req.From)
 	}
+	screen := *base
+	screen.ScreenOnly = true
 
 	dir, err := os.MkdirTemp("", "aos-host-")
 	if err != nil {
@@ -247,7 +263,7 @@ func ServeSocketInvoke(base *Ctx, req SocketRequest) SocketResponse {
 		paths[token] = filepath.Join(dir, fmt.Sprintf("out-%d%s", i, ext))
 		i++
 	}
-	argv := make([]string, len(req.Argv))
+	argv = make([]string, len(req.Argv))
 	for n, arg := range req.Argv {
 		for token, path := range paths {
 			arg = strings.ReplaceAll(arg, token, path)
@@ -255,7 +271,7 @@ func ServeSocketInvoke(base *Ctx, req SocketRequest) SocketResponse {
 		argv[n] = arg
 	}
 
-	result := Invoke(base, argv, req.Stdin)
+	result := Invoke(&screen, argv, req.Stdin)
 	resp := SocketResponse{Exit: result.Exit, Stdout: result.Stdout, Stderr: result.Stderr, Files: map[string]string{}}
 	for token, path := range paths {
 		resp.Stdout = strings.ReplaceAll(resp.Stdout, path, token)
@@ -278,4 +294,41 @@ func showControlledCaption(base *Ctx, from string) {
 	lastCaption[from] = time.Now()
 	captionMu.Unlock()
 	Invoke(base, []string{"subtitle", "show", "aos controlled from " + from, "--seconds=3", "--position=top-right", "--size=S", "--detach"}, "")
+}
+
+// checkSocket refuses a socket someone else could have planted: on a shared
+// server anyone can create /tmp/aos-<you>.sock first. It must be a socket,
+// owned by this user, with no group or other permission bits.
+func checkSocket(socket string) error {
+	info, err := os.Lstat(socket)
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSocket == 0 {
+		return fmt.Errorf("%s is not a socket", socket)
+	}
+	if !ownedByMe(info) {
+		return fmt.Errorf("%s is not owned by you; refusing it (someone else may have created it)", socket)
+	}
+	if info.Mode().Perm()&0o077 != 0 {
+		return fmt.Errorf("%s is readable or writable by others (mode %v); it must be 0600", socket, info.Mode().Perm())
+	}
+	return nil
+}
+
+// writeReturnedFile writes a file the host sent back, 0600, never through a
+// symlink: an existing entry is removed and the file created exclusively.
+func writeReturnedFile(path string, data []byte) error {
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }

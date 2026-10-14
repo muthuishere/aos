@@ -15,7 +15,10 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/muthuishere/aos/internal/cli"
 	toolnexus "github.com/muthuishere/toolnexus/golang"
 )
@@ -430,7 +433,23 @@ func serveSocket(ctx context.Context, c *cli.Ctx, set *argSet, socket string) er
 	}
 	_ = os.Remove(socket)
 
-	tools := buildTools(c, groupFilter(set), gui)
+	// A remote caller gets screen commands only: per-command tools for the
+	// routes that follow the host, plus aos_invoke, all running with a
+	// ScreenOnly context so dispatch refuses anything else as well.
+	screen := *c
+	screen.ScreenOnly = true
+	follows := map[string]bool{}
+	for _, cmd := range c.Registry.Commands() {
+		if cmd.FollowsHost {
+			follows[toolName(cmd.Route())] = true
+		}
+	}
+	var tools []toolnexus.Tool
+	for _, tool := range buildTools(&screen, groupFilter(set), gui) {
+		if follows[tool.Name] {
+			tools = append(tools, tool)
+		}
+	}
 	tools = append(tools, toolnexus.NativeTool(
 		cli.SocketInvokeTool,
 		"Run an aos screen command for another aos that delegated it over SSH. Returns JSON with exit, stdout, stderr and files.",
@@ -458,28 +477,35 @@ func serveSocket(ctx context.Context, c *cli.Ctx, set *argSet, socket string) er
 		},
 	))
 
-	toolkit, err := toolnexus.CreateToolkit(ctx, toolnexus.Options{ExtraTools: tools, Builtins: false})
-	if err != nil {
-		return err
-	}
+	// The MCP handler is served on the socket itself. Nothing listens on a
+	// loopback port, which any local process could reach without the socket.
 	quiet := set.Has("quiet")
-	handle, err := toolkit.Serve("127.0.0.1:0", toolnexus.ServeOptions{
-		MCP: &toolnexus.MCPServeConfig{Name: "aos", Version: c.Version},
-		OnCall: func(event toolnexus.OnCallEvent) {
-			if !quiet {
-				c.Warnf("%-28s %dms\n", event.Name, event.Ms)
-			}
-		},
-	})
-	if err != nil {
-		return err
+	mcpServer := mcpserver.NewMCPServer("aos", c.Version)
+	for _, tool := range tools {
+		tool := tool
+		schema, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			return err
+		}
+		mcpServer.AddTool(mcp.NewToolWithRawSchema(tool.Name, tool.Description, schema),
+			func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+				started := time.Now()
+				res, err := tool.Execute(req.GetArguments(), &toolnexus.ToolContext{Ctx: ctx})
+				if err != nil {
+					res = toolnexus.ToolResult{Output: err.Error(), IsError: true}
+				}
+				if !quiet {
+					c.Warnf("%-28s %dms\n", tool.Name, time.Since(started).Milliseconds())
+				}
+				if res.IsError {
+					return mcp.NewToolResultError(res.Output), nil
+				}
+				return mcp.NewToolResultText(res.Output), nil
+			})
 	}
-	defer handle.Stop()
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", mcpserver.NewStreamableHTTPServer(mcpServer))
 
-	target, err := url.Parse(handle.URL)
-	if err != nil {
-		return err
-	}
 	old := syscallUmask(0o077)
 	listener, err := net.Listen("unix", socket)
 	syscallUmask(old)
@@ -491,7 +517,7 @@ func serveSocket(ctx context.Context, c *cli.Ctx, set *argSet, socket string) er
 		listener.Close()
 		return err
 	}
-	server := &http.Server{Handler: httputil.NewSingleHostReverseProxy(target)}
+	server := &http.Server{Handler: mux}
 	go func() { _ = server.Serve(listener) }()
 	defer server.Close()
 

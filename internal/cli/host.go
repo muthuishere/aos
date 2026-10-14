@@ -115,20 +115,23 @@ func IsWSL(env func(string) string, exists func(string) bool) bool {
 	return exists != nil && exists("/proc/sys/fs/binfmt_misc/WSLInterop")
 }
 
-// stripHostFlag removes --host=<v> (or --host <v> before the command) from
-// args. It is never forwarded: the host has no host of its own.
-func stripHostFlag(args []string) ([]string, string, error) {
+// stripHostFlag removes --host=<v> and --host <v> from args. With anywhere
+// false only flags before the first other word are taken, which is how the
+// global flag is read before the command is known; dispatch then strips the
+// rest of a screen command's arguments with anywhere true. Nothing after --
+// is touched. The flag is never forwarded: the host has no host of its own.
+func stripHostFlag(args []string, anywhere bool) ([]string, string, error) {
 	var out []string
 	value := ""
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		if arg == "--" || (!anywhere && arg != "--host" && !strings.HasPrefix(arg, "--host=")) {
+			return append(out, args[i:]...), value, nil
+		}
 		switch {
-		case arg == "--":
-			out = append(out, args[i:]...)
-			return out, value, nil
 		case strings.HasPrefix(arg, "--host="):
 			value = strings.TrimPrefix(arg, "--host=")
-		case arg == "--host" && len(out) == 0:
+		case arg == "--host":
 			if i+1 >= len(args) {
 				return nil, "", fmt.Errorf("--host needs a value: local, windows-host, or a socket path")
 			}

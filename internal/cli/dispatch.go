@@ -68,7 +68,7 @@ func describeInvocation(r *Registry, args []string) (string, int) {
 }
 
 func dispatch(c *Ctx, args []string) int {
-	args, hostFlag, err := stripHostFlag(args)
+	args, hostFlag, err := stripHostFlag(args, false)
 	if err != nil {
 		c.Warnf("aos: %v\n", err)
 		return 2
@@ -113,6 +113,28 @@ func dispatch(c *Ctx, args []string) int {
 		return 0
 	}
 
+	// A caller that reached this machine as the host may only run screen
+	// commands: the socket is not remote exec (defence in depth; the socket
+	// server refuses these before they get here).
+	if c.ScreenOnly && !cmd.FollowsHost {
+		c.Warnf("aos: %q is not a screen command and is not run for a remote caller\n", cmd.Route())
+		return 2
+	}
+
+	// --host=<v> after the route is only aos's for a screen command. For
+	// anything else (exec run, say) it belongs to the command.
+	words := args[:len(args)-len(rest)]
+	if cmd.FollowsHost {
+		var later string
+		if rest, later, err = stripHostFlag(rest, true); err != nil {
+			c.Warnf("aos: %v\n", err)
+			return 2
+		}
+		if later != "" {
+			hostFlag = later
+		}
+	}
+
 	// Screen commands run on the host, which may be another machine. This
 	// comes before the platform and display checks: those are the host's.
 	if cmd.FollowsHost && !c.Local {
@@ -122,7 +144,7 @@ func dispatch(c *Ctx, args []string) int {
 			return 2
 		}
 		if host.Kind != HostLocal {
-			return c.runOnHost(host, cmd, args[:len(args)-len(rest)], rest)
+			return c.runOnHost(host, cmd, words, rest)
 		}
 	}
 

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -90,18 +91,101 @@ func TestCommandsAreClassifiedByTheTable(t *testing.T) {
 }
 
 func TestStripHostFlag(t *testing.T) {
-	args, host, err := stripHostFlag([]string{"window", "list", "--host=local", "--json"})
-	if err != nil || host != "local" || !reflect.DeepEqual(args, []string{"window", "list", "--json"}) {
+	// Anywhere (a screen command's own arguments), both spellings.
+	args, host, err := stripHostFlag([]string{"--monitor=1", "--host=local", "--json"}, true)
+	if err != nil || host != "local" || !reflect.DeepEqual(args, []string{"--monitor=1", "--json"}) {
 		t.Fatalf("got %v %q %v", args, host, err)
 	}
-	args, host, _ = stripHostFlag([]string{"--host", "windows-host", "window", "list"})
-	if host != "windows-host" || !reflect.DeepEqual(args, []string{"window", "list"}) {
+	args, host, _ = stripHostFlag([]string{"--json", "--host", "windows-host"}, true)
+	if host != "windows-host" || !reflect.DeepEqual(args, []string{"--json"}) {
+		t.Fatalf("got %v %q", args, host)
+	}
+	// Leading only: stops at the first other word, both spellings.
+	args, host, _ = stripHostFlag([]string{"--host", "windows-host", "window", "list", "--host=x"}, false)
+	if host != "windows-host" || !reflect.DeepEqual(args, []string{"window", "list", "--host=x"}) {
+		t.Fatalf("got %v %q", args, host)
+	}
+	args, host, _ = stripHostFlag([]string{"--host=local", "exec", "run"}, false)
+	if host != "local" || !reflect.DeepEqual(args, []string{"exec", "run"}) {
 		t.Fatalf("got %v %q", args, host)
 	}
 	// After --, everything belongs to the command.
-	args, host, _ = stripHostFlag([]string{"exec", "run", "--", "x", "--host=y"})
-	if host != "" || len(args) != 5 {
+	args, host, _ = stripHostFlag([]string{"--", "x", "--host=y"}, true)
+	if host != "" || len(args) != 3 {
 		t.Fatalf("got %v %q", args, host)
+	}
+}
+
+// --host after a local command's route is the command's own argument.
+func TestHostFlagIsKeptForLocalCommands(t *testing.T) {
+	c, out, _ := hostCtx(t, nil, &HostDeps{})
+	for _, argv := range [][]string{{"exec", "run", "foo", "--host=x"}, {"exec", "run", "foo", "--host", "x"}} {
+		out.Reset()
+		if code := Run(c, argv); code != 0 || !strings.Contains(out.String(), "--host") {
+			t.Fatalf("%v: exit %d, %q", argv, code, out.String())
+		}
+	}
+}
+
+// A ScreenOnly context (a remote caller) refuses anything but screen commands.
+func TestScreenOnlyRefusesLocalCommands(t *testing.T) {
+	c, out, _ := hostCtx(t, nil, &HostDeps{})
+	c.ScreenOnly, c.Local = true, true
+	for _, argv := range [][]string{{"exec", "run", "id"}, {"--host=local", "system", "shutdown"}} {
+		out.Reset()
+		if code := Run(c, argv); code != 2 || out.Len() != 0 {
+			t.Fatalf("%v: exit %d, %q", argv, code, out.String())
+		}
+	}
+	if code := Run(c, []string{"window", "list"}); code != 0 {
+		t.Fatalf("screen command refused: %d", code)
+	}
+}
+
+func TestCheckSocketRefusesForeignOrOpenSockets(t *testing.T) {
+	dir, err := os.MkdirTemp("/tmp", "aos-chk")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	plain := filepath.Join(dir, "plain")
+	os.WriteFile(plain, nil, 0o600)
+	if err := checkSocket(plain); err == nil {
+		t.Fatal("a regular file was accepted as a socket")
+	}
+	sock := filepath.Join(dir, "s.sock")
+	l, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	os.Chmod(sock, 0o666)
+	if err := checkSocket(sock); err == nil || !strings.Contains(err.Error(), "0600") {
+		t.Fatalf("an open socket was accepted: %v", err)
+	}
+	os.Chmod(sock, 0o600)
+	if err := checkSocket(sock); err != nil {
+		t.Fatalf("own 0600 socket refused: %v", err)
+	}
+}
+
+func TestReturnedFilesAre0600AndDoNotFollowSymlinks(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "victim")
+	os.WriteFile(target, []byte("keep"), 0o644)
+	link := filepath.Join(dir, "out.png")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeReturnedFile(link, []byte("PNG")); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(target); string(data) != "keep" {
+		t.Fatalf("wrote through the symlink: %q", data)
+	}
+	info, err := os.Lstat(link)
+	if err != nil || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm() != 0o600 {
+		t.Fatalf("mode %v, err %v", info.Mode(), err)
 	}
 }
 

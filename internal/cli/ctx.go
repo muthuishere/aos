@@ -30,6 +30,9 @@ type Ctx struct {
 	// Local pins every command to this machine. It is set for calls arriving
 	// over MCP: the server is the host, so it never delegates again.
 	Local bool
+	// ScreenOnly refuses every command that does not follow the host. It is
+	// set for calls arriving over the SSH socket.
+	ScreenOnly bool
 }
 
 // NewCtx builds a context bound to the real process.
