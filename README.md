@@ -254,7 +254,7 @@ not offering it — it will try, fail, and try again.
 
 | | |
 |---|---|
-| **Desktop** | `window` (list · focus · move to zone/split/coords · resize · wait · save a layout · arrange it back), `display`, `mouse`, `key`, `permission` |
+| **Desktop** | `window` (list · focus · move to zone/split/coords · resize · wait · save a layout · arrange it back · `--kind=browser\|terminal`), `tab` (list · focus · open · send · close browser and terminal tabs), `display`, `mouse`, `key`, `permission` |
 | **Machine** | `system` (lock · sleep · restart · shutdown · logout · info), `process` (list · find · kill), `power`, `battery`, `network`, `audio`, `font`, `pkg`, `debug` |
 | **Content** | `capture`, `clipboard`, `file`, `exec`, `open`, `launch`, `webapp`, `subtitle` |
 | **Remote** | `remote` — hand this screen and its input to a browser on the LAN, for as long as the command runs |
@@ -265,6 +265,27 @@ Windows, monitors, input, screenshots and drawing are handled by aos's own
 engine in `internal/engine` (absorbed from the now-deprecated windowctl); MCP
 serving by [toolnexus](https://github.com/muthuishere/toolnexus), a library this
 depends on — aos is the front door.
+
+## Tabs
+
+Browsers and terminals are windows with tabs inside. `aos tab` reaches them in
+Chrome, Edge, Brave, Safari, Ghostty, iTerm2 and Terminal on macOS, and through
+UI Automation on Windows:
+
+```sh
+aos tab list --kind=terminal               # every tab, with its folder or URL
+aos tab focus --url=github.com/pulls       # raise the window, select the tab
+aos tab open --app=Ghostty --cwd=~/api --command="npm run dev"
+aos tab close --title="Example" --exact    # refuses (exit 4) if several match
+```
+
+## From WSL and over SSH
+
+Screen commands run on the machine whose screen you see. Inside WSL that is
+Windows: `aos window list` lists Windows windows, through `aos.exe`. Over SSH
+it is the laptop you connected from, through a forwarded socket. Commands
+like `exec` and `file` stay where the agent is. See
+[WSL and SSH](https://muthuishere.github.io/aos/host/) for the setup.
 
 ## Reacting to what happens
 
