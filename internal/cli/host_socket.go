@@ -86,8 +86,8 @@ func pingSocket(socket string) error {
 // paths are refused with the alternative.
 func socketPlan(cmd *Command, rest []string, env func(string) string, exists func(string) bool) ([]string, map[string]string, error) {
 	route := cmd.Route()
-	if cmd.Blocking || route == "watch clipboard" || route == "watch window" || route == "remote share" {
-		return nil, nil, fmt.Errorf("%q streams its output, which a socket host does not carry yet; run it on the machine with the screen", route)
+	if err := refuseStreaming(cmd); err != nil {
+		return nil, nil, err
 	}
 	outputs := map[string]string{} // placeholder -> local path
 	placeholder := func(local string) string {
@@ -130,6 +130,16 @@ func socketPlan(cmd *Command, rest []string, env func(string) string, exists fun
 		out = append(out, arg)
 	}
 	return out, outputs, nil
+}
+
+// refuseStreaming rejects commands that run until interrupted: the socket
+// carries one request and one reply.
+func refuseStreaming(cmd *Command) error {
+	route := cmd.Route()
+	if cmd.Blocking || route == "watch clipboard" || route == "watch window" || route == "remote share" {
+		return fmt.Errorf("%q streams its output, which a socket host does not carry yet; run it on the machine with the screen", route)
+	}
+	return nil
 }
 
 // runOnSocket sends the command to the host's aos through the forwarded
@@ -241,6 +251,9 @@ func ServeSocketInvoke(base *Ctx, req SocketRequest) SocketResponse {
 	}
 	if !cmd.FollowsHost {
 		return SocketResponse{Exit: 2, Stderr: fmt.Sprintf("aos: %q is not a screen command and is not run for a remote caller\n", cmd.Route())}
+	}
+	if err := refuseStreaming(cmd); err != nil {
+		return SocketResponse{Exit: 2, Stderr: fmt.Sprintf("aos: %v\n", err)}
 	}
 	req.Argv = argv
 	if req.From != "" && cmd.Group != "capture" && cmd.Group != "find" {

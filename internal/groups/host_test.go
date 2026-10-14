@@ -127,7 +127,7 @@ func TestSocketHostRefusesLocalCommands(t *testing.T) {
 		return func(c *cli.Ctx, args []string) error { ran[route]++; return nil }
 	}
 	host := cli.NewRegistry()
-	for _, g := range []string{"window", "exec", "system", "capture", "subtitle"} {
+	for _, g := range []string{"window", "exec", "system", "capture", "subtitle", "watch"} {
 		host.Describe(g, g)
 	}
 	host.Add(
@@ -136,6 +136,7 @@ func TestSocketHostRefusesLocalCommands(t *testing.T) {
 		&cli.Command{Group: "system", Name: "restart", Summary: "s", Run: record("system restart")},
 		&cli.Command{Group: "capture", Name: "screenshot", Summary: "s", Aliases: []string{"screenshot"}, Run: record("capture screenshot")},
 		&cli.Command{Group: "subtitle", Name: "show", Summary: "s", Run: record("subtitle show")},
+		&cli.Command{Group: "watch", Name: "window", Summary: "s", Blocking: true, Run: record("watch window")},
 	)
 	var sink bytes.Buffer
 	hostCtx := &cli.Ctx{Registry: host, Stdout: &sink, Stderr: &sink, Env: func(string) string { return "" }, GOOS: "darwin"}
@@ -147,12 +148,21 @@ func TestSocketHostRefusesLocalCommands(t *testing.T) {
 		{"system", "restart"},
 		{"nosuch", "command"},
 		{"--host"},
+		{"--", "exec", "capture", "echo", "PWNED"},
+		{"window", "--host=local", "exec", "capture", "echo", "PWNED"},
+		{"watch", "window"},
 	} {
 		if resp := cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: argv}); resp.Exit == 0 {
 			t.Errorf("%v: exit 0, want refused", argv)
 		}
 	}
-	if ran["exec capture"]+ran["system restart"] != 0 {
+	// A screen command whose arguments mention exec runs as that screen
+	// command; the words after it are its arguments, never a second route.
+	cli.ServeSocketInvoke(hostCtx, cli.SocketRequest{Argv: []string{"window", "list", "--host", "x", "--", "exec", "capture", "echo", "PWNED"}})
+	if ran["window list"] != 1 {
+		t.Fatalf("window list did not run: %v", ran)
+	}
+	if ran["exec capture"]+ran["system restart"]+ran["watch window"] != 0 {
 		t.Fatalf("local commands ran for a remote caller: %v", ran)
 	}
 
@@ -210,7 +220,7 @@ func TestSocketHostRefusesLocalCommands(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	got := strings.Join(names, ",")
-	for _, banned := range []string{"exec_capture", "system_restart"} {
+	for _, banned := range []string{"exec_capture", "system_restart", "watch_window"} {
 		if strings.Contains(got, banned) {
 			t.Errorf("socket lists %s: %s", banned, got)
 		}

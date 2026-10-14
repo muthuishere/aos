@@ -440,7 +440,9 @@ func serveSocket(ctx context.Context, c *cli.Ctx, set *argSet, socket string) er
 	screen.ScreenOnly = true
 	follows := map[string]bool{}
 	for _, cmd := range c.Registry.Commands() {
-		if cmd.FollowsHost {
+		// Blocking commands never end, so they have no place on a
+		// request/reply socket (buildTools also leaves them out).
+		if cmd.FollowsHost && !cmd.Blocking {
 			follows[toolName(cmd.Route())] = true
 		}
 	}
