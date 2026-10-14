@@ -37,6 +37,8 @@ const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/M
 const CARD_STILLS = { windows: 35, launch: 40, find: 55, typing: 70, labels: 90, point: 105, video: 120 };
 
 const T = {
+	tabs: ['aos tab list --kind=terminal', ['* ghostty:t-806:t-80f  terminal  api   ~/work/api', '  ghostty:t-806:t-812  terminal  web   ~/work/web', '  iterm2:4:2           terminal  logs  ~/work/ops', '', '$ aos tab focus --cwd=work/web', 'ghostty:t-806:t-812  web', '', '$ aos tab open https://example.com --app=chrome', 'chrome:1658109204:1658109210']],
+	host: ['aos doctor | grep host     # in WSL', ['ok  host  windows-host (/mnt/c/…/aos.exe,', '          via auto: WSL)', '', '$ aos window list --kind=browser', '  Edge  browser  mon 1  1920x1040+0+0  aos docs', '', '$ aos screenshot --out=~/edge.png', '/home/you/edge.png  1920x1080']],
 	screenshot: ['aos capture screenshot --app=Finder --out=shot.png', ['/Users/you/shot.png  1730x933+2045+94']],
 	shell: ['aos exec capture -- git status --short', ['{', '  "command": ["git", "status", "--short"],', '  "exit": 0,', '  "stdout": "",', '  "stderr": "",', '  "duration_ms": 14', '}']],
 	watch: ['aos watch clipboard --max=1', ['{"event":"clipboard","at":"2026-10-13T06:36:30+05:30",', ' "seq":1,"length":14,"digest":"4b559aab5a29"}']],
