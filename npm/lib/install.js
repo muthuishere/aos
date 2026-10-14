@@ -1,6 +1,7 @@
 // Installs the aos binary INTO this package (vendor/), using the same
 // install.sh / install.cmd the curl one-liners use, so `npm uninstall`
-// removes it and nothing is put on the global PATH.
+// removes it and nothing is put on the global PATH. Inside WSL, install.sh also
+// puts the Windows build in %LOCALAPPDATA%\aos, where screen commands run.
 'use strict';
 const fs = require('fs');
 const path = require('path');

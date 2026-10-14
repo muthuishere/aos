@@ -19,15 +19,18 @@ type Result struct {
 func Invoke(base *Ctx, argv []string, stdin string) Result {
 	var stdout, stderr bytes.Buffer
 	ctx := &Ctx{
-		Registry: base.Registry,
-		Stdin:    io.NopCloser(strings.NewReader(stdin)),
-		Stdout:   &stdout,
-		Stderr:   &stderr,
-		Env:      base.Env,
-		GOOS:     base.GOOS,
-		Version:  base.Version,
-		Source:   "mcp",
-		Recorder: base.Recorder,
+		Registry:   base.Registry,
+		Stdin:      io.NopCloser(strings.NewReader(stdin)),
+		Stdout:     &stdout,
+		Stderr:     &stderr,
+		Env:        base.Env,
+		GOOS:       base.GOOS,
+		Version:    base.Version,
+		Source:     "mcp",
+		Recorder:   base.Recorder,
+		HostDeps:   base.HostDeps,
+		Local:      true,
+		ScreenOnly: base.ScreenOnly,
 	}
 	exit := Run(ctx, argv)
 	return Result{Exit: exit, Stdout: stdout.String(), Stderr: stderr.String()}
