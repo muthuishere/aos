@@ -16,7 +16,9 @@ description: >
   text on screen, where is the Allow button, point at it, draw an arrow, show me
   where to click, highlight / circle / box this, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP,
-  record my screen, capture video, record a demo, screen recording with zoom.
+  record my screen, capture video, record a demo, screen recording with zoom,
+  list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
+  this folder, type into a terminal tab.
 ---
 
 # aos
@@ -53,7 +55,8 @@ If a command is not in `commands`, it does not exist here. Do not invent flags �
   `network wifi` on ethernet, `remote url` with nothing running. Often not an error.
 - **2** — refused before doing anything: the command needs a display this machine
   lacks, or is not supported on this platform. The message says which.
-- **3** — not found: `find` / `draw --find` could not find the window or the text.
+- **3** — not found: `find` / `draw --find` could not find the window or the text;
+  `tab focus` / `tab close` found no matching tab.
   The message lists the closest labels it did see; retry with one of them.
 
 Exit 2 on Linux is fixable: `aos headless start --wm` provides a virtual
@@ -68,6 +71,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | find a window | `window list`, `window list --app=Chrome`, `window list --json` |
 | place a window | `window move Chrome --zone=1B` · `--at=x,y,w,h` · `--monitor=2` · `window resize Chrome --w=900 --h=500` |
 | save / restore a layout | `window save P` captures every window · `window arrange P` (or `-` for stdin JSON) puts them back |
+| tabs (browsers, terminals) | `tab list --json` (id, title, url, cwd) · `tab focus --url=github.com/x` · `tab open URL --app=Chrome` · `tab open --app=Ghostty --cwd=D --command=C` · `tab send --id=ID --text=T` · `tab close --id=ID` (exit 3 = no such tab) |
 | focus / wait | `window focus Chrome` · `launch Chrome --wait` · `window wait Chrome --timeout=5000` |
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
@@ -96,6 +100,7 @@ command with usage and examples. Load the guide that matches the intent:
 | windows, monitors, zones, layouts | `references/windows-and-layout.md` |
 | visual loop, terminals, screen sharing rules | `references/automation.md` |
 | find a control by its text | `references/find.md` |
+| browser and terminal tabs: list, switch, open, type into, close | `references/tabs.md` |
 | point at / label things on screen | `references/draw.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
 | `capture video` flags, camera modes, events format | `references/capture-video.md` |
@@ -162,7 +167,7 @@ adopt it. The audit trail lives on the machine that ran the command, so
 
 ## When the screen is on another machine (WSL, SSH)
 
-Screen commands (`window`, `display`, `mouse`, `key`, `find`, `draw`,
+Screen commands (`window`, `tab`, `display`, `mouse`, `key`, `find`, `draw`,
 `subtitle`, `capture`/`screenshot`, `clipboard`, `launch`, `open`, `webapp`,
 `audio`, `remote share`, `lock`/`sleep`, ...) run on the **host**: the machine
 whose screen the person sees. Everything else (`exec`, `file`, `process`,

@@ -60,18 +60,20 @@ aos window focus Chrome
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos window list [--app=<name>] [--title=<substring>] [--json]
+aos window list [--app=<name>] [--title=<substring>] [--kind=browser|terminal|editor|files|other] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
 | `--app` | `<name>` | Optional |
 | `--title` | `<substring>` | Optional |
+| `--kind` | `browser`, `terminal`, `editor`, `files`, `other` | Optional |
 | `--json` |  | Optional |
 
 ```sh
 aos window list
 aos window list --app=Chrome
+aos window list --kind=terminal
 ```
 
 ### aos window move

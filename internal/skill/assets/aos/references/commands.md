@@ -1207,6 +1207,76 @@ aos system info
 ```
 
 
+## tab
+
+Browser and terminal tabs: list, focus, open, send, close
+
+### `aos tab list`
+
+List the tabs of every browser and terminal window
+
+*display · platforms: darwin, windows*
+
+```bash
+aos tab list [--app=<name>] [--kind=browser|terminal|editor|files|other] [--window=<aos window id>] [--json]
+aos tab list
+aos tab list --kind=browser --json
+aos tab list --app=Ghostty
+```
+
+### `aos tab focus`
+
+Raise a tab's window and select the tab
+
+*display · platforms: darwin, windows*
+
+```bash
+aos tab focus (--title=<substring> | --url=<substring> | --cwd=<substring> | --id=<tab id>) [--app=<name>] [--kind=<kind>] [--exact]
+aos tab focus --url=github.com/muthuishere/aos/pulls
+aos tab focus --title=Inbox --app=Chrome
+aos tab focus --cwd=os-cli --kind=terminal
+# exit 3 when no tab matches
+```
+
+### `aos tab open`
+
+Open a browser tab on a URL, or a terminal tab in a folder
+
+*display · platforms: darwin, windows*
+
+```bash
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--background]
+aos tab open https://example.com --app=Chrome
+aos tab open https://example.com --app=Safari --new-window
+aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
+```
+
+### `aos tab send`
+
+Type text or press a key in a terminal tab without focusing it
+
+*display · platforms: darwin, windows*
+
+```bash
+aos tab send --id=<tab id> (--text=<text> | --key=<combo>)
+aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"
+aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --key=enter
+aos tab send --id=iterm:31:1 --key=ctrl+c
+```
+
+### `aos tab close`
+
+Close one tab (never the whole window)
+
+*display · platforms: darwin, windows*
+
+```bash
+aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact]
+aos tab close --id=chrome:1658108662:1658109078
+aos tab close --title=example --app=Chrome
+```
+
+
 ## version
 
 Version information
@@ -1289,9 +1359,10 @@ List open windows
 *display*
 
 ```bash
-aos window list [--app=<name>] [--title=<substring>] [--json]
+aos window list [--app=<name>] [--title=<substring>] [--kind=browser|terminal|editor|files|other] [--json]
 aos window list
 aos window list --app=Chrome
+aos window list --kind=terminal
 ```
 
 ### `aos window focus`

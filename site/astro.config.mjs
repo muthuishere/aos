@@ -63,6 +63,7 @@ export default defineConfig({
 						{ label: 'Using it from an agent (MCP)', slug: 'mcp' },
 						{ label: 'Safety model', slug: 'safety' },
 						{ label: 'Headless machines', slug: 'headless' },
+						{ label: 'Browser and terminal tabs', slug: 'tabs' },
 						{ label: 'WSL and SSH (the host)', slug: 'host' },
 						{ label: 'Extending it', slug: 'extending' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
