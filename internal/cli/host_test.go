@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -218,5 +219,29 @@ func TestSSHUsesTheForwardedSocketOnlyWhenItAnswers(t *testing.T) {
 	answers = false
 	if _, err := c.ResolveHost(sock); err == nil || !strings.Contains(err.Error(), "RemoteForward") {
 		t.Fatalf("want the RemoteForward fix, got %v", err)
+	}
+}
+
+func TestSocketPlan(t *testing.T) {
+	env := func(k string) string {
+		if k == "HOME" {
+			return "/home/me"
+		}
+		return ""
+	}
+	exists := func(p string) bool { return p == "/home/me/l.json" }
+	shot := &Command{Group: "capture", Name: "screenshot"}
+	args, outs, err := socketPlan(shot, []string{"--monitor=1", "--out=~/s.png"}, env, exists)
+	if err != nil || args[1] != "--out=@aos-out-0@" || outs["@aos-out-0@"] != filepath.Join("/home/me", "s.png") {
+		t.Fatalf("%v %v %v", args, outs, err)
+	}
+	if _, _, err := socketPlan(&Command{Group: "window", Name: "arrange"}, []string{"/home/me/l.json"}, env, exists); err == nil || !strings.Contains(err.Error(), "window arrange -") {
+		t.Fatalf("input file: %v", err)
+	}
+	if _, _, err := socketPlan(&Command{Group: "watch", Name: "clipboard"}, nil, env, exists); err == nil {
+		t.Fatal("streams must be refused")
+	}
+	if _, _, err := socketPlan(&Command{Group: "capture", Name: "video start"}, []string{"--out=x.mp4"}, env, exists); err == nil {
+		t.Fatal("video output must be refused")
 	}
 }

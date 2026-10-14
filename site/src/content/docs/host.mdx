@@ -1,0 +1,57 @@
+---
+title: WSL and SSH (the host)
+description: Screen commands run on the machine whose screen you see. From WSL that is Windows; over SSH it is the machine you connected from.
+---
+
+An agent's shell is often not on the machine with the screen. aos calls the machine with the screen the **host**. Screen commands run there, and commands about the agent's own machine run where the agent is. The command line, JSON output and exit codes are the same either way.
+
+| Follows the host | Always local |
+|---|---|
+| `window`, `display`, `mouse`, `key`, `find`, `draw`, `subtitle` | `exec`, `process`, `file`, `pkg`, `service`, `watch file` |
+| `capture` and `screenshot`, `clipboard`, `watch clipboard`, `watch window` | `network`, `battery`, `power`, `system info` |
+| `launch`, `open`, `webapp`, `remote`, `audio`, `permission`, `font` | `skill`, `adapters`, `obs`, `serve`, `headless`, `debug`, `doctor` |
+| `system lock`, `system sleep` | `system logout`, `system restart`, `system shutdown` (never forwarded) |
+
+`aos doctor` prints a `host:` line saying where screen commands go.
+
+## WSL
+
+Inside WSL the host is Windows. aos runs `aos.exe` from `%LOCALAPPDATA%\aos`, and translates path arguments with `wslpath`, so files land back in WSL:
+
+```console
+$ aos window list                 # the Windows desktop's windows
+$ aos screenshot --out=~/s.png    # a Windows screenshot, saved in WSL
+```
+
+Running `install.sh` inside WSL installs both builds. The npm package uses the same script, so it does too.
+
+## SSH
+
+On the machine with the screen, start the socket server (by hand, or as a login item with `aos service create`):
+
+```console
+$ aos serve mcp --socket=~/.aos/serve.sock
+```
+
+Then add one line to that machine's `~/.ssh/config`, under the server you connect to:
+
+```
+RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock
+```
+
+In the SSH session, aos finds `/tmp/aos-$USER.sock`, checks that it answers, and sends screen commands through it. `--out` files come back to the path you gave. No network port is opened, and the socket is `0600`.
+
+- The person at the screen sees a caption, "aos controlled from <machine>", and `aos obs audit` there lists every call.
+- Only screen commands are accepted over the socket. It is not remote exec.
+- Commands that stream (`watch clipboard`, `watch window`, `remote share`), video files, and commands that read a local file are refused with the reason. For a layout, pipe it: `aos window arrange - < layout.json`.
+
+## Choosing the host by hand
+
+First match wins:
+
+1. `--host=local|windows-host|<socket path>` on the command
+2. the `AOS_HOST` environment variable
+3. `host = auto|local|windows-host|<socket path>` in `~/.config/aos/config`
+4. auto: Windows inside WSL, the forwarded socket over SSH, otherwise this machine
+
+If the host cannot be reached, the command fails and says how to fix it. It never falls back to the local machine, because a screenshot of the wrong screen is worse than an error.

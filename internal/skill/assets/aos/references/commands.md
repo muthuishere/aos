@@ -994,8 +994,9 @@ Expose this machine's commands to other agents
 Serve every command as an MCP tool over streamable HTTP
 
 ```bash
-aos serve mcp [--addr=<host:port>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]
+aos serve mcp [--addr=<host:port> | --socket=<path>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]
 aos serve mcp
+aos serve mcp --socket=~/.aos/serve.sock   # the host end of an SSH RemoteForward
 aos serve mcp --addr=127.0.0.1:9000 --groups=window,capture,exec
 aos serve mcp --gui=off   # screenless tools only
 ```

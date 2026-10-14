@@ -159,6 +159,26 @@ On Linux, `ssh server aos headless start --wm` gives it one and later commands
 adopt it. The audit trail lives on the machine that ran the command, so
 `ssh server aos obs audit` is how you see what happened *there*.
 
+## When the screen is on another machine (WSL, SSH)
+
+Screen commands (`window`, `display`, `mouse`, `key`, `find`, `draw`,
+`subtitle`, `capture`/`screenshot`, `clipboard`, `launch`, `open`, `webapp`,
+`audio`, `remote share`, `lock`/`sleep`, ...) run on the **host**: the machine
+whose screen the person sees. Everything else (`exec`, `file`, `process`,
+`pkg`, `system info`, ...) runs where you are. Output and exit codes are the
+same either way; `aos doctor` shows a `host:` line.
+
+- **WSL**: the host is Windows. aos runs `aos.exe` from `%LOCALAPPDATA%\aos`
+  (install.sh inside WSL puts it there) and translates paths, so
+  `aos screenshot --out=~/s.png` lands in WSL.
+- **SSH**: on the person's machine run `aos serve mcp --socket=~/.aos/serve.sock`
+  and add `RemoteForward /tmp/aos-%r.sock ~/.aos/serve.sock` to that host's
+  entry in `~/.ssh/config`. Files given with `--out` come back over the socket;
+  streams (`watch clipboard`) and local input files are refused with a reason.
+- Override with `--host=local|windows-host|<socket>`, `AOS_HOST`, or
+  `host = ...` in `~/.config/aos/config`. If the host cannot be reached the
+  command fails with the fix; it never quietly acts on the wrong screen.
+
 ## Serving it to another agent
 
 ```bash

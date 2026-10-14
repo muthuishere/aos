@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
@@ -31,9 +32,10 @@ func init() {
 			&cli.Command{
 				Group: "serve", Name: "mcp",
 				Summary: "Serve every command as an MCP tool over streamable HTTP",
-				Args:    "[--addr=<host:port>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]",
+				Args:    "[--addr=<host:port> | --socket=<path>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]",
 				Examples: []string{
 					"aos serve mcp",
+					"aos serve mcp --socket=~/.aos/serve.sock   # the host end of an SSH RemoteForward",
 					"aos serve mcp --addr=127.0.0.1:9000 --groups=window,capture,exec",
 					"aos serve mcp --gui=off   # screenless tools only",
 				},
@@ -251,12 +253,20 @@ func runServeTools(c *cli.Ctx, args []string) error {
 }
 
 func runServeMCP(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "addr", "groups", "gui", "token")
+	set, err := parseArgs(args, "addr", "groups", "gui", "token", "socket")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("addr", "groups", "gui", "quiet", "token"); err != nil {
+	if err := set.Reject("addr", "groups", "gui", "quiet", "token", "socket"); err != nil {
 		return err
+	}
+	if socket := set.String("socket", ""); socket != "" {
+		if set.Has("addr") || set.Has("token") {
+			return fmt.Errorf("--socket is gated by the socket file's permissions; it takes no --addr or --token")
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		return serveSocket(ctx, c, set, socket)
 	}
 	token, err := resolveServeToken(c, set)
 	if err != nil {
@@ -393,4 +403,104 @@ func tokenMatches(r *http.Request, token string) bool {
 		}
 	}
 	return subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("t")), []byte(token)) == 1
+}
+
+// serveSocket serves MCP on a Unix socket, the host end of an SSH
+// RemoteForward (ADR 0001). The socket is created 0600 in a 0700 folder: the
+// file permission is the gate, so there is no token. Besides the per-command
+// tools it offers aos_invoke, which another aos uses to delegate a screen
+// command with its exit code and output files intact.
+func serveSocket(ctx context.Context, c *cli.Ctx, set *argSet, socket string) error {
+	gui, err := parseGUIMode(set.String("gui", ""))
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(socket, "~/") {
+		home, _ := os.UserHomeDir()
+		socket = filepath.Join(home, socket[2:])
+	}
+	if err := os.MkdirAll(filepath.Dir(socket), 0o700); err != nil {
+		return err
+	}
+	// A socket left by a server that died refuses connections; one that
+	// answers belongs to a server still running.
+	if conn, err := net.Dial("unix", socket); err == nil {
+		conn.Close()
+		return fmt.Errorf("an aos server is already listening on %s", socket)
+	}
+	_ = os.Remove(socket)
+
+	tools := buildTools(c, groupFilter(set), gui)
+	tools = append(tools, toolnexus.NativeTool(
+		cli.SocketInvokeTool,
+		"Run an aos screen command for another aos that delegated it over SSH. Returns JSON with exit, stdout, stderr and files.",
+		toolnexus.JSONSchema{
+			"type": "object",
+			"properties": map[string]any{
+				"argv":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+				"stdin":   map[string]any{"type": "string"},
+				"outputs": map[string]any{"type": "object"},
+				"from":    map[string]any{"type": "string"},
+			},
+			"required": []string{"argv"},
+		},
+		func(ctx context.Context, args map[string]any) (string, error) {
+			raw, err := json.Marshal(args)
+			if err != nil {
+				return "", err
+			}
+			var req cli.SocketRequest
+			if err := json.Unmarshal(raw, &req); err != nil {
+				return "", err
+			}
+			out, err := json.Marshal(cli.ServeSocketInvoke(c, req))
+			return string(out), err
+		},
+	))
+
+	toolkit, err := toolnexus.CreateToolkit(ctx, toolnexus.Options{ExtraTools: tools, Builtins: false})
+	if err != nil {
+		return err
+	}
+	quiet := set.Has("quiet")
+	handle, err := toolkit.Serve("127.0.0.1:0", toolnexus.ServeOptions{
+		MCP: &toolnexus.MCPServeConfig{Name: "aos", Version: c.Version},
+		OnCall: func(event toolnexus.OnCallEvent) {
+			if !quiet {
+				c.Warnf("%-28s %dms\n", event.Name, event.Ms)
+			}
+		},
+	})
+	if err != nil {
+		return err
+	}
+	defer handle.Stop()
+
+	target, err := url.Parse(handle.URL)
+	if err != nil {
+		return err
+	}
+	old := syscallUmask(0o077)
+	listener, err := net.Listen("unix", socket)
+	syscallUmask(old)
+	if err != nil {
+		return fmt.Errorf("cannot listen on %s: %w", socket, err)
+	}
+	defer os.Remove(socket)
+	if err := os.Chmod(socket, 0o600); err != nil {
+		listener.Close()
+		return err
+	}
+	server := &http.Server{Handler: httputil.NewSingleHostReverseProxy(target)}
+	go func() { _ = server.Serve(listener) }()
+	defer server.Close()
+
+	c.Printf("aos mcp  unix://%s\n", socket)
+	c.Printf("tools           %d\n", len(tools))
+	c.Printf("ssh             add to ~/.ssh/config on this machine:\n")
+	c.Printf("                  RemoteForward /tmp/aos-%%r.sock %s\n", socket)
+
+	<-ctx.Done()
+	c.Warnf("\nstopping\n")
+	return nil
 }

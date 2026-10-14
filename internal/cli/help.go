@@ -27,6 +27,10 @@ func PrintRootHelp(w io.Writer, r *Registry) {
 	fmt.Fprintln(w, "  aos <group> --help")
 	fmt.Fprintln(w, "  aos <group> <command> --help")
 	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Screen commands run on the host, the machine whose screen you see")
+	fmt.Fprintln(w, "(Windows from WSL, your Mac over SSH). --host=local|windows-host|<socket>")
+	fmt.Fprintln(w, "or AOS_HOST overrides it; `aos doctor` shows where they go.")
+	fmt.Fprintln(w)
 
 	var common []*Command
 	for _, route := range Common {
