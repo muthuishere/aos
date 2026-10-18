@@ -583,7 +583,7 @@ func TestRefsStayStableAcrossReads(t *testing.T) {
 	}
 }
 
-func TestRefOccurrenceAndAmbiguity(t *testing.T) {
+func TestRefRepeatedLabelsResolveByContext(t *testing.T) {
 	var acted int
 	withFakePage(t, nil, func(index, _ int, _, _ string) error { acted = index; return nil })
 	t.Cleanup(func() { pageNow = nil })
@@ -593,16 +593,59 @@ func TestRefOccurrenceAndAmbiguity(t *testing.T) {
 	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
 		t.Fatal(err)
 	}
-	// The second "Reply" link (e6), page unchanged: the same occurrence.
+	// e6 is the Reply of "message 1". Two more messages arrive: still that one.
+	msgs = 5
 	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e6"}); err != nil || acted != 6 {
-		t.Fatalf("second Reply: %v acted %d", err, acted)
+		t.Fatalf("Reply of message 1: %v acted %d", err, acted)
 	}
-	// One more Reply link now: which one e6 meant is unknowable.
-	msgs = 4
+	// A virtualised list drops message 0 and adds message 5: same count of
+	// Reply links, but e6 must still be message 1's, not its neighbour.
+	pageNow = func() []engine.WebNode {
+		n := chatPage(6)
+		return append(n[:1], n[4:]...) // remove message 0's three nodes
+	}
 	acted = -1
-	err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e6"})
-	if exitCode(err) != exitNotFound || acted != -1 || !strings.Contains(err.Error(), "now matches 4") {
-		t.Fatalf("ambiguous ref: %v acted %d", err, acted)
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e6"}); err != nil || acted != 3 {
+		t.Fatalf("after remove-one-add-one: %v acted %d (want 3, message 1's Reply)", err, acted)
+	}
+}
+
+func TestRefAmbiguousWithoutContextExits4(t *testing.T) {
+	var acted = -1
+	withFakePage(t, nil, func(index, _ int, _, _ string) error { acted = index; return nil })
+	t.Cleanup(func() { pageNow = nil })
+	del := func(y int) engine.WebNode {
+		return engine.WebNode{Role: "AXButton", Title: "Delete", Bounds: engine.Rect{X: 0, Y: y, W: 50, H: 20}}
+	}
+	pageNow = func() []engine.WebNode { return []engine.WebNode{del(0), del(100)} }
+	c, _ := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	// Unchanged page: bounds tell them apart.
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e1"}); err != nil || acted != 1 {
+		t.Fatalf("by bounds: %v acted %d", err, acted)
+	}
+	// Both moved: nothing tells them apart any more.
+	pageNow = func() []engine.WebNode { return []engine.WebNode{del(300), del(400)} }
+	acted = -1
+	err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e1"})
+	if exitCode(err) != exitAmbiguous || acted != -1 || !strings.Contains(err.Error(), "Delete (button)") {
+		t.Fatalf("ambiguous: %v acted %d", err, acted)
+	}
+}
+
+func TestRefCacheWriteIsAtomic(t *testing.T) {
+	withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	dir, _ := refCacheDir()
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".refs-") {
+			t.Fatalf("temp file left behind: %s", e.Name())
+		}
+	}
+	if len(entries) != 1 {
+		t.Fatalf("cache files: %d", len(entries))
 	}
 }
 

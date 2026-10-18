@@ -671,8 +671,8 @@ type refFP struct {
 	Role  string `json:"role"`             // raw accessibility role
 	Label string `json:"label"`            // engine.WebNode.WebLabel()
 	DOMID string `json:"dom_id,omitempty"` // HTML id: the strongest identity when present
-	Occ   int    `json:"occ"`              // which one, among elements with the same role, label and id
-	Total int    `json:"total"`            // how many had them at read time
+	Ctx   string `json:"ctx,omitempty"`    // nearest text before it
+	Box   string `json:"box,omitempty"`    // bounds rounded to 10 px
 }
 
 type refCache struct {
@@ -700,7 +700,7 @@ func refCachePath(tabID string) (string, error) {
 }
 
 func fingerprintOf(e pageElement) refFP {
-	return refFP{Role: e.axRole, Label: e.fp, DOMID: e.domID, Occ: e.occ, Total: e.total}
+	return refFP{Role: e.axRole, Label: e.fp, DOMID: e.domID, Ctx: e.ctx, Box: e.box}
 }
 
 type refCacheFile struct {
@@ -726,7 +726,37 @@ func loadCache(t Tab) refCacheFile {
 }
 
 func fpKey(f refFP) string {
-	return fmt.Sprintf("%s\x00%s\x00%s\x00%d\x00%d", f.Role, f.Label, f.DOMID, f.Occ, f.Total)
+	return f.Role + "\x00" + f.Label + "\x00" + f.DOMID
+}
+
+// carryRef picks which cached ref (of those with f's role, label and id,
+// not yet given out) an element keeps. alone: it is the only such element
+// now and there was one before, so it is the same element.
+func carryRef(cached map[string]refFP, cands []string, taken map[string]refFP, f refFP, alone bool) (string, bool) {
+	var free []string
+	for _, r := range cands {
+		if _, used := taken[r]; !used {
+			free = append(free, r)
+		}
+	}
+	if alone && len(cands) == 1 && len(free) == 1 {
+		return free[0], true
+	}
+	for _, match := range []func(refFP) bool{
+		func(c refFP) bool { return c.Ctx == f.Ctx },
+		func(c refFP) bool { return c.Ctx == f.Ctx && c.Box == f.Box },
+	} {
+		var hit []string
+		for _, r := range free {
+			if match(cached[r]) {
+				hit = append(hit, r)
+			}
+		}
+		if len(hit) == 1 {
+			return hit[0], true
+		}
+	}
+	return "", false
 }
 
 // pageRefs gives the page's elements refs that stay the same across reads:
@@ -736,9 +766,15 @@ func fpKey(f refFP) string {
 func pageRefs(t Tab, nodes []engine.WebNode) ([]pageElement, error) {
 	elems := pageElements(nodes)
 	rc := loadCache(t)
-	byKey := map[string]string{}
+	// Cached refs by role+label+id. A unique one carries over as is; among
+	// several, the one with the same text before it, else the same bounds.
+	groups := map[string][]string{}
 	for ref, f := range rc.Refs {
-		byKey[fpKey(f)] = ref
+		groups[fpKey(f)] = append(groups[fpKey(f)], ref)
+	}
+	now := map[string]int{}
+	for _, e := range elems {
+		now[fpKey(fingerprintOf(e))]++
 	}
 	refs := map[string]refFP{}
 	// A new element is numbered by its position when that number was never
@@ -748,7 +784,7 @@ func pageRefs(t Tab, nodes []engine.WebNode) ([]pageElement, error) {
 	high := rc.Next
 	for i := range elems {
 		f := fingerprintOf(elems[i])
-		ref, ok := byKey[fpKey(f)]
+		ref, ok := carryRef(rc.Refs, groups[fpKey(f)], refs, f, now[fpKey(f)] == 1)
 		if !ok {
 			n := elems[i].index
 			if n < high {
@@ -771,10 +807,35 @@ func pageRefs(t Tab, nodes []engine.WebNode) ([]pageElement, error) {
 	if err != nil {
 		return elems, err
 	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-		return elems, err
+	return elems, writeAtomic(p, b)
+}
+
+// writeAtomic writes through a temp file in the same folder and a rename,
+// so a concurrent read (another aos command) never sees half a file.
+func writeAtomic(p string, b []byte) error {
+	dir := filepath.Dir(p)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
 	}
-	return elems, os.WriteFile(p, b, 0o600)
+	f, err := os.CreateTemp(dir, ".refs-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	if _, err := f.Write(b); err != nil {
+		f.Close()
+		os.Remove(tmp)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, p); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 // loadRef returns the fingerprint a ref stood for in the tab's last read, or
@@ -803,9 +864,11 @@ func loadRef(t Tab, ref string) *refFP {
 }
 
 // byFingerprint finds the element a ref stood for on the page as it is now.
-// One element with that role, label (and HTML id) is it. Several: the same
-// occurrence, but only while their count is unchanged, since otherwise
-// there is no telling which one is meant. Anything else is exit 3.
+// Candidates share its role, label and HTML id. One candidate is it. Several
+// are narrowed by the text before them (which message a "Reply" belongs
+// to), then by rounded bounds. Never by position among them: in a list
+// where one item went and another came, that lands on a neighbour. Still
+// several: exit 4 with the candidates. None: exit 3.
 func byFingerprint(elems []pageElement, ref string, fp refFP) (pageElement, error) {
 	var same []pageElement
 	for _, e := range elems {
@@ -813,15 +876,39 @@ func byFingerprint(elems []pageElement, ref string, fp refFP) (pageElement, erro
 			same = append(same, e)
 		}
 	}
-	switch {
-	case len(same) == 1:
-		return same[0], nil
-	case len(same) > 1 && len(same) == fp.Total && fp.Occ < len(same):
-		return same[fp.Occ], nil
-	case len(same) == 0:
+	if len(same) == 0 {
 		return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
 			"%s (%q) is not on the page any more; run `aos tab read` again", ref, fp.Label)}
 	}
-	return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
-		"%s (%q) now matches %d elements (was %d), so it is not clear which; run `aos tab read` again", ref, fp.Label, len(same), fp.Total)}
+	if len(same) == 1 {
+		return same[0], nil
+	}
+	narrow := func(in []pageElement, ok func(pageElement) bool) []pageElement {
+		var out []pageElement
+		for _, e := range in {
+			if ok(e) {
+				out = append(out, e)
+			}
+		}
+		return out
+	}
+	byCtx := narrow(same, func(e pageElement) bool { return e.ctx == fp.Ctx })
+	if len(byCtx) == 1 {
+		return byCtx[0], nil
+	}
+	pool := byCtx
+	if len(pool) == 0 {
+		pool = same
+	}
+	if byBox := narrow(pool, func(e pageElement) bool { return e.box == fp.Box }); len(byBox) == 1 && len(byCtx) > 0 {
+		return byBox[0], nil
+	}
+	msg := fmt.Sprintf("%s (%q) could be any of %d elements now; name one with its current ref:", ref, fp.Label, len(pool))
+	for _, e := range pool {
+		msg += "\n  " + e.annotation(true)
+		if e.ctx != "" {
+			msg += fmt.Sprintf("  after %q", e.ctx)
+		}
+	}
+	return pageElement{}, &cli.ExitError{Code: exitAmbiguous, Message: msg}
 }

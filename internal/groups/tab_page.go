@@ -26,8 +26,8 @@ type pageElement struct {
 	axRole string // raw role, part of the fingerprint
 	fp     string // engine.WebNode.WebLabel(), part of the fingerprint
 	domID  string // HTML id, part of the fingerprint
-	occ    int    // occurrence among elements with the same role, label and id
-	total  int    // how many such elements the page has
+	ctx    string // nearest text before it: tells repeated "Reply" buttons apart
+	box    string // bounds rounded to 10 px, the last tie-breaker
 	alt    []string
 }
 
@@ -148,17 +148,28 @@ func pageElements(nodes []engine.WebNode) []pageElement {
 		}
 		out = append(out, e)
 	}
-	seen, count := map[string]int{}, map[string]int{}
-	key := func(e pageElement) string { return e.axRole + "\x00" + e.fp + "\x00" + e.domID }
-	for _, e := range out {
-		count[key(e)]++
-	}
 	for i := range out {
-		k := key(out[i])
-		out[i].occ, out[i].total = seen[k], count[k]
-		seen[k]++
+		out[i].ctx = contextBefore(nodes, out[i].index)
+		b := nodes[out[i].index].Bounds
+		out[i].box = fmt.Sprintf("%d,%d,%d,%d", b.X/10, b.Y/10, b.W/10, b.H/10)
 	}
 	return out
+}
+
+// contextBefore is the nearest heading or text before nodes[i] (outside the
+// element itself): the message a "Reply" button belongs to, the section a
+// "Delete" sits in.
+func contextBefore(nodes []engine.WebNode, i int) string {
+	for j, seen := i-1, 0; j >= 0 && seen < 200; j, seen = j-1, seen+1 {
+		r := pageRole(nodes[j])
+		if r != "text" && r != "heading" {
+			continue
+		}
+		if t := nodeText(nodes[j]); t != "" {
+			return clip(t, 80)
+		}
+	}
+	return ""
 }
 
 // annotation is how an element reads inline: `[e8] Send (button)`,
