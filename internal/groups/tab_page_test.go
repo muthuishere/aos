@@ -135,10 +135,10 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 	t.Helper()
 	var typed []string
 	oldTab, oldTree, oldAct, oldType, oldPress := pageTab, webTree, webAct, typeInto, pressInto
-	oldPrep, oldFocused, oldFront, oldNow := webPrepare, webFocused, frontWindow, tabNow
+	oldPrep, oldFocus, oldFront, oldNow := webPrepare, webFocus, frontWindow, tabNow
 	t.Cleanup(func() {
 		pageTab, webTree, webAct, typeInto, pressInto = oldTab, oldTree, oldAct, oldType, oldPress
-		webPrepare, webFocused, frontWindow, tabNow = oldPrep, oldFocused, oldFront, oldNow
+		webPrepare, webFocus, frontWindow, tabNow = oldPrep, oldFocus, oldFront, oldNow
 	})
 	tab := Tab{ID: "chrome:1:2", Kind: "browser", Active: true, Title: "Chat", URL: "https://chat.example/"}
 	pageTab = func(id string) (Tab, engine.Window, error) {
@@ -146,18 +146,17 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 		return tab, engine.Window{ID: "1", App: "Google Chrome", PID: 9}, nil
 	}
 	webPrepare = func(engine.Window) (func(), error) { return func() {}, nil }
-	// The focused element is whatever was last focused through webAct.
-	var focused engine.WebNode
-	webFocused = func(engine.Window) (engine.WebNode, bool, error) { return focused, focused.Role != "", nil }
+	webFocus = func(_ engine.Window, _, _, index int, role, label string) (engine.WebTarget, error) {
+		if err := act(index, engine.WebFocus, role, label); err != nil {
+			return nil, err
+		}
+		return &fakeTarget{}, nil
+	}
 	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "77", App: "Ghostty"}, nil }
 	tabNow = func(string) (Tab, error) { return tab, nil }
 	webTree = func(*engine.Window, int, int) ([]engine.WebNode, error) { return nodes, nil }
 	webAct = func(_ engine.Window, _, _, index, action int, role, label string) error {
-		err := act(index, action, role, label)
-		if err == nil && action == engine.WebFocus {
-			focused = nodes[index]
-		}
-		return err
+		return act(index, action, role, label)
 	}
 	typeInto = func(_ engine.Window, s string) error { typed = append(typed, s); return nil }
 	pressInto = func(_ engine.Window, k string) error { typed = append(typed, "<"+k+">"); return nil }
@@ -323,13 +322,9 @@ func TestTabTypeRefusesWhenFocusDoesNotLand(t *testing.T) {
 
 func TestTabTypeStopsWhenFocusMoves(t *testing.T) {
 	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
-	calls := 0
-	webFocused = func(engine.Window) (engine.WebNode, bool, error) {
-		calls++
-		if calls > 1 { // the person clicked elsewhere after the first burst
-			return engine.WebNode{Role: "AXTextField", Title: "Search"}, true, nil
-		}
-		return engine.WebNode{Role: "AXTextArea", Title: "Message"}, true, nil
+	// Focus moves after the first burst (to a box with the same label, say).
+	webFocus = func(engine.Window, int, int, int, string, string) (engine.WebTarget, error) {
+		return &fakeTarget{focusedFor: 1}, nil
 	}
 	c, _ := pageCtx()
 	text := strings.Repeat("a", typeBurst) + "bbbb"
@@ -344,13 +339,8 @@ func TestTabTypeStopsWhenFocusMoves(t *testing.T) {
 
 func TestTabTypeChecksFocusBeforeEnter(t *testing.T) {
 	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
-	calls := 0
-	webFocused = func(engine.Window) (engine.WebNode, bool, error) {
-		calls++
-		if calls > 1 {
-			return engine.WebNode{}, false, nil
-		}
-		return engine.WebNode{Role: "AXTextArea", Title: "Message"}, true, nil
+	webFocus = func(engine.Window, int, int, int, string, string) (engine.WebTarget, error) {
+		return &fakeTarget{focusedFor: 1}, nil
 	}
 	c, _ := pageCtx()
 	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=hi", "--enter"})
@@ -431,5 +421,55 @@ func TestWatchTabFlagsAndClosedTab(t *testing.T) {
 		}})
 	if exitCode(err) != exitNotFound {
 		t.Fatalf("closed tab: %v", err)
+	}
+}
+
+// fakeTarget answers StillFocused true for its first focusedFor checks
+// (0 = always), then false.
+type fakeTarget struct {
+	focusedFor, checks int
+	released           bool
+}
+
+func (f *fakeTarget) StillFocused() (bool, error) {
+	f.checks++
+	return f.focusedFor == 0 || f.checks <= f.focusedFor, nil
+}
+
+func (f *fakeTarget) Release() { f.released = true }
+
+func TestTabTypeFocusGuardFailsClosedAndRunsPerBurst(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	frontWindow = func() (engine.Window, error) { return engine.Window{}, errors.New("no window server") }
+	c, _ := pageCtx()
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"}); err == nil || len(*typed) != 0 {
+		t.Fatalf("guard failed open: %v typed %q", err, *typed)
+	}
+	// The person switches to another browser window after the first burst.
+	calls := 0
+	frontWindow = func() (engine.Window, error) {
+		calls++
+		if calls > 2 { // pre-focus check + first burst check pass
+			return engine.Window{ID: "2", App: "Google Chrome", Title: "Mail"}, nil
+		}
+		return engine.Window{ID: "77", App: "Ghostty"}, nil
+	}
+	text := strings.Repeat("a", typeBurst+3)
+	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=" + text})
+	if exitCode(err) != exitNotFound || !reflect.DeepEqual(*typed, []string{strings.Repeat("a", typeBurst)}) {
+		t.Fatalf("mid-typing switch: %v typed %q", err, *typed)
+	}
+}
+
+func TestTabTypeReleasesTarget(t *testing.T) {
+	withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	ft := &fakeTarget{}
+	webFocus = func(engine.Window, int, int, int, string, string) (engine.WebTarget, error) { return ft, nil }
+	c, _ := pageCtx()
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=hello", "--enter"}); err != nil {
+		t.Fatal(err)
+	}
+	if !ft.released || ft.checks != 2 {
+		t.Fatalf("released=%v checks=%d (want true, 2: one burst + Enter)", ft.released, ft.checks)
 	}
 }

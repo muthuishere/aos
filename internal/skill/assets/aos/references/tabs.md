@@ -90,7 +90,7 @@ aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it a
   focuses the field through accessibility and posts keys to the browser
   process, so React or Lexical editors see real input.
 - Type checks itself. The focused element must be the field (else exit 3,
-  nothing typed). It is re-checked every 16 characters and before Enter, and
+  nothing typed). The same element (identity, not label) and the front window are re-checked every 16 characters and before Enter, and
   on a change typing stops and reports how many characters went out. The tab
   must still be selected with the same title and URL.
 - Type makes the tab's window the browser's key window. If the browser is in

@@ -197,8 +197,18 @@ type WebReader interface {
 	// WebPrepare makes the page visible to accessibility; restore undoes
 	// whatever it turned on.
 	WebPrepare(w Window) (restore func(), err error)
-	// WebFocused describes the app's focused element.
-	WebFocused(w Window) (WebNode, bool, error)
+	// WebFocus focuses the node at index (if it still has role and label),
+	// verifies it is the app's focused element, and returns a handle that
+	// re-checks that same element later. ErrWebStale / ErrWebFocus otherwise.
+	WebFocus(w Window, maxNodes, maxDepth, index int, role, label string) (WebTarget, error)
+}
+
+// WebTarget is a focused web element held for identity checks.
+type WebTarget interface {
+	// StillFocused reports whether the app's focused element is still this
+	// very element (not just one with the same label).
+	StillFocused() (bool, error)
+	Release()
 }
 
 // ElementPresser activates the accessibility element of window w at the

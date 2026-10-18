@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -158,7 +159,8 @@ type webWalk struct {
 	maxNodes, maxDepth int
 	act, action        int
 	role, label        string
-	rc                 int // 1 not reached, 0 done, -1 failed, 2 stale, 3 focus did not land
+	rc                 int     // 1 not reached, 0 done, -1 failed, 2 stale, 3 focus did not land
+	held               uintptr // the focused target (AddRef'd), for WebFocus
 }
 
 func (u *uiaWeb) walk(el uintptr, depth int, w *webWalk) {
@@ -195,6 +197,8 @@ func (u *uiaWeb) perform(el uintptr, n core.WebNode, w *webWalk) int {
 				vcall(u.uia, uiaCompareElements, el, f, uintptr(unsafe.Pointer(&same)))
 				release(f)
 				if same != 0 {
+					vcall(el, 1) // AddRef: held past the walk
+					w.held = el
 					return 0
 				}
 			}
@@ -214,6 +218,17 @@ func (u *uiaWeb) perform(el uintptr, n core.WebNode, w *webWalk) int {
 }
 
 func (a *Adapter) webWalk(win core.Window, w *webWalk) error {
+	err := a.webWalkThen(win, w, nil)
+	if w.held != 0 {
+		release(w.held)
+		w.held = 0
+	}
+	return err
+}
+
+// webWalkThen walks, then (on success) runs then on the same COM thread
+// before anything is released, so held elements stay usable inside it.
+func (a *Adapter) webWalkThen(win core.Window, w *webWalk, then func(u *uiaWeb)) error {
 	hwnd, err := parseHwnd(win.ID)
 	if err != nil {
 		return err
@@ -248,6 +263,9 @@ func (a *Adapter) webWalk(win core.Window, w *webWalk) error {
 			u.walk(doc, 0, w)
 			release(doc)
 			if len(w.nodes) > 0 || i >= 10 {
+				if then != nil {
+					then(u)
+				}
 				return nil
 			}
 		} else if i >= 10 {
@@ -282,29 +300,73 @@ func (a *Adapter) WebAct(w core.Window, maxNodes, maxDepth, index, action int, r
 	return errors.New("the element has no Invoke pattern")
 }
 
+type winTarget struct {
+	reqs chan chan bool
+	done chan struct{}
+	once sync.Once
+}
+
+func (t *winTarget) StillFocused() (bool, error) {
+	r := make(chan bool, 1)
+	select {
+	case t.reqs <- r:
+		return <-r, nil
+	case <-t.done:
+		return false, nil
+	}
+}
+
+func (t *winTarget) Release() { t.once.Do(func() { close(t.done) }) }
+
+// WebFocus focuses the node at index, proves it has focus (CompareElements
+// with GetFocusedElement) and keeps it on its COM thread, so later checks
+// compare against the very same element.
+func (a *Adapter) WebFocus(win core.Window, maxNodes, maxDepth, index int, role, label string) (core.WebTarget, error) {
+	ww := &webWalk{maxNodes: maxNodes, maxDepth: maxDepth, act: index, action: core.WebFocus, role: role, label: label, rc: 1}
+	t := &winTarget{reqs: make(chan chan bool), done: make(chan struct{})}
+	ready := make(chan error, 1)
+	go func() {
+		err := a.webWalkThen(win, ww, func(u *uiaWeb) {
+			if ww.rc != 0 || ww.held == 0 {
+				return
+			}
+			defer release(ww.held)
+			ready <- nil
+			for {
+				select {
+				case r := <-t.reqs:
+					same := false
+					var f uintptr
+					if hr := vcall(u.uia, uiaGetFocusedElement, uintptr(unsafe.Pointer(&f))); !failed(hr) && f != 0 {
+						var s int32
+						vcall(u.uia, uiaCompareElements, ww.held, f, uintptr(unsafe.Pointer(&s)))
+						release(f)
+						same = s != 0
+					}
+					r <- same
+				case <-t.done:
+					return
+				}
+			}
+		})
+		if ww.rc == 0 && err == nil {
+			return // served above
+		}
+		switch {
+		case err != nil:
+			ready <- err
+		case ww.rc == 1 || ww.rc == 2:
+			ready <- core.ErrWebStale
+		default:
+			ready <- core.ErrWebFocus
+		}
+	}()
+	if err := <-ready; err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 // WebPrepare: UI Automation needs nothing turned on; Chromium builds its
 // tree when asked, which webWalk waits for.
 func (a *Adapter) WebPrepare(core.Window) (func(), error) { return func() {}, nil }
-
-// WebFocused describes the focused UI Automation element.
-func (a *Adapter) WebFocused(core.Window) (core.WebNode, bool, error) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	if hr, _, _ := procCoInitializeEx.Call(0, 2); hr == 0 || hr == 1 {
-		defer procCoUninitialize.Call()
-	}
-	u := &uiaWeb{}
-	if hr, _, _ := procCoCreateInstance.Call(uintptr(unsafe.Pointer(&clsidCUIAutomation)), 0, 1|4,
-		uintptr(unsafe.Pointer(&iidIUIAutomation)), uintptr(unsafe.Pointer(&u.uia))); failed(hr) || u.uia == 0 {
-		return core.WebNode{}, false, hrErr("CoCreateInstance(CUIAutomation)", hr)
-	}
-	defer release(u.uia)
-	var f uintptr
-	if hr := vcall(u.uia, uiaGetFocusedElement, uintptr(unsafe.Pointer(&f))); failed(hr) || f == 0 {
-		return core.WebNode{}, false, nil
-	}
-	defer release(f)
-	n, _ := u.node(f, 0)
-	n.Value = ""
-	return n, true, nil
-}

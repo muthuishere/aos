@@ -52,13 +52,17 @@ func WebPrepare(w Window) (func(), error) {
 	return r.WebPrepare(w)
 }
 
-// WebFocused describes the focused element of window w's app.
-func WebFocused(w Window) (WebNode, bool, error) {
+// WebTarget is a focused web element held for identity checks.
+type WebTarget = core.WebTarget
+
+// FocusWebElement focuses the element at index and returns a handle that checks
+// later that the very same element still has focus.
+func FocusWebElement(w Window, maxNodes, maxDepth, index int, role, label string) (WebTarget, error) {
 	r, err := webReader()
 	if err != nil {
-		return WebNode{}, false, err
+		return nil, err
 	}
-	return r.WebFocused(w)
+	return r.WebFocus(w, maxNodes, maxDepth, index, role, label)
 }
 
 // Web actions for WebAct.

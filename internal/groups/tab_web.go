@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
@@ -94,7 +95,7 @@ var (
 	typeInto    = engine.PostTextTo
 	pressInto   = engine.PostKeyTo
 	webPrepare  = engine.WebPrepare
-	webFocused  = engine.WebFocused
+	webFocus    = engine.FocusWebElement
 	frontWindow = focusedWindow
 	tabNow      = func(id string) (Tab, error) { return pickTab(tabFilter{ID: id}, true) }
 )
@@ -266,7 +267,10 @@ func pickElement(nodes []engine.WebNode, ref, query string, exact bool, nth int,
 // actOn performs action on e, refusing (exit 3) when the element at its ref
 // is not the one that was read.
 func actOn(w engine.Window, e pageElement, action int) error {
-	err := webAct(w, pageMaxNodes, pageMaxDepth, e.index, action, e.axRole, e.fp)
+	return actErr(e, webAct(w, pageMaxNodes, pageMaxDepth, e.index, action, e.axRole, e.fp))
+}
+
+func actErr(e pageElement, err error) error {
 	if errors.Is(err, engine.ErrWebStale) {
 		return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%s is no longer %q (%s): the page changed; run `aos tab read` again", e.Ref, e.Label, e.Role)}
 	}
@@ -295,12 +299,18 @@ const typeBurst = 16
 
 // focusGuard refuses to make another window the browser's key window
 // while the person is using that browser.
+// It fails closed: when the frontmost window cannot be read, nothing is typed.
+// It runs before focusing and again before every burst, because the person
+// can switch to the browser mid-typing.
 func focusGuard(w engine.Window, allow bool) error {
 	if allow {
 		return nil
 	}
 	front, err := frontWindow()
-	if err != nil || front.App != w.App || front.ID == w.ID {
+	if err != nil {
+		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("cannot tell which window is in front (%v); not typing (pass --allow-focus to type anyway)", err)}
+	}
+	if front.App != w.App || front.ID == w.ID {
 		return nil
 	}
 	return &cli.ExitError{Code: 1, Message: fmt.Sprintf(
@@ -322,10 +332,18 @@ func sameTab(t Tab) error {
 	return nil
 }
 
-// stillFocused checks that the browser's focused element is still the field.
-func stillFocused(w engine.Window, e pageElement, sent, total int) error {
-	f, ok, err := webFocused(w)
-	if err == nil && ok && f.Role == e.axRole && f.WebLabel() == e.fp {
+// stillFocused checks, before a burst, that the browser's focused element is
+// still the very element that was focused (CFEqual / CompareElements, so a
+// second box with the same label does not pass) and that the person has not
+// switched to the browser meanwhile.
+func stillFocused(w engine.Window, target engine.WebTarget, e pageElement, allow bool, sent, total int) error {
+	if err := focusGuard(w, allow); err != nil {
+		if sent == 0 {
+			return err
+		}
+		return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%v; stopped after %d of %d characters", err, sent, total)}
+	}
+	if ok, err := target.StillFocused(); err == nil && ok {
 		return nil
 	}
 	return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
@@ -369,12 +387,15 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := focusGuard(w, set.Has("allow-focus")); err != nil {
+	allow := set.Has("allow-focus")
+	if err := focusGuard(w, allow); err != nil {
 		return err
 	}
-	if err := actOn(w, e, engine.WebFocus); err != nil {
-		return err
+	target, err := webFocus(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp)
+	if err != nil {
+		return actErr(e, err)
 	}
+	defer target.Release()
 	if err := sameTab(t); err != nil {
 		return err
 	}
@@ -384,7 +405,7 @@ func runTabType(c *cli.Ctx, args []string) error {
 	// each burst and before Enter.
 	runes := []rune(text)
 	for i := 0; i < len(runes); i += typeBurst {
-		if err := stillFocused(w, e, i, len(runes)); err != nil {
+		if err := stillFocused(w, target, e, allow, i, len(runes)); err != nil {
 			return err
 		}
 		end := min(i+typeBurst, len(runes))
@@ -393,7 +414,7 @@ func runTabType(c *cli.Ctx, args []string) error {
 		}
 	}
 	if set.Has("enter") {
-		if err := stillFocused(w, e, len(runes), len(runes)); err != nil {
+		if err := stillFocused(w, target, e, allow, len(runes), len(runes)); err != nil {
 			return err
 		}
 		if err := pressInto(w, "enter"); err != nil {
@@ -542,7 +563,9 @@ type tabWatch struct {
 // switches the window to another tab, ticks are skipped (with a warning)
 // rather than reporting the other page or switching back under them.
 func watchTabLoop(c *cli.Ctx, o tabWatch) error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// SIGTERM / SIGHUP too: agents and timeouts end watches that way, and the
+	// deferred AXEnhancedUserInterface restore must still run.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 	if o.now == nil {
 		o.now = time.Now

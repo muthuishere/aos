@@ -114,6 +114,7 @@ typedef struct {
     int n, cap, max_nodes, max_depth;
     int act_index, action, act_rc;
     AXUIElementRef app;
+    AXUIElementRef held; // the focused target, retained for later checks
     const char* want_role;
     const char* want_label;
     CFArrayRef attrs;
@@ -172,7 +173,7 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
                 for (int k = 0; k < 10 && acc->act_rc == 3; k++) {
                     CFTypeRef f = NULL;
                     if (AXUIElementCopyAttributeValue(acc->app, kAXFocusedUIElementAttribute, &f) == kAXErrorSuccess && f) {
-                        if (CFEqual(f, el)) acc->act_rc = 0;
+                        if (CFEqual(f, el)) { acc->act_rc = 0; CFRetain(el); acc->held = el; }
                         CFRelease(f);
                     }
                     if (acc->act_rc == 3) usleep(30000);
@@ -203,8 +204,8 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
 // when focus was asked for and the app's focused element is not the node.
 static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int act_index, int action,
                          const char* want_role, const char* want_label, const char* title,
-                         wctl_web_node** out, int* act_rc, long* found_wid) {
-    *out = NULL; *act_rc = 1; *found_wid = 0;
+                         wctl_web_node** out, int* act_rc, long* found_wid, void** held) {
+    *out = NULL; *act_rc = 1; *found_wid = 0; *held = NULL;
     if (!AXIsProcessTrusted()) return -1;
     AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
     if (!app) return -2;
@@ -239,6 +240,7 @@ static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int ac
     CFRelease(app);
     *out = acc.items;
     *act_rc = acc.act_rc;
+    *held = (void*)acc.held;
     return acc.n;
 }
 
@@ -279,43 +281,29 @@ static int wctl_web_prepare(int pid, long wid, const char* title, int* enabled) 
     return 0;
 }
 
+// wctl_web_is_focused: 1 when app pid's focused element is el.
+static int wctl_web_is_focused(int pid, void* el) {
+    AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
+    if (!app) return 0;
+    AXUIElementSetMessagingTimeout(app, 1.0);
+    CFTypeRef f = NULL;
+    int same = 0;
+    if (AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute, &f) == kAXErrorSuccess && f) {
+        same = CFEqual(f, (CFTypeRef)el) ? 1 : 0;
+        CFRelease(f);
+    }
+    CFRelease(app);
+    return same;
+}
+
+static void wctl_web_release(void* el) { if (el) CFRelease((CFTypeRef)el); }
+
 static void wctl_web_enhance_off(int pid) {
     AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
     if (!app) return;
     AXUIElementSetMessagingTimeout(app, 1.0);
     AXUIElementSetAttributeValue(app, CFSTR("AXEnhancedUserInterface"), kCFBooleanFalse);
     CFRelease(app);
-}
-
-// wctl_web_focused describes the app's focused element. 1 = filled, 0 none.
-static int wctl_web_focused(int pid, wctl_web_node* t) {
-    memset(t, 0, sizeof(*t));
-    AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
-    if (!app) return 0;
-    AXUIElementSetMessagingTimeout(app, 1.0);
-    CFTypeRef f = NULL;
-    int ok = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute, &f) == kAXErrorSuccess && f;
-    CFRelease(app);
-    if (!ok) return 0;
-    AXUIElementRef el = (AXUIElementRef)f;
-    CFTypeRef v = NULL;
-#define WCTL_STR(attr, field) v = NULL; if (AXUIElementCopyAttributeValue(el, attr, &v) == kAXErrorSuccess && v) { t->field = wctl_web_dup(v); CFRelease(v); }
-    WCTL_STR(kAXRoleAttribute, role)
-    WCTL_STR(kAXTitleAttribute, title)
-    WCTL_STR(kAXDescriptionAttribute, desc)
-    WCTL_STR(CFSTR("AXPlaceholderValue"), placeholder)
-#undef WCTL_STR
-    CFTypeRef pv = NULL, sv = NULL;
-    CGPoint p; CGSize sz;
-    if (AXUIElementCopyAttributeValue(el, kAXPositionAttribute, &pv) == kAXErrorSuccess && pv &&
-        AXUIElementCopyAttributeValue(el, kAXSizeAttribute, &sv) == kAXErrorSuccess && sv &&
-        AXValueGetValue((AXValueRef)pv, kAXValueCGPointType, &p) && AXValueGetValue((AXValueRef)sv, kAXValueCGSizeType, &sz)) {
-        t->x = p.x; t->y = p.y; t->w = sz.width; t->h = sz.height;
-    }
-    if (pv) CFRelease(pv);
-    if (sv) CFRelease(sv);
-    CFRelease(f);
-    return 1;
 }
 
 static void wctl_web_free(wctl_web_node* t, int n) {
@@ -337,11 +325,17 @@ import (
 )
 
 func (a *Adapter) webWalk(w core.Window, maxNodes, maxDepth, index, action int, role, label string) ([]core.WebNode, int, string, error) {
+	nodes, rc, id, held, err := a.webWalkHeld(w, maxNodes, maxDepth, index, action, role, label)
+	C.wctl_web_release(held)
+	return nodes, rc, id, err
+}
+
+func (a *Adapter) webWalkHeld(w core.Window, maxNodes, maxDepth, index, action int, role, label string) ([]core.WebNode, int, string, unsafe.Pointer, error) {
 	var wid int64
 	if w.ID != "" {
 		id, err := parseCGWindowID(w.ID)
 		if err != nil {
-			return nil, 1, "", err
+			return nil, 1, "", nil, err
 		}
 		wid = int64(id)
 	}
@@ -352,21 +346,22 @@ func (a *Adapter) webWalk(w core.Window, maxNodes, maxDepth, index, action int, 
 	var raw *C.wctl_web_node
 	var rc C.int
 	var found C.long
-	n := int(C.wctl_web_tree(C.int(w.PID), C.long(wid), C.int(maxNodes), C.int(maxDepth), C.int(index), C.int(action), cr, cl, ct, &raw, &rc, &found))
+	var held unsafe.Pointer
+	n := int(C.wctl_web_tree(C.int(w.PID), C.long(wid), C.int(maxNodes), C.int(maxDepth), C.int(index), C.int(action), cr, cl, ct, &raw, &rc, &found, &held))
 	id := ""
 	if found > 0 {
 		id = fmt.Sprintf("%d", int64(found))
 	}
 	switch n {
 	case -1:
-		return nil, 1, "", core.ErrAccessibilityDenied
+		return nil, 1, "", nil, core.ErrAccessibilityDenied
 	case -2:
-		return nil, 1, "", fmt.Errorf("%w: window %s of %s is not in the accessibility tree", core.ErrNoMatch, w.ID, w.App)
+		return nil, 1, "", nil, fmt.Errorf("%w: window %s of %s is not in the accessibility tree", core.ErrNoMatch, w.ID, w.App)
 	case -3:
-		return nil, 1, "", errNoWebArea(w)
+		return nil, 1, "", nil, errNoWebArea(w)
 	}
 	if raw == nil {
-		return nil, int(rc), id, nil
+		return nil, int(rc), id, held, nil
 	}
 	defer C.wctl_web_free(raw, C.int(n))
 	out := make([]core.WebNode, 0, n)
@@ -378,7 +373,7 @@ func (a *Adapter) webWalk(w core.Window, maxNodes, maxDepth, index, action int, 
 			Bounds: core.Rect{X: int(t.x), Y: int(t.y), W: int(t.w + 0.5), H: int(t.h + 0.5)},
 		})
 	}
-	return out, int(rc), id, nil
+	return out, int(rc), id, held, nil
 }
 
 // WebTree reads the selected tab's web area of window w, and returns the
@@ -449,20 +444,38 @@ func (a *Adapter) WebPrepare(w core.Window) (func(), error) {
 	return restore, errNoWebArea(w)
 }
 
-// WebFocused describes the browser's focused element (role, labels, bounds).
-func (a *Adapter) WebFocused(w core.Window) (core.WebNode, bool, error) {
-	var t C.wctl_web_node
-	if C.wctl_web_focused(C.int(w.PID), &t) == 0 {
-		return core.WebNode{}, false, nil
+type darwinTarget struct {
+	pid int
+	el  unsafe.Pointer
+}
+
+func (t *darwinTarget) StillFocused() (bool, error) {
+	if t.el == nil {
+		return false, nil
 	}
-	n := core.WebNode{
-		Role: cStringOrEmpty(t.role), Title: cStringOrEmpty(t.title), Desc: cStringOrEmpty(t.desc),
-		Placeholder: cStringOrEmpty(t.placeholder),
-		Bounds:      core.Rect{X: int(t.x), Y: int(t.y), W: int(t.w + 0.5), H: int(t.h + 0.5)},
+	return C.wctl_web_is_focused(C.int(t.pid), t.el) == 1, nil
+}
+
+func (t *darwinTarget) Release() {
+	C.wctl_web_release(t.el)
+	t.el = nil
+}
+
+// WebFocus focuses the node at index (only if it still has role and label),
+// proves the app's focused element is that node, and returns a handle that
+// re-checks that identity (CFEqual) later.
+func (a *Adapter) WebFocus(w core.Window, maxNodes, maxDepth, index int, role, label string) (core.WebTarget, error) {
+	_, rc, _, held, err := a.webWalkHeld(w, maxNodes, maxDepth, index, core.WebFocus, role, label)
+	if err != nil {
+		C.wctl_web_release(held)
+		return nil, err
 	}
-	C.free(unsafe.Pointer(t.role))
-	C.free(unsafe.Pointer(t.title))
-	C.free(unsafe.Pointer(t.desc))
-	C.free(unsafe.Pointer(t.placeholder))
-	return n, true, nil
+	switch rc {
+	case 0:
+		return &darwinTarget{pid: w.PID, el: held}, nil
+	case 1, 2:
+		return nil, core.ErrWebStale
+	}
+	C.wctl_web_release(held)
+	return nil, core.ErrWebFocus
 }
