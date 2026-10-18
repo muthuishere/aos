@@ -88,7 +88,8 @@ type WebNode struct {
 	Desc        string
 	Value       string // string values only
 	Placeholder string
-	Level       int // heading level, 0 when unknown
+	DOMID       string // the HTML id (AXDOMIdentifier / UIA AutomationId), when the page set one
+	Level       int    // heading level, 0 when unknown
 	Focused     bool
 	Bounds      Rect
 }

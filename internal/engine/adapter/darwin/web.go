@@ -33,6 +33,7 @@ typedef struct {
     char*  desc;
     char*  value;
     char*  placeholder;
+    char*  domid;
     int    level;
     int    focused;
     double x, y, w, h;
@@ -121,7 +122,7 @@ typedef struct {
 } wctl_web_acc;
 
 // Attribute order for the batched read; indexes below must match.
-enum { A_ROLE, A_SUBROLE, A_TITLE, A_DESC, A_VALUE, A_PLACEHOLDER, A_FOCUSED, A_POS, A_SIZE, A_KIDS, A_COUNT };
+enum { A_ROLE, A_SUBROLE, A_TITLE, A_DESC, A_VALUE, A_PLACEHOLDER, A_FOCUSED, A_POS, A_SIZE, A_DOMID, A_KIDS, A_COUNT };
 
 static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
     if (acc->n >= acc->max_nodes || depth > acc->max_depth) return;
@@ -144,6 +145,7 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
     t->desc = wctl_web_dup(CFArrayGetValueAtIndex(vals, A_DESC));
     t->value = wctl_web_dup(CFArrayGetValueAtIndex(vals, A_VALUE));
     t->placeholder = wctl_web_dup(CFArrayGetValueAtIndex(vals, A_PLACEHOLDER));
+    t->domid = wctl_web_dup(CFArrayGetValueAtIndex(vals, A_DOMID));
     // A heading's level is its AXValue (Chromium, WebKit).
     CFTypeRef lv = CFArrayGetValueAtIndex(vals, A_VALUE);
     if (lv && CFGetTypeID(lv) == CFNumberGetTypeID() && t->role && strcmp(t->role, "AXHeading") == 0)
@@ -221,7 +223,7 @@ static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int ac
     CFStringRef names[A_COUNT] = {
         kAXRoleAttribute, kAXSubroleAttribute, kAXTitleAttribute, kAXDescriptionAttribute,
         kAXValueAttribute, CFSTR("AXPlaceholderValue"), kAXFocusedAttribute,
-        kAXPositionAttribute, kAXSizeAttribute, kAXChildrenAttribute,
+        kAXPositionAttribute, kAXSizeAttribute, CFSTR("AXDOMIdentifier"), kAXChildrenAttribute,
     };
     wctl_web_acc acc = {0};
     acc.max_nodes = max_nodes; acc.max_depth = max_depth;
@@ -309,7 +311,7 @@ static void wctl_web_enhance_off(int pid) {
 static void wctl_web_free(wctl_web_node* t, int n) {
     for (int i = 0; i < n; i++) {
         free(t[i].role); free(t[i].subrole); free(t[i].title);
-        free(t[i].desc); free(t[i].value); free(t[i].placeholder);
+        free(t[i].desc); free(t[i].value); free(t[i].placeholder); free(t[i].domid);
     }
     free(t);
 }
@@ -369,7 +371,7 @@ func (a *Adapter) webWalkHeld(w core.Window, maxNodes, maxDepth, index, action i
 		out = append(out, core.WebNode{
 			Depth: int(t.depth), Role: cStringOrEmpty(t.role), Subrole: cStringOrEmpty(t.subrole),
 			Title: cStringOrEmpty(t.title), Desc: cStringOrEmpty(t.desc), Value: cStringOrEmpty(t.value),
-			Placeholder: cStringOrEmpty(t.placeholder), Level: int(t.level), Focused: t.focused != 0,
+			Placeholder: cStringOrEmpty(t.placeholder), DOMID: cStringOrEmpty(t.domid), Level: int(t.level), Focused: t.focused != 0,
 			Bounds: core.Rect{X: int(t.x), Y: int(t.y), W: int(t.w + 0.5), H: int(t.h + 0.5)},
 		})
 	}

@@ -135,10 +135,12 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 	t.Helper()
 	var typed []string
 	oldTab, oldTree, oldAct, oldType, oldPress := pageTab, webTree, webAct, typeInto, pressInto
-	oldPrep, oldFocus, oldFront, oldNow := webPrepare, webFocus, frontWindow, tabNow
+	oldPrep, oldFocus, oldFront, oldNow, oldCache := webPrepare, webFocus, frontWindow, tabNow, refCacheDir
+	dir := t.TempDir()
+	refCacheDir = func() (string, error) { return dir, nil }
 	t.Cleanup(func() {
 		pageTab, webTree, webAct, typeInto, pressInto = oldTab, oldTree, oldAct, oldType, oldPress
-		webPrepare, webFocus, frontWindow, tabNow = oldPrep, oldFocus, oldFront, oldNow
+		webPrepare, webFocus, frontWindow, tabNow, refCacheDir = oldPrep, oldFocus, oldFront, oldNow, oldCache
 	})
 	tab := Tab{ID: "chrome:1:2", Kind: "browser", Active: true, Title: "Chat", URL: "https://chat.example/"}
 	pageTab = func(id string) (Tab, engine.Window, error) {
@@ -154,7 +156,7 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 	}
 	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "77", App: "Ghostty"}, nil }
 	tabNow = func(string) (Tab, error) { return tab, nil }
-	webTree = func(*engine.Window, int, int) ([]engine.WebNode, error) { return nodes, nil }
+	webTree = func(*engine.Window, int, int) ([]engine.WebNode, error) { return currentPage(nodes), nil }
 	webAct = func(_ engine.Window, _, _, index, action int, role, label string) error {
 		return act(index, action, role, label)
 	}
@@ -471,5 +473,136 @@ func TestTabTypeReleasesTarget(t *testing.T) {
 	}
 	if !ft.released || ft.checks != 2 {
 		t.Fatalf("released=%v checks=%d (want true, 2: one burst + Enter)", ft.released, ft.checks)
+	}
+}
+
+// pageNow, when set, replaces the fake page (a live page between calls).
+var pageNow func() []engine.WebNode
+
+func currentPage(def []engine.WebNode) []engine.WebNode {
+	if pageNow != nil {
+		return pageNow()
+	}
+	return def
+}
+
+// chatPage: a chat whose message list grows above the input.
+func chatPage(messages int) []engine.WebNode {
+	n := []engine.WebNode{{Depth: 0, Role: "AXList"}}
+	for i := 0; i < messages; i++ {
+		n = append(n,
+			engine.WebNode{Depth: 1, Role: "AXGroup"},
+			engine.WebNode{Depth: 2, Role: "AXStaticText", Value: fmt.Sprintf("message %d", i)},
+			engine.WebNode{Depth: 2, Role: "AXLink", Title: "Reply"})
+	}
+	return append(n,
+		engine.WebNode{Depth: 0, Role: "AXTextArea", Placeholder: "Type a message"},
+		engine.WebNode{Depth: 0, Role: "AXButton", Title: "Send"})
+}
+
+func TestRefsSurviveInsertionsAbove(t *testing.T) {
+	var acted []any
+	withFakePage(t, nil, func(index, action int, role, label string) error {
+		acted = []any{index, role, label}
+		return nil
+	})
+	t.Cleanup(func() { pageNow = nil })
+	msgs := 2
+	pageNow = func() []engine.WebNode { return chatPage(msgs) }
+	c, out := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "[e7] Type a message (textarea, empty) [e8] Send (button)") {
+		t.Fatalf("read:\n%s", out.String())
+	}
+	msgs = 5 // three messages arrive above the input
+	c, _ = pageCtx()
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e7", "--text=hi"}); err != nil {
+		t.Fatalf("type after insertions: %v", err)
+	}
+	if want := []any{16, "AXTextArea", "Type a message"}; !reflect.DeepEqual(acted, want) {
+		t.Fatalf("acted on %v, want %v", acted, want)
+	}
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e8"}); err != nil || acted[0] != 17 {
+		t.Fatalf("click Send after insertions: %v %v", err, acted)
+	}
+}
+
+func TestRefOccurrenceAndAmbiguity(t *testing.T) {
+	var acted int
+	withFakePage(t, nil, func(index, _ int, _, _ string) error { acted = index; return nil })
+	t.Cleanup(func() { pageNow = nil })
+	msgs := 3
+	pageNow = func() []engine.WebNode { return chatPage(msgs) }
+	c, _ := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	// The second "Reply" link (e6), page unchanged: the same occurrence.
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e6"}); err != nil || acted != 6 {
+		t.Fatalf("second Reply: %v acted %d", err, acted)
+	}
+	// One more Reply link now: which one e6 meant is unknowable.
+	msgs = 4
+	acted = -1
+	err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e6"})
+	if exitCode(err) != exitNotFound || acted != -1 || !strings.Contains(err.Error(), "now matches 4") {
+		t.Fatalf("ambiguous ref: %v acted %d", err, acted)
+	}
+}
+
+func TestRefPrefersDOMID(t *testing.T) {
+	var acted int
+	withFakePage(t, nil, func(index, _ int, _, _ string) error { acted = index; return nil })
+	t.Cleanup(func() { pageNow = nil })
+	page := func(extra int) []engine.WebNode {
+		n := []engine.WebNode{}
+		for i := 0; i < extra; i++ {
+			n = append(n, engine.WebNode{Role: "AXButton", Title: "Send", DOMID: fmt.Sprintf("other-%d", i)})
+		}
+		return append(n, engine.WebNode{Role: "AXButton", Title: "Send", DOMID: "main-send"})
+	}
+	extra := 1
+	pageNow = func() []engine.WebNode { return page(extra) }
+	c, _ := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	extra = 3 // more Send buttons, each with its own id, are inserted first
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e1"}); err != nil || acted != 3 {
+		t.Fatalf("by DOM id: %v acted %d", err, acted)
+	}
+}
+
+func TestRefCacheIsPerTabAndURL(t *testing.T) {
+	withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	c, _ := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	if fp := loadRef(Tab{ID: "chrome:1:2", URL: "https://chat.example/"}, "e7"); fp == nil || fp.Role != "AXButton" {
+		t.Fatalf("cached ref: %+v", fp)
+	}
+	if loadRef(Tab{ID: "chrome:1:2", URL: "https://elsewhere/"}, "e7") != nil {
+		t.Fatal("ref from another URL used")
+	}
+	if loadRef(Tab{ID: "chrome:1:3", URL: "https://chat.example/"}, "e7") != nil {
+		t.Fatal("ref from another tab used")
+	}
+}
+
+func TestResolveRetriesOnceWhenPageShiftsDuringAct(t *testing.T) {
+	calls := 0
+	withFakePage(t, fakePage(), func(int, int, string, string) error {
+		calls++
+		if calls == 1 {
+			return engine.ErrWebStale // something was inserted between read and act
+		}
+		return nil
+	})
+	c, _ := pageCtx()
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--find=Send"}); err != nil || calls != 2 {
+		t.Fatalf("retry: %v calls %d", err, calls)
 	}
 }

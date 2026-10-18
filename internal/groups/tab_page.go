@@ -22,9 +22,12 @@ type pageElement struct {
 	Label string `json:"label"`
 	Value string `json:"value,omitempty"`
 
-	index  int    // preorder index: what the ref encodes
+	index  int    // preorder index: the ref's number
 	axRole string // raw role, part of the fingerprint
-	fp     string // engine.WebNode.WebLabel(), the other part
+	fp     string // engine.WebNode.WebLabel(), part of the fingerprint
+	domID  string // HTML id, part of the fingerprint
+	occ    int    // occurrence among elements with the same role, label and id
+	total  int    // how many such elements the page has
 	alt    []string
 }
 
@@ -134,7 +137,7 @@ func pageElements(nodes []engine.WebNode) []pageElement {
 			continue
 		}
 		label, _ := displayLabel(nodes, i)
-		e := pageElement{Ref: elementRef(i), Role: role, Label: label, index: i, axRole: n.Role, fp: n.WebLabel()}
+		e := pageElement{Ref: elementRef(i), Role: role, Label: label, index: i, axRole: n.Role, fp: n.WebLabel(), domID: n.DOMID}
 		if pageEditable[role] || role == "select" {
 			e.Value = n.Value
 		}
@@ -144,6 +147,16 @@ func pageElements(nodes []engine.WebNode) []pageElement {
 			}
 		}
 		out = append(out, e)
+	}
+	seen, count := map[string]int{}, map[string]int{}
+	key := func(e pageElement) string { return e.axRole + "\x00" + e.fp + "\x00" + e.domID }
+	for _, e := range out {
+		count[key(e)]++
+	}
+	for i := range out {
+		k := key(out[i])
+		out[i].occ, out[i].total = seen[k], count[k]
+		seen[k]++
 	}
 	return out
 }

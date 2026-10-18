@@ -2,11 +2,14 @@ package groups
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -194,6 +197,9 @@ func runTabRead(c *cli.Ctx, args []string) error {
 		return err
 	}
 	md := strings.Join(renderPage(nodes, true, false), "\n")
+	if err := saveRefs(t, pageElements(nodes)); err != nil {
+		c.Warnf("aos: refs not saved (--element will match by position): %v\n", err)
+	}
 	if set.Has("json") {
 		elems := pageElements(nodes)
 		if elems == nil {
@@ -214,8 +220,15 @@ func runTabRead(c *cli.Ctx, args []string) error {
 // checked against nothing here (the adapter re-verifies it on use); a label
 // with several matches is refused with the candidates (exit 4) unless --nth
 // picks one.
-func pickElement(nodes []engine.WebNode, ref, query string, exact bool, nth int, keep func(pageElement) bool, what string) (pageElement, error) {
+func pickElement(nodes []engine.WebNode, ref string, fp *refFP, query string, exact bool, nth int, keep func(pageElement) bool, what string) (pageElement, error) {
 	elems := pageElements(nodes)
+	if ref != "" && fp != nil {
+		e, err := byFingerprint(elems, ref, *fp)
+		if err == nil && keep != nil && !keep(e) {
+			return pageElement{}, fmt.Errorf("%s is a %s, not a %s", ref, e.Role, what)
+		}
+		return e, err
+	}
 	if ref != "" {
 		idx, err := parseElementRef(ref)
 		if err != nil {
@@ -264,10 +277,26 @@ func pickElement(nodes []engine.WebNode, ref, query string, exact bool, nth int,
 	return hits[0], nil
 }
 
-// actOn performs action on e, refusing (exit 3) when the element at its ref
-// is not the one that was read.
-func actOn(w engine.Window, e pageElement, action int) error {
-	return actErr(e, webAct(w, pageMaxNodes, pageMaxDepth, e.index, action, e.axRole, e.fp))
+// resolveAndAct reads the page, resolves the element and acts on it. The
+// adapter refuses to act when the element at the resolved position is not
+// the one resolved (a live page inserted something in between); then the
+// page is read and resolved once more. A second miss is exit 3.
+func resolveAndAct(w *engine.Window, pick func([]engine.WebNode) (pageElement, error), act func(pageElement) error) (pageElement, []engine.WebNode, error) {
+	for attempt := 0; ; attempt++ {
+		nodes, err := webTree(w, pageMaxNodes, pageMaxDepth)
+		if err != nil {
+			return pageElement{}, nil, err
+		}
+		e, err := pick(nodes)
+		if err != nil {
+			return e, nodes, err
+		}
+		err = act(e)
+		if errors.Is(err, engine.ErrWebStale) && attempt == 0 {
+			continue
+		}
+		return e, nodes, actErr(e, err)
+	}
 }
 
 func actErr(e pageElement, err error) error {
@@ -379,21 +408,20 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	nodes, err := webTree(&w, pageMaxNodes, pageMaxDepth)
-	if err != nil {
-		return err
-	}
-	e, err := pickElement(nodes, ref, query, set.Has("exact"), nth, func(e pageElement) bool { return pageEditable[e.Role] }, "field")
-	if err != nil {
-		return err
-	}
 	allow := set.Has("allow-focus")
 	if err := focusGuard(w, allow); err != nil {
 		return err
 	}
-	target, err := webFocus(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp)
+	fp := loadRef(t, ref)
+	var target engine.WebTarget
+	e, _, err := resolveAndAct(&w, func(nodes []engine.WebNode) (pageElement, error) {
+		return pickElement(nodes, ref, fp, query, set.Has("exact"), nth, func(e pageElement) bool { return pageEditable[e.Role] }, "field")
+	}, func(e pageElement) (err error) {
+		target, err = webFocus(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp)
+		return err
+	})
 	if err != nil {
-		return actErr(e, err)
+		return err
 	}
 	defer target.Release()
 	if err := sameTab(t); err != nil {
@@ -441,7 +469,7 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	if role != "" && !pageActionable[role] {
 		return fmt.Errorf("--role must be one of button, link, checkbox, radio, select, textbox, textarea, combobox; got %q", role)
 	}
-	_, w, err := pageTab(set.String("id", ""))
+	t, w, err := pageTab(set.String("id", ""))
 	if err != nil {
 		return err
 	}
@@ -450,20 +478,18 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	nodes, err := webTree(&w, pageMaxNodes, pageMaxDepth)
-	if err != nil {
-		return err
-	}
 	keep := func(e pageElement) bool { return role == "" || e.Role == role }
 	what := "element"
 	if role != "" {
 		what = role
 	}
-	e, err := pickElement(nodes, ref, query, set.Has("exact"), nth, keep, what)
+	fp := loadRef(t, ref)
+	e, nodes, err := resolveAndAct(&w, func(nodes []engine.WebNode) (pageElement, error) {
+		return pickElement(nodes, ref, fp, query, set.Has("exact"), nth, keep, what)
+	}, func(e pageElement) error {
+		return webAct(w, pageMaxNodes, pageMaxDepth, e.index, engine.WebPress, e.axRole, e.fp)
+	})
 	if err != nil {
-		return err
-	}
-	if err := actOn(w, e, engine.WebPress); err != nil {
 		var exit *cli.ExitError
 		if errors.As(err, &exit) || runtime.GOOS != "windows" {
 			return err
@@ -632,4 +658,112 @@ func watchTabLoop(c *cli.Ctx, o tabWatch) error {
 		case <-ticker.C:
 		}
 	}
+}
+
+// refFP is what a ref from `tab read` stands for: the element's identity,
+// not its position. Live pages (chats, feeds) insert elements above a field
+// between the read and the action, so a position goes stale in seconds.
+type refFP struct {
+	Role  string `json:"role"`             // raw accessibility role
+	Label string `json:"label"`            // engine.WebNode.WebLabel()
+	DOMID string `json:"dom_id,omitempty"` // HTML id: the strongest identity when present
+	Occ   int    `json:"occ"`              // which one, among elements with the same role, label and id
+	Total int    `json:"total"`            // how many had them at read time
+}
+
+type refCache struct {
+	Tab  string           `json:"tab"`
+	URL  string           `json:"url"`
+	Refs map[string]refFP `json:"refs"`
+}
+
+// refCacheDir is where the last read's refs are kept per tab (a seam for tests).
+var refCacheDir = func() (string, error) {
+	d, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(d, "aos", "tab-refs"), nil
+}
+
+func refCachePath(tabID string) (string, error) {
+	d, err := refCacheDir()
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(tabID))
+	return filepath.Join(d, hex.EncodeToString(sum[:8])+".json"), nil
+}
+
+func fingerprintOf(e pageElement) refFP {
+	return refFP{Role: e.axRole, Label: e.fp, DOMID: e.domID, Occ: e.occ, Total: e.total}
+}
+
+// saveRefs keeps the refs of a read for the tab's current URL.
+func saveRefs(t Tab, elems []pageElement) error {
+	p, err := refCachePath(t.ID)
+	if err != nil {
+		return err
+	}
+	rc := refCache{Tab: t.ID, URL: t.URL, Refs: map[string]refFP{}}
+	for _, e := range elems {
+		rc.Refs[e.Ref] = fingerprintOf(e)
+	}
+	b, err := json.Marshal(rc)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(p, b, 0o600)
+}
+
+// loadRef returns the fingerprint a ref stood for in the tab's last read, or
+// nil when there is none for this tab and URL (then the ref is a position).
+func loadRef(t Tab, ref string) *refFP {
+	if ref == "" {
+		return nil
+	}
+	p, err := refCachePath(t.ID)
+	if err != nil {
+		return nil
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var rc refCache
+	if json.Unmarshal(b, &rc) != nil || rc.Tab != t.ID || rc.URL != t.URL {
+		return nil
+	}
+	fp, ok := rc.Refs[strings.TrimSpace(ref)]
+	if !ok {
+		return nil
+	}
+	return &fp
+}
+
+// byFingerprint finds the element a ref stood for on the page as it is now.
+// One element with that role, label (and HTML id) is it. Several: the same
+// occurrence, but only while their count is unchanged, since otherwise
+// there is no telling which one is meant. Anything else is exit 3.
+func byFingerprint(elems []pageElement, ref string, fp refFP) (pageElement, error) {
+	var same []pageElement
+	for _, e := range elems {
+		if e.axRole == fp.Role && e.fp == fp.Label && e.domID == fp.DOMID {
+			same = append(same, e)
+		}
+	}
+	switch {
+	case len(same) == 1:
+		return same[0], nil
+	case len(same) > 1 && len(same) == fp.Total && fp.Occ < len(same):
+		return same[fp.Occ], nil
+	case len(same) == 0:
+		return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+			"%s (%q) is not on the page any more; run `aos tab read` again", ref, fp.Label)}
+	}
+	return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+		"%s (%q) now matches %d elements (was %d), so it is not clear which; run `aos tab read` again", ref, fp.Label, len(same), fp.Total)}
 }

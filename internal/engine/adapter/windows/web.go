@@ -24,18 +24,19 @@ import (
 )
 
 const (
-	uiaCompareElements   = 3
-	uiaGetFocusedElement = 8
-	uiaControlViewWalker = 14
-	walkerFirstChild     = 4
-	walkerNextSibling    = 6
-	elSetFocus           = 3
-	elGetCurPropValue    = 10
-	elHasKeyboardFocus   = 26
-	elCurrentHelpText    = 31
-	propValueValue       = 30045
-	propHeadingLevel     = 30173
-	ctDocument           = 50030
+	uiaCompareElements    = 3
+	uiaGetFocusedElement  = 8
+	uiaControlViewWalker  = 14
+	walkerFirstChild      = 4
+	walkerNextSibling     = 6
+	elSetFocus            = 3
+	elGetCurPropValue     = 10
+	elHasKeyboardFocus    = 26
+	elCurrentHelpText     = 31
+	elCurrentAutomationID = 29
+	propValueValue        = 30045
+	propHeadingLevel      = 30173
+	ctDocument            = 50030
 )
 
 var procVariantClear = oleaut32.NewProc("VariantClear")
@@ -98,7 +99,8 @@ func (u *uiaWeb) prop(el uintptr, id int) variant {
 func (u *uiaWeb) node(el uintptr, depth int) (core.WebNode, int32) {
 	var ct int32
 	vcall(el, elCurrentControlType, uintptr(unsafe.Pointer(&ct)))
-	n := core.WebNode{Depth: depth, Title: u.str(el, elCurrentName), Placeholder: u.str(el, elCurrentHelpText)}
+	n := core.WebNode{Depth: depth, Title: u.str(el, elCurrentName), Placeholder: u.str(el, elCurrentHelpText),
+		DOMID: u.str(el, elCurrentAutomationID)}
 	if v := u.prop(el, propHeadingLevel); v.VT == 3 /* VT_I4 */ {
 		if l := int(int32(v.Val)) - 80050; l > 0 && l < 10 {
 			n.Level = l

@@ -80,9 +80,10 @@ aos tab click --id=ID --find=Send --role=button
 aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it appears, 3 on timeout
 ```
 
-- Read first, then act by ref. A ref is checked on use: if the element there
-  no longer has the role and label `tab read` showed, the command refuses
-  with exit 3 ("page changed"). Read again.
+- Read first, then act by ref. A ref is an identity (role + label + HTML id
+  + occurrence, remembered per tab and URL), not a position, so new chat
+  messages above the box do not break it. Exit 3 when the element is gone or
+  is now ambiguous. Read again.
 - `--into` / `--find` match label, placeholder, title or description (exact
   first, then substring). Several matches: exit 4 with the candidates. Use
   `--element`, `--exact` or `--nth`.
