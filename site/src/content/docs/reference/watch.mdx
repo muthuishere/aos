@@ -65,7 +65,7 @@ aos watch file ./src --recursive --interval=1s
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<500ms>] [--timeout=<duration>] [--max=<n>]
+aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 ```
 
 | flag | values | meaning |
@@ -73,14 +73,14 @@ aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<500ms>] [--t
 | `--id` | `<tab id>` | Required |
 | `--match` | `<text>` | Optional |
 | `--exact` |  | Optional |
-| `--interval` | `<500ms>` | Optional. default 500ms |
+| `--interval` | `<1s>` | Optional. default 1s |
 | `--timeout` | `<duration>` | Optional |
 | `--max` | `<n>` | Optional |
 
 ```sh
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m
-# with --match: exit 0 when the text appears, 3 on --timeout
+# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
 ```
 
 ### aos watch window

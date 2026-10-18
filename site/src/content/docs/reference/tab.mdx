@@ -17,7 +17,7 @@ sidebar:
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>]
+aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
 ```
 
 | flag | values | meaning |
@@ -28,6 +28,7 @@ aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|li
 | `--role` | `button`, `link`, `checkbox`, `radio`, `...` | Optional |
 | `--exact` |  | Optional |
 | `--nth` | `<n>` | Optional |
+| `--allow-focus` |  | Optional |
 
 ```sh
 aos tab click --id=chrome:1658108662:1658109078 --element=e8
@@ -190,7 +191,7 @@ aos tab send --id=iterm:31:1 --key=ctrl+c
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>]
+aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
 ```
 
 | flag | values | meaning |
@@ -202,9 +203,11 @@ aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--e
 | `--enter` |  | Optional |
 | `--exact` |  | Optional |
 | `--nth` | `<n>` | Optional |
+| `--allow-newline` |  | Optional |
+| `--allow-focus` |  | Optional |
 
 ```sh
 aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter
 aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"
-# exit 3 when no field matches or the page changed, 4 when several fields match
+# exit 3 when no field matches, the page changed or focus moved; 4 when several fields match
 ```
