@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-3 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+4 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
@@ -56,6 +56,31 @@ aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
 aos watch file ~/Downloads
 aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
+```
+
+### aos watch tab
+
+<p class="cmd-lead">Print a JSON line with the new text whenever a browser tab's page changes</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<500ms>] [--timeout=<duration>] [--max=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | Required |
+| `--match` | `<text>` | Optional |
+| `--exact` |  | Optional |
+| `--interval` | `<500ms>` | Optional. default 500ms |
+| `--timeout` | `<duration>` | Optional |
+| `--max` | `<n>` | Optional |
+
+```sh
+aos watch tab --id=chrome:1658108662:1658109078
+aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m
+# with --match: exit 0 when the text appears, 3 on --timeout
 ```
 
 ### aos watch window
