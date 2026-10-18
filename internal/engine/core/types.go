@@ -96,7 +96,7 @@ type WebNode struct {
 // Web-area actions for WebActor.
 const (
 	WebPress = 1 // AXPress
-	WebFocus = 2 // AXFocused = true, falling back to AXPress
+	WebFocus = 2 // AXFocused = true, verified against the app's focused element
 )
 
 // WebLabel is the label WebAct fingerprints a node by: the first non-empty

@@ -17,9 +17,10 @@ import (
 
 // Reading and driving the page inside a browser tab through accessibility:
 // `tab read`, `tab type`, `tab click` and `watch tab`. The tab is selected in
-// its window without raising the window, and nothing here takes focus: a
-// click is an accessibility press, typing is key events posted to the
-// browser's process.
+// its window without raising the window. A click is an accessibility press;
+// typing focuses the field through accessibility and posts key events to the
+// browser's process, so the frontmost app does not change (the browser's own
+// key window can: see focusGuard).
 
 func init() {
 	register(func(r *cli.Registry) {
@@ -40,11 +41,11 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "type",
 				Summary: "Type into a field of a browser tab's page without taking focus",
-				Args:    "--id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>]",
+				Args:    "--id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]",
 				Examples: []string{
 					`aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter`,
 					`aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"`,
-					"# exit 3 when no field matches or the page changed, 4 when several fields match",
+					"# exit 3 when no field matches, the page changed or focus moved; 4 when several fields match",
 				},
 				Platforms: platforms,
 				Run:       runTabType,
@@ -52,7 +53,7 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "click",
 				Summary: "Press a button or link in a browser tab's page, without moving the mouse",
-				Args:    "--id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>]",
+				Args:    "--id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]",
 				Examples: []string{
 					"aos tab click --id=chrome:1658108662:1658109078 --element=e8",
 					"aos tab click --id=chrome:1658108662:1658109078 --find=Send --role=button",
@@ -65,11 +66,11 @@ func init() {
 				Group: "watch", Name: "tab",
 				Summary:  "Print a JSON line with the new text whenever a browser tab's page changes",
 				Blocking: true,
-				Args:     "--id=<tab id> [--match=<text>] [--exact] [--interval=<500ms>] [--timeout=<duration>] [--max=<n>]",
+				Args:     "--id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
 				Examples: []string{
 					"aos watch tab --id=chrome:1658108662:1658109078",
 					`aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m`,
-					"# with --match: exit 0 when the text appears, 3 on --timeout",
+					"# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes",
 				},
 				Platforms: platforms,
 				Run:       runWatchTab,
@@ -87,11 +88,15 @@ const (
 
 // Seams for tests.
 var (
-	webTree   = engine.WebTree
-	webAct    = engine.WebAct
-	pageTab   = resolvePageTab
-	typeInto  = engine.PostTextTo
-	pressInto = engine.PostKeyTo
+	webTree     = engine.WebTree
+	webAct      = engine.WebAct
+	pageTab     = resolvePageTab
+	typeInto    = engine.PostTextTo
+	pressInto   = engine.PostKeyTo
+	webPrepare  = engine.WebPrepare
+	webFocused  = engine.WebFocused
+	frontWindow = focusedWindow
+	tabNow      = func(id string) (Tab, error) { return pickTab(tabFilter{ID: id}, true) }
 )
 
 // quietSelector is a provider that can select a tab in its window without
@@ -178,6 +183,11 @@ func runTabRead(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	restore, err := webPrepare(w)
+	defer restore()
+	if err != nil {
+		return err
+	}
 	nodes, err := webTree(&w, pageMaxNodes, pageMaxDepth)
 	if err != nil {
 		return err
@@ -260,6 +270,9 @@ func actOn(w engine.Window, e pageElement, action int) error {
 	if errors.Is(err, engine.ErrWebStale) {
 		return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%s is no longer %q (%s): the page changed; run `aos tab read` again", e.Ref, e.Label, e.Role)}
 	}
+	if errors.Is(err, engine.ErrWebFocus) {
+		return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("focus did not land on %s %q; nothing typed", e.Ref, e.Label)}
+	}
 	return err
 }
 
@@ -276,12 +289,55 @@ func targetFlags(set *argSet, labelFlag string) (ref, query string, nth int, err
 	return ref, query, nth, err
 }
 
+// typeBurst is how many characters go out between focus checks: small
+// enough that a focus change costs at most this many stray characters.
+const typeBurst = 16
+
+// focusGuard refuses to make another window the browser's key window
+// while the person is using that browser.
+func focusGuard(w engine.Window, allow bool) error {
+	if allow {
+		return nil
+	}
+	front, err := frontWindow()
+	if err != nil || front.App != w.App || front.ID == w.ID {
+		return nil
+	}
+	return &cli.ExitError{Code: 1, Message: fmt.Sprintf(
+		"%s is the app in front (window %q) and the tab is in another of its windows; typing would make that window %s's key window under you. Retry when %s is not in front, or pass --allow-focus",
+		w.App, front.Title, w.App, w.App)}
+}
+
+// sameTab checks the tab is still the selected tab of its window and still
+// shows the page that was resolved.
+func sameTab(t Tab) error {
+	cur, err := tabNow(t.ID)
+	if err != nil {
+		return err
+	}
+	if !cur.Active || cur.URL != t.URL || cur.Title != t.Title {
+		return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+			"%s changed (now %q %s, selected=%v); nothing typed. Run `aos tab read` again", t.ID, cur.Title, cur.URL, cur.Active)}
+	}
+	return nil
+}
+
+// stillFocused checks that the browser's focused element is still the field.
+func stillFocused(w engine.Window, e pageElement, sent, total int) error {
+	f, ok, err := webFocused(w)
+	if err == nil && ok && f.Role == e.axRole && f.WebLabel() == e.fp {
+		return nil
+	}
+	return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+		"focus left %s %q after %d of %d characters; stopped", e.Ref, e.Label, sent, total)}
+}
+
 func runTabType(c *cli.Ctx, args []string) error {
 	set, err := parseArgs(args, "id", "element", "into", "text", "nth")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "element", "into", "text", "nth", "enter", "exact"); err != nil {
+	if err := set.Reject("id", "element", "into", "text", "nth", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "into")
@@ -292,7 +348,16 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if text == "" && !set.Has("enter") {
 		return fmt.Errorf("--text is required")
 	}
-	_, w, err := pageTab(set.String("id", ""))
+	// A newline is a Return key: in a chat box it sends half a message.
+	if strings.ContainsAny(text, "\r\n") && !set.Has("allow-newline") {
+		return fmt.Errorf("--text contains a newline, which is typed as Return (it can submit the form); pass --allow-newline if you mean it, or use --enter at the end")
+	}
+	t, w, err := pageTab(set.String("id", ""))
+	if err != nil {
+		return err
+	}
+	restore, err := webPrepare(w)
+	defer restore()
 	if err != nil {
 		return err
 	}
@@ -304,19 +369,33 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := focusGuard(w, set.Has("allow-focus")); err != nil {
+		return err
+	}
 	if err := actOn(w, e, engine.WebFocus); err != nil {
+		return err
+	}
+	if err := sameTab(t); err != nil {
 		return err
 	}
 	// Pages ignore values set through accessibility (React, Lexical keep
 	// their own state), so the text goes in as key events posted to the
-	// browser's process: the field has accessibility focus, the window stays
-	// where it is, and the frontmost app never changes.
-	if text != "" {
-		if err := typeInto(w, text); err != nil {
+	// browser's process, in bursts, with the field's focus re-checked before
+	// each burst and before Enter.
+	runes := []rune(text)
+	for i := 0; i < len(runes); i += typeBurst {
+		if err := stillFocused(w, e, i, len(runes)); err != nil {
+			return err
+		}
+		end := min(i+typeBurst, len(runes))
+		if err := typeInto(w, string(runes[i:end])); err != nil {
 			return err
 		}
 	}
 	if set.Has("enter") {
+		if err := stillFocused(w, e, len(runes), len(runes)); err != nil {
+			return err
+		}
 		if err := pressInto(w, "enter"); err != nil {
 			return err
 		}
@@ -330,7 +409,7 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "element", "find", "role", "nth", "exact"); err != nil {
+	if err := set.Reject("id", "element", "find", "role", "nth", "exact", "allow-focus"); err != nil {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "find")
@@ -342,6 +421,11 @@ func runTabClick(c *cli.Ctx, args []string) error {
 		return fmt.Errorf("--role must be one of button, link, checkbox, radio, select, textbox, textarea, combobox; got %q", role)
 	}
 	_, w, err := pageTab(set.String("id", ""))
+	if err != nil {
+		return err
+	}
+	restore, err := webPrepare(w)
+	defer restore()
 	if err != nil {
 		return err
 	}
@@ -363,23 +447,26 @@ func runTabClick(c *cli.Ctx, args []string) error {
 		if errors.As(err, &exit) || runtime.GOOS != "windows" {
 			return err
 		}
-		// UI Automation: an element with no Invoke pattern is clicked at its
-		// centre, which needs the window in front.
-		if b := nodes[e.index].Bounds; b.W > 0 && b.H > 0 {
-			if ferr := engine.FocusWindowID(w.ID); ferr != nil {
-				return err
-			}
-			time.Sleep(150 * time.Millisecond)
-			if cerr := engine.ClickAt(b.X+b.W/2, b.Y+b.H/2); cerr != nil {
-				return cerr
-			}
-		} else {
-			return err
+		// UI Automation: an element with no Invoke pattern can only be
+		// clicked, which raises the window and moves the mouse.
+		b := nodes[e.index].Bounds
+		if !set.Has("allow-focus") || b.W <= 0 || b.H <= 0 {
+			return fmt.Errorf("%s has no Invoke pattern (%v); pass --allow-focus to raise the window and click its centre", e.Ref, err)
+		}
+		if ferr := engine.FocusWindowID(w.ID); ferr != nil {
+			return ferr
+		}
+		time.Sleep(150 * time.Millisecond)
+		if cerr := engine.ClickAt(b.X+b.W/2, b.Y+b.H/2); cerr != nil {
+			return cerr
 		}
 	}
 	c.Printf("clicked %s  %s\n", e.Ref, e.annotation(false))
 	return nil
 }
+
+// minTabWatchInterval: each read is a full accessibility walk of the page.
+const minTabWatchInterval = time.Second
 
 func runWatchTab(c *cli.Ctx, args []string) error {
 	set, err := parseArgs(args, "id", "match", "interval", "timeout", "max")
@@ -393,6 +480,12 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	if !set.Has("interval") {
+		interval = minTabWatchInterval
+	}
+	if interval < minTabWatchInterval {
+		return fmt.Errorf("--interval for watch tab must be at least %s", minTabWatchInterval)
+	}
 	var timeout time.Duration
 	if v := set.String("timeout", ""); v != "" {
 		if timeout, err = parseInterval(v, 0); err != nil || timeout <= 0 {
@@ -401,6 +494,13 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 	}
 	id := set.String("id", "")
 	t, w, err := pageTab(id)
+	if err != nil {
+		return err
+	}
+	// AXEnhancedUserInterface stays on for the watch and is restored when it
+	// ends (Ctrl-C included: the loop returns rather than being killed).
+	restore, err := webPrepare(w)
+	defer restore()
 	if err != nil {
 		return err
 	}
@@ -415,8 +515,11 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 		tab: t.ID, match: set.String("match", ""), exact: set.Has("exact"),
 		interval: interval, timeout: timeout, max: max, read: read,
 		selected: func() (bool, error) {
-			cur, err := pickTab(tabFilter{ID: id}, true)
-			return err == nil && cur.Active, err
+			cur, err := tabNow(id)
+			if err != nil {
+				return false, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%s closed: %v", id, err)}
+			}
+			return cur.Active, nil
 		},
 	})
 }

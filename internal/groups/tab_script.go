@@ -513,7 +513,11 @@ func safariFamily() *scriptFamily {
 		openJS: `function run(argv) {
   var A = app(argv[0]), url = argv[1], w, bg = argv[4] == "1";
   if (argv[3] == "1" || A.windows.length == 0) {
-    A.Document().make(); w = A.windows[0]; if (url) w.currentTab.url = url;
+    // windows[0] after make() is not always the new window: find it by id.
+    var before = A.windows.id(); A.Document().make(); w = A.windows[0];
+    var ws = A.windows();
+    for (var i = 0; i < ws.length; i++) { if (before.indexOf(ws[i].id()) < 0) { w = ws[i]; break; } }
+    if (url) w.currentTab.url = url;
   } else {
     w = argv[2] ? findWin(A, argv[2]) : A.windows[0];
     var prev = w.currentTab(), props = {};

@@ -86,13 +86,28 @@ aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it a
 - `--into` / `--find` match label, placeholder, title or description (exact
   first, then substring). Several matches: exit 4 with the candidates. Use
   `--element`, `--exact` or `--nth`.
-- No focus is taken. Click is an accessibility press. Type sets accessibility
-  focus on the field and posts keys to the browser process, so React or
-  Lexical editors see real input. The frontmost app does not change.
+- The frontmost app does not change. Click is an accessibility press. Type
+  focuses the field through accessibility and posts keys to the browser
+  process, so React or Lexical editors see real input.
+- Type checks itself. The focused element must be the field (else exit 3,
+  nothing typed). It is re-checked every 16 characters and before Enter, and
+  on a change typing stops and reports how many characters went out. The tab
+  must still be selected with the same title and URL.
+- Type makes the tab's window the browser's key window. If the browser is in
+  front and the user is in another of its windows, it refuses unless you pass
+  `--allow-focus`.
+- A newline in `--text` is Return (it can send a chat message early). It is
+  refused unless you pass `--allow-newline`. Use `--enter` at the end.
+- Windows click with no Invoke pattern needs `--allow-focus` (it raises the
+  window and clicks with the mouse).
 - The tab is selected in its window if needed, without raising the window.
 - `watch tab` prints `{"event":"tab","tab":ID,"added":[...]}` for new lines
   only. Text present at start is the baseline. Reordering, live clocks and
   field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.
+  Interval is 1 s by default and at minimum. Navigating the tab reports the new
+  page as added text. If the tab closes, it exits 3.
+- Chromium: aos turns on `AXEnhancedUserInterface` only when the page is
+  missing, and turns it off again when the command ends.
 - macOS: Chrome family and Safari. Windows: Edge/Chrome through UI Automation
   (type is not live-tested yet). Linux: not supported yet (exit 2).
 

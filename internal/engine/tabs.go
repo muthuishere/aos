@@ -39,6 +39,28 @@ type WebNode = core.WebNode
 // ErrWebStale: the element at a ref is not the one that was read.
 var ErrWebStale = core.ErrWebStale
 
+// ErrWebFocus: focusing a field did not make it the focused element.
+var ErrWebFocus = core.ErrWebFocus
+
+// WebPrepare makes window w's page visible to accessibility; call restore
+// when done (it undoes AXEnhancedUserInterface when this turned it on).
+func WebPrepare(w Window) (func(), error) {
+	r, err := webReader()
+	if err != nil {
+		return func() {}, err
+	}
+	return r.WebPrepare(w)
+}
+
+// WebFocused describes the focused element of window w's app.
+func WebFocused(w Window) (WebNode, bool, error) {
+	r, err := webReader()
+	if err != nil {
+		return WebNode{}, false, err
+	}
+	return r.WebFocused(w)
+}
+
 // Web actions for WebAct.
 const (
 	WebPress = core.WebPress

@@ -7,9 +7,10 @@
 // default; Chromium browsers expose nothing below the toolbar until a client
 // sets AXEnhancedUserInterface on the application element. That set call
 // returns an error on current Chrome (-25208) yet the tree appears anyway, so
-// the error is ignored and success is judged by the web area showing up. It
-// is set only when the web area is missing, and only on this browser's
-// process.
+// the error is ignored and success is judged by the web area showing up.
+// WebPrepare sets it only when the web area is missing and the attribute was
+// not already on, only on this browser's process, and hands back a restore
+// that turns it off again (it can slow window animations in that app).
 package darwin
 
 /*
@@ -112,6 +113,7 @@ typedef struct {
     wctl_web_node* items;
     int n, cap, max_nodes, max_depth;
     int act_index, action, act_rc;
+    AXUIElementRef app;
     const char* want_role;
     const char* want_label;
     CFArrayRef attrs;
@@ -126,8 +128,10 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
     CFArrayRef vals = NULL;
     if (AXUIElementCopyMultipleAttributeValues(el, acc->attrs, 0, &vals) != kAXErrorSuccess || !vals) return;
     if (acc->n == acc->cap) {
-        acc->cap = acc->cap ? acc->cap * 2 : 256;
-        acc->items = (wctl_web_node*)realloc(acc->items, sizeof(wctl_web_node) * acc->cap);
+        int cap = acc->cap ? acc->cap * 2 : 256;
+        wctl_web_node* grown = (wctl_web_node*)realloc(acc->items, sizeof(wctl_web_node) * cap);
+        if (!grown) { CFRelease(vals); acc->max_nodes = acc->n; return; } // out of memory: stop, keep what was read
+        acc->items = grown; acc->cap = cap;
     }
     int idx = acc->n++;
     wctl_web_node* t = &acc->items[idx];
@@ -160,10 +164,23 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
             CFRelease(vals);
             return;
         }
-        AXError e = kAXErrorFailure;
-        if (acc->action == 2) e = AXUIElementSetAttributeValue(el, kAXFocusedAttribute, kCFBooleanTrue);
-        if (e != kAXErrorSuccess) e = AXUIElementPerformAction(el, kAXPressAction);
-        acc->act_rc = (e == kAXErrorSuccess) ? 0 : -1;
+        if (acc->action == 2) {
+            // Focus, then prove it: the app's focused element must be this
+            // element. No press fallback: a press is not focus.
+            acc->act_rc = 3;
+            if (AXUIElementSetAttributeValue(el, kAXFocusedAttribute, kCFBooleanTrue) == kAXErrorSuccess) {
+                for (int k = 0; k < 10 && acc->act_rc == 3; k++) {
+                    CFTypeRef f = NULL;
+                    if (AXUIElementCopyAttributeValue(acc->app, kAXFocusedUIElementAttribute, &f) == kAXErrorSuccess && f) {
+                        if (CFEqual(f, el)) acc->act_rc = 0;
+                        CFRelease(f);
+                    }
+                    if (acc->act_rc == 3) usleep(30000);
+                }
+            }
+        } else {
+            acc->act_rc = AXUIElementPerformAction(el, kAXPressAction) == kAXErrorSuccess ? 0 : -1;
+        }
         CFRelease(vals);
         return;
     }
@@ -182,7 +199,8 @@ static void wctl_web_walk(AXUIElementRef el, int depth, wctl_web_acc* acc) {
 // Returns the node count, or -1 not trusted, -2 no window, -3 no web area.
 // act_index >= 0 performs action on that preorder node; *act_rc is 0 on
 // success, -1 when the action failed, 1 when the node was not reached, 2 when
-// the node there no longer has want_role and want_label (nothing is done).
+// the node there no longer has want_role and want_label (nothing is done), 3
+// when focus was asked for and the app's focused element is not the node.
 static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int act_index, int action,
                          const char* want_role, const char* want_label, const char* title,
                          wctl_web_node** out, int* act_rc, long* found_wid) {
@@ -197,17 +215,8 @@ static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int ac
     if (_AXUIElementGetWindow(win, &fw) == kAXErrorSuccess) *found_wid = (long)fw;
     int budget = 4000;
     AXUIElementRef web = wctl_web_find(win, 0, &budget);
-    if (!web) {
-        AXUIElementSetAttributeValue(app, CFSTR("AXEnhancedUserInterface"), kCFBooleanTrue); // error ignored, see above
-        for (int i = 0; i < 10 && !web; i++) {
-            usleep(150000);
-            budget = 4000;
-            web = wctl_web_find(win, 0, &budget);
-        }
-    }
     CFRelease(win);
-    CFRelease(app);
-    if (!web) return -3;
+    if (!web) { CFRelease(app); return -3; }
     CFStringRef names[A_COUNT] = {
         kAXRoleAttribute, kAXSubroleAttribute, kAXTitleAttribute, kAXDescriptionAttribute,
         kAXValueAttribute, CFSTR("AXPlaceholderValue"), kAXFocusedAttribute,
@@ -217,6 +226,7 @@ static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int ac
     acc.max_nodes = max_nodes; acc.max_depth = max_depth;
     acc.act_index = act_index; acc.action = action; acc.act_rc = 1;
     acc.want_role = want_role ? want_role : ""; acc.want_label = want_label ? want_label : "";
+    acc.app = app;
     acc.attrs = CFArrayCreate(NULL, (const void**)names, A_COUNT, &kCFTypeArrayCallBacks);
     CFArrayRef kids = NULL;
     if (AXUIElementCopyAttributeValue(web, kAXChildrenAttribute, (CFTypeRef*)&kids) == kAXErrorSuccess && kids) {
@@ -226,9 +236,86 @@ static int wctl_web_tree(int pid, long wid, int max_nodes, int max_depth, int ac
     }
     CFRelease(acc.attrs);
     CFRelease(web);
+    CFRelease(app);
     *out = acc.items;
     *act_rc = acc.act_rc;
     return acc.n;
+}
+
+// wctl_web_prepare makes the window's web area visible to accessibility.
+// When it is missing and AXEnhancedUserInterface is not already on, it turns
+// it on and waits up to ~1.5 s; *enabled says whether this call turned it on
+// (so the caller restores it). Returns 0 when the web area is there, -1 not
+// trusted, -2 no window, -3 still no web area.
+static int wctl_web_prepare(int pid, long wid, const char* title, int* enabled) {
+    *enabled = 0;
+    if (!AXIsProcessTrusted()) return -1;
+    AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
+    if (!app) return -2;
+    AXUIElementSetMessagingTimeout(app, 1.0);
+    AXUIElementRef win = wctl_web_window(app, wid, title);
+    if (!win) { CFRelease(app); return -2; }
+    int budget = 4000;
+    AXUIElementRef web = wctl_web_find(win, 0, &budget);
+    if (!web) {
+        CFTypeRef prev = NULL;
+        int on = AXUIElementCopyAttributeValue(app, CFSTR("AXEnhancedUserInterface"), &prev) == kAXErrorSuccess &&
+                 prev && CFGetTypeID(prev) == CFBooleanGetTypeID() && CFBooleanGetValue((CFBooleanRef)prev);
+        if (prev) CFRelease(prev);
+        if (!on) {
+            AXUIElementSetAttributeValue(app, CFSTR("AXEnhancedUserInterface"), kCFBooleanTrue); // error ignored, see above
+            *enabled = 1;
+        }
+        for (int i = 0; i < 10 && !web; i++) {
+            usleep(150000);
+            budget = 4000;
+            web = wctl_web_find(win, 0, &budget);
+        }
+    }
+    CFRelease(win);
+    CFRelease(app);
+    if (!web) return -3;
+    CFRelease(web);
+    return 0;
+}
+
+static void wctl_web_enhance_off(int pid) {
+    AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
+    if (!app) return;
+    AXUIElementSetMessagingTimeout(app, 1.0);
+    AXUIElementSetAttributeValue(app, CFSTR("AXEnhancedUserInterface"), kCFBooleanFalse);
+    CFRelease(app);
+}
+
+// wctl_web_focused describes the app's focused element. 1 = filled, 0 none.
+static int wctl_web_focused(int pid, wctl_web_node* t) {
+    memset(t, 0, sizeof(*t));
+    AXUIElementRef app = AXUIElementCreateApplication((pid_t)pid);
+    if (!app) return 0;
+    AXUIElementSetMessagingTimeout(app, 1.0);
+    CFTypeRef f = NULL;
+    int ok = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute, &f) == kAXErrorSuccess && f;
+    CFRelease(app);
+    if (!ok) return 0;
+    AXUIElementRef el = (AXUIElementRef)f;
+    CFTypeRef v = NULL;
+#define WCTL_STR(attr, field) v = NULL; if (AXUIElementCopyAttributeValue(el, attr, &v) == kAXErrorSuccess && v) { t->field = wctl_web_dup(v); CFRelease(v); }
+    WCTL_STR(kAXRoleAttribute, role)
+    WCTL_STR(kAXTitleAttribute, title)
+    WCTL_STR(kAXDescriptionAttribute, desc)
+    WCTL_STR(CFSTR("AXPlaceholderValue"), placeholder)
+#undef WCTL_STR
+    CFTypeRef pv = NULL, sv = NULL;
+    CGPoint p; CGSize sz;
+    if (AXUIElementCopyAttributeValue(el, kAXPositionAttribute, &pv) == kAXErrorSuccess && pv &&
+        AXUIElementCopyAttributeValue(el, kAXSizeAttribute, &sv) == kAXErrorSuccess && sv &&
+        AXValueGetValue((AXValueRef)pv, kAXValueCGPointType, &p) && AXValueGetValue((AXValueRef)sv, kAXValueCGSizeType, &sz)) {
+        t->x = p.x; t->y = p.y; t->w = sz.width; t->h = sz.height;
+    }
+    if (pv) CFRelease(pv);
+    if (sv) CFRelease(sv);
+    CFRelease(f);
+    return 1;
 }
 
 static void wctl_web_free(wctl_web_node* t, int n) {
@@ -276,7 +363,7 @@ func (a *Adapter) webWalk(w core.Window, maxNodes, maxDepth, index, action int, 
 	case -2:
 		return nil, 1, "", fmt.Errorf("%w: window %s of %s is not in the accessibility tree", core.ErrNoMatch, w.ID, w.App)
 	case -3:
-		return nil, 1, "", errors.New(w.App + " shows no web content to accessibility for this window (is the tab still loading, or a browser page like settings?)")
+		return nil, 1, "", errNoWebArea(w)
 	}
 	if raw == nil {
 		return nil, int(rc), id, nil
@@ -313,6 +400,69 @@ func (a *Adapter) WebAct(w core.Window, maxNodes, maxDepth, index, action int, r
 		return nil
 	case 1, 2:
 		return core.ErrWebStale
+	case 3:
+		return core.ErrWebFocus
 	}
 	return errors.New("the element refused the accessibility action")
+}
+
+func errNoWebArea(w core.Window) error {
+	return errors.New(w.App + " shows no web content to accessibility for this window (is the tab still loading, or a browser page like settings?)")
+}
+
+func (a *Adapter) cWindow(w core.Window) (C.long, *C.char, error) {
+	var wid int64
+	if w.ID != "" {
+		id, err := parseCGWindowID(w.ID)
+		if err != nil {
+			return 0, nil, err
+		}
+		wid = id
+	}
+	return C.long(wid), C.CString(w.Title), nil
+}
+
+// WebPrepare makes window w's page visible to accessibility, turning on
+// AXEnhancedUserInterface for the browser process when the page is missing.
+// restore turns it off again when this call turned it on; call it when done.
+func (a *Adapter) WebPrepare(w core.Window) (func(), error) {
+	wid, ct, err := a.cWindow(w)
+	if err != nil {
+		return func() {}, err
+	}
+	defer C.free(unsafe.Pointer(ct))
+	var enabled C.int
+	rc := int(C.wctl_web_prepare(C.int(w.PID), wid, ct, &enabled))
+	restore := func() {}
+	if enabled != 0 {
+		pid := C.int(w.PID)
+		restore = func() { C.wctl_web_enhance_off(pid) }
+	}
+	switch rc {
+	case 0:
+		return restore, nil
+	case -1:
+		return restore, core.ErrAccessibilityDenied
+	case -2:
+		return restore, fmt.Errorf("%w: window %s of %s is not in the accessibility tree", core.ErrNoMatch, w.ID, w.App)
+	}
+	return restore, errNoWebArea(w)
+}
+
+// WebFocused describes the browser's focused element (role, labels, bounds).
+func (a *Adapter) WebFocused(w core.Window) (core.WebNode, bool, error) {
+	var t C.wctl_web_node
+	if C.wctl_web_focused(C.int(w.PID), &t) == 0 {
+		return core.WebNode{}, false, nil
+	}
+	n := core.WebNode{
+		Role: cStringOrEmpty(t.role), Title: cStringOrEmpty(t.title), Desc: cStringOrEmpty(t.desc),
+		Placeholder: cStringOrEmpty(t.placeholder),
+		Bounds:      core.Rect{X: int(t.x), Y: int(t.y), W: int(t.w + 0.5), H: int(t.h + 0.5)},
+	}
+	C.free(unsafe.Pointer(t.role))
+	C.free(unsafe.Pointer(t.title))
+	C.free(unsafe.Pointer(t.desc))
+	C.free(unsafe.Pointer(t.placeholder))
+	return n, true, nil
 }

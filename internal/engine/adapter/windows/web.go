@@ -23,6 +23,8 @@ import (
 )
 
 const (
+	uiaCompareElements   = 3
+	uiaGetFocusedElement = 8
 	uiaControlViewWalker = 14
 	walkerFirstChild     = 4
 	walkerNextSibling    = 6
@@ -156,7 +158,7 @@ type webWalk struct {
 	maxNodes, maxDepth int
 	act, action        int
 	role, label        string
-	rc                 int // 1 not reached, 0 done, -1 failed, 2 stale
+	rc                 int // 1 not reached, 0 done, -1 failed, 2 stale, 3 focus did not land
 }
 
 func (u *uiaWeb) walk(el uintptr, depth int, w *webWalk) {
@@ -182,9 +184,23 @@ func (u *uiaWeb) perform(el uintptr, n core.WebNode, w *webWalk) int {
 		return 2
 	}
 	if w.action == core.WebFocus {
-		if !failed(vcall(el, elSetFocus)) {
-			return 0
+		// Focus, then prove it; never an Invoke instead (a press is not focus).
+		if failed(vcall(el, elSetFocus)) {
+			return 3
 		}
+		for k := 0; k < 10; k++ {
+			var f uintptr
+			if hr := vcall(u.uia, uiaGetFocusedElement, uintptr(unsafe.Pointer(&f))); !failed(hr) && f != 0 {
+				var same int32
+				vcall(u.uia, uiaCompareElements, el, f, uintptr(unsafe.Pointer(&same)))
+				release(f)
+				if same != 0 {
+					return 0
+				}
+			}
+			time.Sleep(30 * time.Millisecond)
+		}
+		return 3
 	}
 	var pat uintptr
 	if hr := vcall(el, elGetCurPattern, invokePatternID, uintptr(unsafe.Pointer(&pat))); !failed(hr) && pat != 0 {
@@ -260,6 +276,35 @@ func (a *Adapter) WebAct(w core.Window, maxNodes, maxDepth, index, action int, r
 		return nil
 	case 1, 2:
 		return core.ErrWebStale
+	case 3:
+		return core.ErrWebFocus
 	}
-	return errors.New("the element has no SetFocus/Invoke that worked")
+	return errors.New("the element has no Invoke pattern")
+}
+
+// WebPrepare: UI Automation needs nothing turned on; Chromium builds its
+// tree when asked, which webWalk waits for.
+func (a *Adapter) WebPrepare(core.Window) (func(), error) { return func() {}, nil }
+
+// WebFocused describes the focused UI Automation element.
+func (a *Adapter) WebFocused(core.Window) (core.WebNode, bool, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	if hr, _, _ := procCoInitializeEx.Call(0, 2); hr == 0 || hr == 1 {
+		defer procCoUninitialize.Call()
+	}
+	u := &uiaWeb{}
+	if hr, _, _ := procCoCreateInstance.Call(uintptr(unsafe.Pointer(&clsidCUIAutomation)), 0, 1|4,
+		uintptr(unsafe.Pointer(&iidIUIAutomation)), uintptr(unsafe.Pointer(&u.uia))); failed(hr) || u.uia == 0 {
+		return core.WebNode{}, false, hrErr("CoCreateInstance(CUIAutomation)", hr)
+	}
+	defer release(u.uia)
+	var f uintptr
+	if hr := vcall(u.uia, uiaGetFocusedElement, uintptr(unsafe.Pointer(&f))); failed(hr) || f == 0 {
+		return core.WebNode{}, false, nil
+	}
+	defer release(f)
+	n, _ := u.node(f, 0)
+	n.Value = ""
+	return n, true, nil
 }

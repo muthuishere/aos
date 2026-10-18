@@ -17,6 +17,10 @@ var ErrNoMatch = errors.New("no window matched the filter")
 // longer the one the caller read: the page changed.
 var ErrWebStale = errors.New("the page changed since it was read")
 
+// ErrWebFocus is returned by WebAct(WebFocus) when the browser's focused
+// element is not the target after focusing it.
+var ErrWebFocus = errors.New("focus did not land on the field")
+
 // ErrAccessibilityDenied is returned by the macOS adapter when a Move
 // or Focus call is attempted while the running process is not trusted
 // by the Accessibility (AX) subsystem. The message instructs the user
@@ -190,6 +194,11 @@ type FocusedTextReader interface {
 type WebReader interface {
 	WebTree(w Window, maxNodes, maxDepth int) ([]WebNode, string, error)
 	WebAct(w Window, maxNodes, maxDepth, index, action int, role, label string) error
+	// WebPrepare makes the page visible to accessibility; restore undoes
+	// whatever it turned on.
+	WebPrepare(w Window) (restore func(), err error)
+	// WebFocused describes the app's focused element.
+	WebFocused(w Window) (WebNode, bool, error)
 }
 
 // ElementPresser activates the accessibility element of window w at the

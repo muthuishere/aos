@@ -3,6 +3,7 @@ package groups
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -134,13 +135,29 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 	t.Helper()
 	var typed []string
 	oldTab, oldTree, oldAct, oldType, oldPress := pageTab, webTree, webAct, typeInto, pressInto
-	t.Cleanup(func() { pageTab, webTree, webAct, typeInto, pressInto = oldTab, oldTree, oldAct, oldType, oldPress })
+	oldPrep, oldFocused, oldFront, oldNow := webPrepare, webFocused, frontWindow, tabNow
+	t.Cleanup(func() {
+		pageTab, webTree, webAct, typeInto, pressInto = oldTab, oldTree, oldAct, oldType, oldPress
+		webPrepare, webFocused, frontWindow, tabNow = oldPrep, oldFocused, oldFront, oldNow
+	})
+	tab := Tab{ID: "chrome:1:2", Kind: "browser", Active: true, Title: "Chat", URL: "https://chat.example/"}
 	pageTab = func(id string) (Tab, engine.Window, error) {
-		return Tab{ID: id, Kind: "browser"}, engine.Window{ID: "1", App: "Google Chrome", PID: 9}, nil
+		tab.ID = id
+		return tab, engine.Window{ID: "1", App: "Google Chrome", PID: 9}, nil
 	}
+	webPrepare = func(engine.Window) (func(), error) { return func() {}, nil }
+	// The focused element is whatever was last focused through webAct.
+	var focused engine.WebNode
+	webFocused = func(engine.Window) (engine.WebNode, bool, error) { return focused, focused.Role != "", nil }
+	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "77", App: "Ghostty"}, nil }
+	tabNow = func(string) (Tab, error) { return tab, nil }
 	webTree = func(*engine.Window, int, int) ([]engine.WebNode, error) { return nodes, nil }
 	webAct = func(_ engine.Window, _, _, index, action int, role, label string) error {
-		return act(index, action, role, label)
+		err := act(index, action, role, label)
+		if err == nil && action == engine.WebFocus {
+			focused = nodes[index]
+		}
+		return err
 	}
 	typeInto = func(_ engine.Window, s string) error { typed = append(typed, s); return nil }
 	pressInto = func(_ engine.Window, k string) error { typed = append(typed, "<"+k+">"); return nil }
@@ -292,5 +309,127 @@ func TestWatchTabLoopMatchAndTimeout(t *testing.T) {
 		selected: func() (bool, error) { return false, nil }})
 	if err != nil || n != 1 {
 		t.Fatalf("unselected tab read %d times: %v", n, err)
+	}
+}
+
+func TestTabTypeRefusesWhenFocusDoesNotLand(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return engine.ErrWebFocus })
+	c, _ := pageCtx()
+	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=hello"})
+	if exitCode(err) != exitNotFound || len(*typed) != 0 || !strings.Contains(err.Error(), "focus did not land") {
+		t.Fatalf("focus not landed: %v typed %q", err, *typed)
+	}
+}
+
+func TestTabTypeStopsWhenFocusMoves(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	calls := 0
+	webFocused = func(engine.Window) (engine.WebNode, bool, error) {
+		calls++
+		if calls > 1 { // the person clicked elsewhere after the first burst
+			return engine.WebNode{Role: "AXTextField", Title: "Search"}, true, nil
+		}
+		return engine.WebNode{Role: "AXTextArea", Title: "Message"}, true, nil
+	}
+	c, _ := pageCtx()
+	text := strings.Repeat("a", typeBurst) + "bbbb"
+	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=" + text, "--enter"})
+	if exitCode(err) != exitNotFound || !strings.Contains(err.Error(), fmt.Sprintf("after %d of %d characters", typeBurst, len(text))) {
+		t.Fatalf("focus moved: %v", err)
+	}
+	if !reflect.DeepEqual(*typed, []string{strings.Repeat("a", typeBurst)}) {
+		t.Fatalf("typed %q, want only the first burst and no Enter", *typed)
+	}
+}
+
+func TestTabTypeChecksFocusBeforeEnter(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	calls := 0
+	webFocused = func(engine.Window) (engine.WebNode, bool, error) {
+		calls++
+		if calls > 1 {
+			return engine.WebNode{}, false, nil
+		}
+		return engine.WebNode{Role: "AXTextArea", Title: "Message"}, true, nil
+	}
+	c, _ := pageCtx()
+	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=hi", "--enter"})
+	if exitCode(err) != exitNotFound || !reflect.DeepEqual(*typed, []string{"hi"}) {
+		t.Fatalf("enter after focus loss: %v typed %q", err, *typed)
+	}
+}
+
+func TestTabTypeNewlines(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	c, _ := pageCtx()
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=line1\nline2"}); err == nil || len(*typed) != 0 {
+		t.Fatalf("newline accepted: %v typed %q", err, *typed)
+	}
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=line1\nline2", "--allow-newline"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTabTypeRefusesWhenTabChanged(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	for name, now := range map[string]Tab{
+		"navigated":    {ID: "chrome:1:2", Active: true, Title: "Chat", URL: "https://evil.example/"},
+		"deselected":   {ID: "chrome:1:2", Active: false, Title: "Chat", URL: "https://chat.example/"},
+		"title change": {ID: "chrome:1:2", Active: true, Title: "Other", URL: "https://chat.example/"},
+	} {
+		tabNow = func(string) (Tab, error) { return now, nil }
+		c, _ := pageCtx()
+		err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"})
+		if exitCode(err) != exitNotFound || len(*typed) != 0 {
+			t.Fatalf("%s: %v typed %q", name, err, *typed)
+		}
+	}
+}
+
+func TestTabTypeFocusGuard(t *testing.T) {
+	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	// The person is in another window of the same browser.
+	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "2", App: "Google Chrome", Title: "Mail"}, nil }
+	c, _ := pageCtx()
+	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"})
+	if err == nil || !strings.Contains(err.Error(), "--allow-focus") || len(*typed) != 0 {
+		t.Fatalf("focus guard: %v typed %q", err, *typed)
+	}
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x", "--allow-focus"}); err != nil {
+		t.Fatal(err)
+	}
+	// The tab's own window in front is fine: keys go where the person looks.
+	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "1", App: "Google Chrome"}, nil }
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPageCommandsRestorePrepare(t *testing.T) {
+	withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	restored := 0
+	webPrepare = func(engine.Window) (func(), error) { return func() { restored++ }, nil }
+	c, _ := pageCtx()
+	_ = runTabRead(c, []string{"--id=chrome:1:2"})
+	_ = runTabClick(c, []string{"--id=chrome:1:2", "--element=e7"})
+	_ = runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"})
+	if restored != 3 {
+		t.Fatalf("restore ran %d times, want 3", restored)
+	}
+}
+
+func TestWatchTabFlagsAndClosedTab(t *testing.T) {
+	withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
+	c, _ := pageCtx()
+	if err := runWatchTab(c, []string{"--id=chrome:1:2", "--interval=500ms"}); err == nil {
+		t.Fatal("sub-second interval accepted")
+	}
+	err := watchTabLoop(c, tabWatch{tab: "chrome:1:2", interval: time.Millisecond,
+		read: func() ([]string, error) { return []string{"a"}, nil },
+		selected: func() (bool, error) {
+			return false, &cli.ExitError{Code: exitNotFound, Message: "chrome:1:2 closed"}
+		}})
+	if exitCode(err) != exitNotFound {
+		t.Fatalf("closed tab: %v", err)
 	}
 }
