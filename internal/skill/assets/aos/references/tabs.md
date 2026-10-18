@@ -82,8 +82,9 @@ aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it a
 
 - Read first, then act by ref. A ref is an identity (role + label + HTML id
   + occurrence, remembered per tab and URL), not a position, so new chat
-  messages above the box do not break it. Exit 3 when the element is gone or
-  is now ambiguous. Read again.
+  messages above the box do not break it. Refs stay the same across reads (new
+  elements get new numbers). Exit 3 when the element is gone, is now
+  ambiguous, or there was no read for this tab and URL. Read again.
 - `--into` / `--find` match label, placeholder, title or description (exact
   first, then substring). Several matches: exit 4 with the candidates. Use
   `--element`, `--exact` or `--nth`.

@@ -100,6 +100,7 @@ var (
 	webPrepare  = engine.WebPrepare
 	webFocus    = engine.FocusWebElement
 	frontWindow = focusedWindow
+	frontPID    = engine.FrontmostPID
 	tabNow      = func(id string) (Tab, error) { return pickTab(tabFilter{ID: id}, true) }
 )
 
@@ -196,12 +197,12 @@ func runTabRead(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	md := strings.Join(renderPage(nodes, true, false), "\n")
-	if err := saveRefs(t, pageElements(nodes)); err != nil {
-		c.Warnf("aos: refs not saved (--element will match by position): %v\n", err)
+	elems, err := pageRefs(t, nodes)
+	if err != nil {
+		c.Warnf("aos: refs not saved, so --element cannot use them: %v\n", err)
 	}
+	md := strings.Join(renderPageElems(nodes, elems, true, false), "\n")
 	if set.Has("json") {
-		elems := pageElements(nodes)
 		if elems == nil {
 			elems = []pageElement{}
 		}
@@ -220,8 +221,7 @@ func runTabRead(c *cli.Ctx, args []string) error {
 // checked against nothing here (the adapter re-verifies it on use); a label
 // with several matches is refused with the candidates (exit 4) unless --nth
 // picks one.
-func pickElement(nodes []engine.WebNode, ref string, fp *refFP, query string, exact bool, nth int, keep func(pageElement) bool, what string) (pageElement, error) {
-	elems := pageElements(nodes)
+func pickElement(elems []pageElement, ref string, fp *refFP, query string, exact bool, nth int, keep func(pageElement) bool, what string) (pageElement, error) {
 	if ref != "" && fp != nil {
 		e, err := byFingerprint(elems, ref, *fp)
 		if err == nil && keep != nil && !keep(e) {
@@ -230,19 +230,11 @@ func pickElement(nodes []engine.WebNode, ref string, fp *refFP, query string, ex
 		return e, err
 	}
 	if ref != "" {
-		idx, err := parseElementRef(ref)
-		if err != nil {
+		if _, err := parseElementRef(ref); err != nil {
 			return pageElement{}, err
 		}
-		for _, e := range elems {
-			if e.index == idx {
-				if keep != nil && !keep(e) {
-					return pageElement{}, fmt.Errorf("%s is a %s, not a %s", ref, e.Role, what)
-				}
-				return e, nil
-			}
-		}
-		return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%s is not on the page any more (the page changed); run `aos tab read` again", ref)}
+		return pageElement{}, &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+			"%s is not a ref from this tab's last `aos tab read` (none yet, or the tab moved to another page); run `aos tab read` first", ref)}
 	}
 	hits := matchElements(elems, query, exact, keep)
 	if len(hits) == 0 {
@@ -335,11 +327,21 @@ func focusGuard(w engine.Window, allow bool) error {
 	if allow {
 		return nil
 	}
+	// The frontmost app first: when it is not the browser, keys the person
+	// types go elsewhere and making a browser window key cannot steal them.
+	pid, err := frontPID()
+	if err != nil {
+		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("cannot tell which app is in front (%v); not typing (pass --allow-focus to type anyway)", err)}
+	}
+	if pid != w.PID {
+		return nil
+	}
+	// The browser is in front: only its window holding the tab is safe.
 	front, err := frontWindow()
 	if err != nil {
-		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("cannot tell which window is in front (%v); not typing (pass --allow-focus to type anyway)", err)}
+		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("%s is in front and its focused window cannot be read (%v); not typing (pass --allow-focus to type anyway)", w.App, err)}
 	}
-	if front.App != w.App || front.ID == w.ID {
+	if front.ID == w.ID {
 		return nil
 	}
 	return &cli.ExitError{Code: 1, Message: fmt.Sprintf(
@@ -415,7 +417,8 @@ func runTabType(c *cli.Ctx, args []string) error {
 	fp := loadRef(t, ref)
 	var target engine.WebTarget
 	e, _, err := resolveAndAct(&w, func(nodes []engine.WebNode) (pageElement, error) {
-		return pickElement(nodes, ref, fp, query, set.Has("exact"), nth, func(e pageElement) bool { return pageEditable[e.Role] }, "field")
+		elems, _ := pageRefs(t, nodes)
+		return pickElement(elems, ref, fp, query, set.Has("exact"), nth, func(e pageElement) bool { return pageEditable[e.Role] }, "field")
 	}, func(e pageElement) (err error) {
 		target, err = webFocus(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp)
 		return err
@@ -485,7 +488,8 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	}
 	fp := loadRef(t, ref)
 	e, nodes, err := resolveAndAct(&w, func(nodes []engine.WebNode) (pageElement, error) {
-		return pickElement(nodes, ref, fp, query, set.Has("exact"), nth, keep, what)
+		elems, _ := pageRefs(t, nodes)
+		return pickElement(elems, ref, fp, query, set.Has("exact"), nth, keep, what)
 	}, func(e pageElement) error {
 		return webAct(w, pageMaxNodes, pageMaxDepth, e.index, engine.WebPress, e.axRole, e.fp)
 	})
@@ -699,24 +703,78 @@ func fingerprintOf(e pageElement) refFP {
 	return refFP{Role: e.axRole, Label: e.fp, DOMID: e.domID, Occ: e.occ, Total: e.total}
 }
 
-// saveRefs keeps the refs of a read for the tab's current URL.
-func saveRefs(t Tab, elems []pageElement) error {
+type refCacheFile struct {
+	refCache
+	Next int `json:"next"`
+}
+
+func loadCache(t Tab) refCacheFile {
+	fresh := refCacheFile{refCache: refCache{Tab: t.ID, URL: t.URL, Refs: map[string]refFP{}}}
 	p, err := refCachePath(t.ID)
 	if err != nil {
-		return err
+		return fresh
 	}
-	rc := refCache{Tab: t.ID, URL: t.URL, Refs: map[string]refFP{}}
-	for _, e := range elems {
-		rc.Refs[e.Ref] = fingerprintOf(e)
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return fresh
+	}
+	var rc refCacheFile
+	if json.Unmarshal(b, &rc) != nil || rc.Tab != t.ID || rc.URL != t.URL || rc.Refs == nil {
+		return fresh
+	}
+	return rc
+}
+
+func fpKey(f refFP) string {
+	return fmt.Sprintf("%s\x00%s\x00%s\x00%d\x00%d", f.Role, f.Label, f.DOMID, f.Occ, f.Total)
+}
+
+// pageRefs gives the page's elements refs that stay the same across reads:
+// an element whose fingerprint was in the tab's last read keeps its ref; a
+// new element gets the next number (never reused on this page); elements
+// that are gone are dropped. The result is saved for --element.
+func pageRefs(t Tab, nodes []engine.WebNode) ([]pageElement, error) {
+	elems := pageElements(nodes)
+	rc := loadCache(t)
+	byKey := map[string]string{}
+	for ref, f := range rc.Refs {
+		byKey[fpKey(f)] = ref
+	}
+	refs := map[string]refFP{}
+	// A new element is numbered by its position when that number was never
+	// issued on this page (so a first read reads like the tree), else by
+	// the next free number. Next is a high-water mark: a ref is never
+	// reissued to a different element.
+	high := rc.Next
+	for i := range elems {
+		f := fingerprintOf(elems[i])
+		ref, ok := byKey[fpKey(f)]
+		if !ok {
+			n := elems[i].index
+			if n < high {
+				n = rc.Next
+			}
+			ref = elementRef(n)
+			if n+1 > rc.Next {
+				rc.Next = n + 1
+			}
+		}
+		elems[i].Ref = ref
+		refs[ref] = f
+	}
+	rc.Refs = refs
+	p, err := refCachePath(t.ID)
+	if err != nil {
+		return elems, err
 	}
 	b, err := json.Marshal(rc)
 	if err != nil {
-		return err
+		return elems, err
 	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-		return err
+		return elems, err
 	}
-	return os.WriteFile(p, b, 0o600)
+	return elems, os.WriteFile(p, b, 0o600)
 }
 
 // loadRef returns the fingerprint a ref stood for in the tab's last read, or

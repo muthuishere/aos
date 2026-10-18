@@ -201,8 +201,13 @@ func clip(s string, n int) string {
 // left out (typing into a box is not new page text), link and button labels
 // stay as plain text.
 func renderPage(nodes []engine.WebNode, refs, textOnly bool) []string {
+	return renderPageElems(nodes, pageElements(nodes), refs, textOnly)
+}
+
+// renderPageElems renders with the given elements (their refs as assigned).
+func renderPageElems(nodes []engine.WebNode, list []pageElement, refs, textOnly bool) []string {
 	elems := map[int]pageElement{}
-	for _, e := range pageElements(nodes) {
+	for _, e := range list {
 		elems[e.index] = e
 	}
 	var (

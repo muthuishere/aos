@@ -155,10 +155,18 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 		return &fakeTarget{}, nil
 	}
 	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "77", App: "Ghostty"}, nil }
+	oldPID := frontPID
+	t.Cleanup(func() { frontPID = oldPID })
+	frontPID = func() (int, error) { return 77, nil } // Ghostty, not the browser (pid 9)
 	tabNow = func(string) (Tab, error) { return tab, nil }
 	webTree = func(*engine.Window, int, int) ([]engine.WebNode, error) { return currentPage(nodes), nil }
 	webAct = func(_ engine.Window, _, _, index, action int, role, label string) error {
 		return act(index, action, role, label)
+	}
+	if nodes != nil { // as if the tab had been read: refs are known
+		if _, err := pageRefs(tab, nodes); err != nil {
+			t.Fatal(err)
+		}
 	}
 	typeInto = func(_ engine.Window, s string) error { typed = append(typed, s); return nil }
 	pressInto = func(_ engine.Window, k string) error { typed = append(typed, "<"+k+">"); return nil }
@@ -381,6 +389,7 @@ func TestTabTypeRefusesWhenTabChanged(t *testing.T) {
 func TestTabTypeFocusGuard(t *testing.T) {
 	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
 	// The person is in another window of the same browser.
+	frontPID = func() (int, error) { return 9, nil }
 	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "2", App: "Google Chrome", Title: "Mail"}, nil }
 	c, _ := pageCtx()
 	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"})
@@ -442,19 +451,32 @@ func (f *fakeTarget) Release() { f.released = true }
 
 func TestTabTypeFocusGuardFailsClosedAndRunsPerBurst(t *testing.T) {
 	typed := withFakePage(t, fakePage(), func(int, int, string, string) error { return nil })
-	frontWindow = func() (engine.Window, error) { return engine.Window{}, errors.New("no window server") }
+	frontPID = func() (int, error) { return 0, errors.New("no focused app") }
 	c, _ := pageCtx()
 	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"}); err == nil || len(*typed) != 0 {
 		t.Fatalf("guard failed open: %v typed %q", err, *typed)
 	}
+	// The browser in front with an unreadable focused window: refuse too.
+	frontPID = func() (int, error) { return 9, nil }
+	frontWindow = func() (engine.Window, error) { return engine.Window{}, errors.New("no focused window") }
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"}); err == nil || len(*typed) != 0 {
+		t.Fatalf("browser in front, window unknown: %v typed %q", err, *typed)
+	}
+	// Another app in front and no focused window resolvable: that is safe.
+	frontPID = func() (int, error) { return 77, nil }
+	if err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=x"}); err != nil {
+		t.Fatalf("other app in front: %v", err)
+	}
+	*typed = nil
 	// The person switches to another browser window after the first burst.
 	calls := 0
-	frontWindow = func() (engine.Window, error) {
+	frontWindow = func() (engine.Window, error) { return engine.Window{ID: "2", App: "Google Chrome", Title: "Mail"}, nil }
+	frontPID = func() (int, error) {
 		calls++
 		if calls > 2 { // pre-focus check + first burst check pass
-			return engine.Window{ID: "2", App: "Google Chrome", Title: "Mail"}, nil
+			return 9, nil
 		}
-		return engine.Window{ID: "77", App: "Ghostty"}, nil
+		return 77, nil
 	}
 	text := strings.Repeat("a", typeBurst+3)
 	err := runTabType(c, []string{"--id=chrome:1:2", "--element=e6", "--text=" + text})
@@ -526,6 +548,38 @@ func TestRefsSurviveInsertionsAbove(t *testing.T) {
 	}
 	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e8"}); err != nil || acted[0] != 17 {
 		t.Fatalf("click Send after insertions: %v %v", err, acted)
+	}
+}
+
+func TestRefsStayStableAcrossReads(t *testing.T) {
+	withFakePage(t, nil, func(int, int, string, string) error { return nil })
+	t.Cleanup(func() { pageNow = nil })
+	msgs := 2
+	pageNow = func() []engine.WebNode { return chatPage(msgs) }
+	c, out := pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "[e7] Type a message (textarea, empty) [e8] Send (button)") {
+		t.Fatalf("first read:\n%s", out.String())
+	}
+	msgs = 5
+	c, out = pageCtx()
+	if err := runTabRead(c, []string{"--id=chrome:1:2"}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "[e7] Type a message (textarea, empty) [e8] Send (button)") {
+		t.Fatalf("second read renumbered the input:\n%s", out.String())
+	}
+	// New elements get numbers never used on this page.
+	if strings.Contains(out.String(), "[e1] ") || !strings.Contains(out.String(), "[e9] Reply (link)") {
+		t.Fatalf("new refs:\n%s", out.String())
+	}
+	// A ref from the first read still resolves after the second.
+	var acted int
+	webAct = func(_ engine.Window, _, _, index, _ int, _, _ string) error { acted = index; return nil }
+	if err := runTabClick(c, []string{"--id=chrome:1:2", "--element=e8"}); err != nil || acted != 17 {
+		t.Fatalf("old ref after re-read: %v acted %d", err, acted)
 	}
 }
 

@@ -302,6 +302,20 @@ func (a *Adapter) WebAct(w core.Window, maxNodes, maxDepth, index, action int, r
 	return errors.New("the element has no Invoke pattern")
 }
 
+// FrontmostPID is the process that owns the foreground window.
+func (a *Adapter) FrontmostPID() (int, error) {
+	h, _, _ := procGetForegroundWnd.Call()
+	if h == 0 {
+		return 0, errors.New("no foreground window")
+	}
+	var pid uint32
+	procGetWindowThreadPID.Call(h, uintptr(unsafe.Pointer(&pid)))
+	if pid == 0 {
+		return 0, errors.New("the foreground window has no process")
+	}
+	return int(pid), nil
+}
+
 type winTarget struct {
 	reqs chan chan bool
 	done chan struct{}

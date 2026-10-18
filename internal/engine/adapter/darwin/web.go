@@ -298,6 +298,22 @@ static int wctl_web_is_focused(int pid, void* el) {
     return same;
 }
 
+// wctl_front_pid: the pid of the app that has keyboard focus, or -1.
+static int wctl_front_pid(void) {
+    AXUIElementRef sys = AXUIElementCreateSystemWide();
+    if (!sys) return -1;
+    AXUIElementSetMessagingTimeout(sys, 1.0);
+    CFTypeRef app = NULL;
+    int pid = -1;
+    if (AXUIElementCopyAttributeValue(sys, kAXFocusedApplicationAttribute, &app) == kAXErrorSuccess && app) {
+        pid_t p = 0;
+        if (AXUIElementGetPid((AXUIElementRef)app, &p) == kAXErrorSuccess) pid = (int)p;
+        CFRelease(app);
+    }
+    CFRelease(sys);
+    return pid;
+}
+
 static void wctl_web_release(void* el) { if (el) CFRelease((CFTypeRef)el); }
 
 static void wctl_web_enhance_off(int pid) {
@@ -444,6 +460,14 @@ func (a *Adapter) WebPrepare(w core.Window) (func(), error) {
 		return restore, fmt.Errorf("%w: window %s of %s is not in the accessibility tree", core.ErrNoMatch, w.ID, w.App)
 	}
 	return restore, errNoWebArea(w)
+}
+
+// FrontmostPID is the process of the app with keyboard focus.
+func (a *Adapter) FrontmostPID() (int, error) {
+	if pid := int(C.wctl_front_pid()); pid > 0 {
+		return pid, nil
+	}
+	return 0, errors.New("no app has keyboard focus (accessibility could not say)")
 }
 
 type darwinTarget struct {

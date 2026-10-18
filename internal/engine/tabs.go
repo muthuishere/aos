@@ -52,6 +52,16 @@ func WebPrepare(w Window) (func(), error) {
 	return r.WebPrepare(w)
 }
 
+// FrontmostPID is the process of the app with keyboard focus (the one
+// typed keys go to).
+func FrontmostPID() (int, error) {
+	f, ok := defaultAdapter.(interface{ FrontmostPID() (int, error) })
+	if !ok {
+		return 0, errors.New("this platform cannot tell the frontmost app")
+	}
+	return f.FrontmostPID()
+}
+
 // WebTarget is a focused web element held for identity checks.
 type WebTarget = core.WebTarget
 
