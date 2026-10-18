@@ -8,7 +8,33 @@ sidebar:
 
 <p class="cmd-lead">Browser and terminal tabs: list, focus, open, send, close</p>
 
-5 commands. Run `aos tab --help` for the same list from the binary, or [see every group](../commands/).
+8 commands. Run `aos tab --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos tab click
+
+<p class="cmd-lead">Press a button or link in a browser tab's page, without moving the mouse</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | Required |
+| `--element` | `<ref>` | One of these is required |
+| `--find` | `<label>` | One of these is required |
+| `--role` | `button`, `link`, `checkbox`, `radio`, `...` | Optional |
+| `--exact` |  | Optional |
+| `--nth` | `<n>` | Optional |
+| `--allow-focus` |  | Optional |
+
+```sh
+aos tab click --id=chrome:1658108662:1658109078 --element=e8
+aos tab click --id=chrome:1658108662:1658109078 --find=Send --role=button
+# exit 3 when nothing matches or the page changed, 4 when several elements match
+```
 
 ### aos tab close
 
@@ -113,6 +139,28 @@ aos tab open https://example.com --app=Safari --new-window
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
 ```
 
+### aos tab read
+
+<p class="cmd-lead">Read a browser tab's page as markdown, with refs for its buttons, links and fields</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab read --id=<tab id> [--md | --json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | Required |
+| `--md` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos tab read --id=chrome:1658108662:1658109078
+aos tab read --id=safari:22718:2 --json
+# [e7] Message (textarea, empty)   [e8] Send (button)
+```
+
 ### aos tab send
 
 <p class="cmd-lead">Type text or press a key in a terminal tab without focusing it</p>
@@ -134,4 +182,32 @@ aos tab send --id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<subs
 aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --text="ls -la"
 aos tab send --id=ghostty:tab-group-8039faee0:tab-802a71200 --key=enter
 aos tab send --id=iterm:31:1 --key=ctrl+c
+```
+
+### aos tab type
+
+<p class="cmd-lead">Type into a field of a browser tab's page without taking focus</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--id` | `<tab id>` | Required |
+| `--element` | `<ref>` | One of these is required |
+| `--into` | `<label>` | One of these is required |
+| `--text` | `<text>` | Required |
+| `--enter` |  | Optional |
+| `--exact` |  | Optional |
+| `--nth` | `<n>` | Optional |
+| `--allow-newline` |  | Optional |
+| `--allow-focus` |  | Optional |
+
+```sh
+aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter
+aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"
+# exit 3 when no field matches, the page changed or focus moved; 4 when several fields match
 ```

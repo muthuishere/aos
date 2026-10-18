@@ -97,6 +97,10 @@ type watchEvent struct {
 	Path string `json:"path,omitempty"`
 	Size *int64 `json:"size,omitempty"`
 	Dir  bool   `json:"dir,omitempty"`
+
+	// tab
+	Tab   string   `json:"tab,omitempty"`
+	Added []string `json:"added,omitempty"`
 }
 
 // tracker reports transitions in a sequence of observations. The first sample

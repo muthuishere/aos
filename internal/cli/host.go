@@ -26,7 +26,7 @@ var hostTable = map[string]bool{
 	// Screen, input and the person sitting at it.
 	"window": true, "display": true, "mouse": true, "key": true, "find": true,
 	"draw": true, "subtitle": true, "capture": true, "tab": true,
-	"clipboard": true, "watch clipboard": true, "watch window": true,
+	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
 	"launch": true, "open": true, "webapp": true,
 	"remote": true, "audio": true, "permission": true, "font": true,
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are

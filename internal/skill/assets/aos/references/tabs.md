@@ -68,6 +68,52 @@ Paths and gets the URL as one argument after `--`; `wt.exe` gets argv with
 (`cmd /k <command>`). Close uses ctrl+w in browsers and Notepad,
 ctrl+shift+w in Windows Terminal, and refuses apps it does not know.
 
+## The page inside a browser tab: read, type, click, watch
+
+```bash
+aos tab read --id=ID                 # markdown; [e7] Message (textarea, empty)  [e8] Send (button)
+aos tab read --id=ID --json          # + elements: ref, role, label, value
+aos tab type --id=ID --element=e7 --text="hi" --enter
+aos tab type --id=ID --into=Message --text="hi"
+aos tab click --id=ID --element=e8
+aos tab click --id=ID --find=Send --role=button
+aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it appears, 3 on timeout
+```
+
+- Read first, then act by ref. A ref is an identity (role + label + HTML id
+  + the text before it + rounded bounds, remembered per tab and URL), not a
+  position. When several elements still fit, it exits 4 with the candidates, so new chat
+  messages above the box do not break it. Refs stay the same across reads (new
+  elements get new numbers). Exit 3 when the element is gone or there was no
+  read for this tab and URL. Read again.
+- `--into` / `--find` match label, placeholder, title or description (exact
+  first, then substring). Several matches: exit 4 with the candidates. Use
+  `--element`, `--exact` or `--nth`.
+- The frontmost app does not change. Click is an accessibility press. Type
+  focuses the field through accessibility and posts keys to the browser
+  process, so React or Lexical editors see real input.
+- Type checks itself. The focused element must be the field (else exit 3,
+  nothing typed). The same element (identity, not label) and the front window are re-checked every 16 characters and before Enter, and
+  on a change typing stops and reports how many characters went out. The tab
+  must still be selected with the same title and URL.
+- Type makes the tab's window the browser's key window. If the browser is in
+  front and the user is in another of its windows, it refuses unless you pass
+  `--allow-focus`.
+- A newline in `--text` is Return (it can send a chat message early). It is
+  refused unless you pass `--allow-newline`. Use `--enter` at the end.
+- Windows click with no Invoke pattern needs `--allow-focus` (it raises the
+  window and clicks with the mouse).
+- The tab is selected in its window if needed, without raising the window.
+- `watch tab` prints `{"event":"tab","tab":ID,"added":[...]}` for new lines
+  only. Text present at start is the baseline. Reordering, live clocks and
+  field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.
+  Interval is 1 s by default and at minimum. Navigating the tab reports the new
+  page as added text. If the tab closes, it exits 3.
+- Chromium: aos turns on `AXEnhancedUserInterface` only when the page is
+  missing, and turns it off again when the command ends.
+- macOS: Chrome family and Safari. Windows: Edge/Chrome through UI Automation
+  (type is not live-tested yet). Linux: not supported yet (exit 2).
+
 ## Accessibility close is best-effort
 
 It selects the tab, re-checks that the tab's window is frontmost right
@@ -77,8 +123,10 @@ between can still receive the key.
 
 ## Errors
 
-- Exit 3: no tab matched (`focus`, `close`, `send`). List again.
-- Exit 4: `close` / `send` matched several tabs; the message lists them. Use
+- Exit 3: no tab matched (`focus`, `close`, `send`). List again. For the
+  page commands: no element matched, or the page changed under a ref.
+- Exit 4: `close` / `send` matched several tabs, or `tab type` / `tab click`
+  matched several elements; the message lists them. Use
   `--id` or `--exact`. (`focus` takes the selected match, else the first.)
 - Stale ids: index ids (Safari, iTerm2, Terminal) shift when an earlier tab
   closes, and Ghostty reuses tab ids. `--expect-title=<substring>` on

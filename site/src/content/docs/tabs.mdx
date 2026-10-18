@@ -93,7 +93,7 @@ ghostty:tab-group-8039faee0:tab-802a73a00
 
 - `--window` takes an aos window id, the app's own id, or any tab id in that window. Without it the tab goes into the front window.
 - `--new-window` opens a window instead.
-- `--background` leaves the current tab selected and the app where it was.
+- `--background` leaves the current tab selected and the app where it was. Exception: with `--new-window`, Chrome-family browsers come to the front when the window is created, and scripting cannot prevent that.
 - In a terminal, `--command` runs once and the tab stays open with your normal shell after it.
 
 ## 4. Type into a terminal tab
@@ -127,6 +127,62 @@ If the flags match more than one tab, `close` (and `send`) refuse with exit 4 an
 $ aos tab close --id=safari:22718:2 --expect-title=Example
 closed safari:22718:2  Example Domains
 ```
+
+## Read and drive the page in a browser tab
+
+`tab read` prints the page of a browser tab as markdown, built from the accessibility tree (only the page, not the toolbar). Buttons, links and fields get a short ref:
+
+```console
+$ aos tab read --id=chrome:1658109971:1658109972
+# Tab Test Page
+Static intro text.
+Message
+[e6] Message (textarea, empty) [e7] Send (button) [e8] Docs link (link)
+- first item
+- sent: hello
+```
+
+`--json` gives the same markdown plus an `elements` array (`ref`, `role`, `label`, `value`). Act on an element by its ref, or by its label:
+
+```console
+$ aos tab type --id=chrome:1658109971:1658109972 --element=e6 --text="hi aos" --enter
+typed into e6  Message (textarea, empty)
+
+$ aos tab click --id=chrome:1658109971:1658109972 --find=Send --role=button
+clicked e7  Send (button)
+```
+
+- `--into` (type) and `--find` (click) match the label, placeholder, title or description: exact matches first, then substrings. `--exact` turns substrings off. When several elements match, the command refuses with exit 4 and lists them with their refs; pick one with `--element` or `--nth`.
+- A ref names an element, not a position. `tab read` remembers what each ref stood for: the role and label, the HTML id when the page set one, the nearest text before it (so each message's "Reply" button is its own), and its rounded position. `--element` finds that element on the page as it is now, so messages arriving above a chat box between the read and the type do not break the ref. aos never picks "the second Reply" by counting, because in a scrolling list where one item left and another arrived, counting lands on a neighbour. When the element is gone it exits 3. When several elements still fit, it exits 4 and lists them with their current refs. It does nothing in both cases. Refs also stay the same across reads. Once the textarea is `e6` on a page, it stays `e6`. New elements get numbers never used before on that page, and elements that disappear give up their ref. The memory is kept per tab and URL in the user cache folder. With no read yet, or after the tab moved to another URL, `--element` refuses (exit 3) until you run `tab read` again.
+- The frontmost app does not change. A click is an accessibility press, and the mouse does not move. Typing focuses the field through accessibility and posts key events to the browser's process, so pages that keep their own state (React, Lexical) see real key and input events.
+- Typing is checked as it goes. After focusing the field, aos reads back the browser's focused element and refuses (exit 3, nothing typed) unless it is that very element. Before every 16 characters and before Enter it checks again that the same element (not just one with the same label) has focus, and that you have not switched to another window of the browser. If the focus moved, it stops and reports how many characters were already sent. Right before typing, it also checks that the tab is still selected and still shows the same title and URL.
+- Typing makes the tab's window the browser's key window (inside the browser, without bringing the browser forward). aos first checks which app is in front. If it is not the browser, typing goes ahead. If the browser is the app in front and you are in another of its windows, or aos cannot tell which of its windows has focus, `tab type` refuses: your next keystroke would land in the tab's window. Pass `--allow-focus` to type anyway.
+- A newline in `--text` is a Return key, which can submit a chat box halfway through. It is refused unless you pass `--allow-newline`. Use `--enter` to press Return once at the end. In a `textarea`, Return adds a new line unless the page handles it.
+- On Windows, an element with no Invoke pattern can only be clicked with the mouse, which raises the window. `tab click` refuses unless you pass `--allow-focus`.
+- If the tab is not the selected tab of its window, aos selects it there without raising the window. Only the selected tab of a window has a page in the accessibility tree.
+- Chrome and other Chromium browsers show nothing below the toolbar until a client asks for it. When the page is missing, aos turns on `AXEnhancedUserInterface` for that browser process only, and turns it off again when the command ends (`watch tab`: when the watch ends, Ctrl-C included). While it is on, that browser's window animations can be slower.
+
+`watch tab` re-reads the page and prints the lines that were not there before. The text already on the page when the watch starts is the baseline:
+
+```console
+$ aos watch tab --id=chrome:1658109971:1658109972 --match=sent --timeout=1m
+{"event":"tab","at":"2026-10-18T10:36:23+05:30","seq":1,"tab":"chrome:1658109971:1658109972","added":["sent:","tick line 23 at 10:36:03"]}
+```
+
+- With `--match`, it exits 0 as soon as matching text appears, or exits 3 on `--timeout`. Use this to wait for a reply or a build result.
+- New text is counted, not compared as a set. A page whose lines change order adds nothing. A second "ok" is news. Digits are ignored when lines are compared, so a clock or "3 minutes ago" that ticks over is not reported.
+- Field contents are left out, so typing into a box is not reported as new text.
+- If someone switches the window to another tab, the watch waits until the tab is selected again. It does not switch back.
+- A browser slows timers in hidden windows, so a page in a covered window can change only about once a minute.
+- The interval is 1 s by default and cannot be shorter: every read walks the whole page.
+- Navigating the tab to another page is not special. The new page's lines come out as added text.
+- If the tab closes, the watch exits 3.
+
+| | macOS | Windows | Linux |
+|---|---|---|---|
+| `tab read`, `watch tab` | Chrome family, Safari (accessibility) | Edge, Chrome (UI Automation) | not yet (exit 2) |
+| `tab click` | AXPress | UIA Invoke, else a click at the element's centre | not yet |
+| `tab type` | AXFocused + keys posted to the browser process | UIA SetFocus + keys posted to the window (not tested live yet) | not yet |
 
 ## What each app supports
 
