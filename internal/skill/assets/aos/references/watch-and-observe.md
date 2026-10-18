@@ -10,8 +10,12 @@ aos watch clipboard --max=1 --content     # wait for the next copy; --content in
 aos watch window --max=1                  # wait until the focused window changes
 aos watch file ./notes.md --max=1         # wait for one change to a file
 aos watch file ./src --recursive --interval=1s
+aos watch tab --id=ID --match="Done" --timeout=5m   # wait for text to appear in a browser tab
 ```
 
+- `watch tab` prints only the new lines of the page (`"added":[...]`). With
+  `--match` it exits 0 when matching text appears and 3 on `--timeout`. Text
+  already on the page at start does not count. See `references/tabs.md`.
 - `--interval` is the poll period (default `500ms`).
 - Without `--max` they block forever: run them in the background and read the
   stream, or do not run them at all. They are left out of MCP for that reason.

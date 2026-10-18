@@ -176,11 +176,14 @@ type scriptFamily struct {
 	apps    map[string]string // app name -> id slug
 	listJS  string
 	focusJS string // argv: app, window, tab, pane
-	openJS  string // argv: app, url, window, new("1"), background("1"), cwd, command
-	sendJS  string // argv: app, window, tab, pane, text, key, modifiers
-	closeJS string // argv: app, window, tab
-	noSend  string // why send is refused, when send is ""
-	noOpen  string // extra open restriction, checked by the family itself
+	// selectJS selects a tab in its window without raising the window or
+	// activating the app (argv: app, window, tab), for the page commands.
+	selectJS string
+	openJS   string // argv: app, url, window, new("1"), background("1"), cwd, command
+	sendJS   string // argv: app, window, tab, pane, text, key, modifiers
+	closeJS  string // argv: app, window, tab
+	noSend   string // why send is refused, when send is ""
+	noOpen   string // extra open restriction, checked by the family itself
 	// plainCommand passes --cwd/--command as a plain shell line (the app
 	// types it into a fresh shell) instead of the tab's start program.
 	plainCommand bool
@@ -305,6 +308,19 @@ func (f *scriptFamily) focus(ctx context.Context, t Tab) error {
 		// LaunchServices always brings the app forward.
 		_ = exec.Command("/usr/bin/open", "-a", t.App).Run()
 	}
+	return err
+}
+
+// selectQuiet selects t in its window, leaving the window where it is.
+func (f *scriptFamily) selectQuiet(ctx context.Context, t Tab) error {
+	if f.selectJS == "" {
+		return errTabUnsupported{fmt.Sprintf("aos cannot select %s tabs without raising the window", t.App)}
+	}
+	r, err := refOf(t)
+	if err != nil {
+		return err
+	}
+	_, err = f.run(ctx, f.selectJS, f.scripted(t.App), r.window, r.tab)
 	return err
 }
 
@@ -439,6 +455,10 @@ func chromeFamily() *scriptFamily {
   if (w.minimized()) w.minimized = false;
   w.index = 1; A.activate(); return "ok";
 }`,
+		selectJS: `function run(argv) {
+  var A = app(argv[0]), w = findWin(A, argv[1]), r = findTab(w, argv[2], true);
+  w.activeTabIndex = r[1]; return "ok";
+}`,
 		openJS: `function run(argv) {
   var A = app(argv[0]), url = argv[1], w, t, bg = argv[4] == "1";
   if (argv[3] == "1" || A.windows.length == 0) {
@@ -485,6 +505,10 @@ func safariFamily() *scriptFamily {
   w.currentTab = r[0];
   if (w.miniaturized()) w.miniaturized = false;
   w.index = 1; A.activate(); return "ok";
+}`,
+		selectJS: `function run(argv) {
+  var A = app(argv[0]), w = findWin(A, argv[1]), r = findTab(w, argv[2], false);
+  w.currentTab = r[0]; return "ok";
 }`,
 		openJS: `function run(argv) {
   var A = app(argv[0]), url = argv[1], w, bg = argv[4] == "1";

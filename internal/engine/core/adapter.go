@@ -13,6 +13,10 @@ var ErrNotImplemented = errors.New("operation not implemented on this platform")
 
 var ErrNoMatch = errors.New("no window matched the filter")
 
+// ErrWebStale is returned by WebAct when the element at an index is no
+// longer the one the caller read: the page changed.
+var ErrWebStale = errors.New("the page changed since it was read")
+
 // ErrAccessibilityDenied is returned by the macOS adapter when a Move
 // or Focus call is attempted while the running process is not trusted
 // by the Accessibility (AX) subsystem. The message instructs the user
@@ -175,6 +179,17 @@ type TargetedInput interface {
 // window has no readable text element.
 type FocusedTextReader interface {
 	FocusedText(w Window) (text string, ok bool, err error)
+}
+
+// WebReader reads and acts on the web content of a browser window
+// (macOS AXWebArea). WebTree walks the selected tab's web area, bounded by
+// maxNodes and maxDepth, and returns the window's id (resolved through
+// accessibility when w came without one: a window on another Space). WebAct walks again and performs action on the node
+// at preorder index, only if that node still has role and label (WebLabel);
+// otherwise it does nothing and returns ErrWebStale.
+type WebReader interface {
+	WebTree(w Window, maxNodes, maxDepth int) ([]WebNode, string, error)
+	WebAct(w Window, maxNodes, maxDepth, index, action int, role, label string) error
 }
 
 // ElementPresser activates the accessibility element of window w at the

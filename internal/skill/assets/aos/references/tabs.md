@@ -68,6 +68,34 @@ Paths and gets the URL as one argument after `--`; `wt.exe` gets argv with
 (`cmd /k <command>`). Close uses ctrl+w in browsers and Notepad,
 ctrl+shift+w in Windows Terminal, and refuses apps it does not know.
 
+## The page inside a browser tab: read, type, click, watch
+
+```bash
+aos tab read --id=ID                 # markdown; [e7] Message (textarea, empty)  [e8] Send (button)
+aos tab read --id=ID --json          # + elements: ref, role, label, value
+aos tab type --id=ID --element=e7 --text="hi" --enter
+aos tab type --id=ID --into=Message --text="hi"
+aos tab click --id=ID --element=e8
+aos tab click --id=ID --find=Send --role=button
+aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it appears, 3 on timeout
+```
+
+- Read first, then act by ref. A ref is checked on use: if the element there
+  no longer has the role and label `tab read` showed, the command refuses
+  with exit 3 ("page changed"). Read again.
+- `--into` / `--find` match label, placeholder, title or description (exact
+  first, then substring). Several matches: exit 4 with the candidates. Use
+  `--element`, `--exact` or `--nth`.
+- No focus is taken. Click is an accessibility press. Type sets accessibility
+  focus on the field and posts keys to the browser process, so React or
+  Lexical editors see real input. The frontmost app does not change.
+- The tab is selected in its window if needed, without raising the window.
+- `watch tab` prints `{"event":"tab","tab":ID,"added":[...]}` for new lines
+  only. Text present at start is the baseline. Reordering, live clocks and
+  field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.
+- macOS: Chrome family and Safari. Windows: Edge/Chrome through UI Automation
+  (type is not live-tested yet). Linux: not supported yet (exit 2).
+
 ## Accessibility close is best-effort
 
 It selects the tab, re-checks that the tab's window is frontmost right
@@ -77,8 +105,10 @@ between can still receive the key.
 
 ## Errors
 
-- Exit 3: no tab matched (`focus`, `close`, `send`). List again.
-- Exit 4: `close` / `send` matched several tabs; the message lists them. Use
+- Exit 3: no tab matched (`focus`, `close`, `send`). List again. For the
+  page commands: no element matched, or the page changed under a ref.
+- Exit 4: `close` / `send` matched several tabs, or `tab type` / `tab click`
+  matched several elements; the message lists them. Use
   `--id` or `--exact`. (`focus` takes the selected match, else the first.)
 - Stale ids: index ids (Safari, iTerm2, Terminal) shift when an earlier tab
   closes, and Ghostty reuses tab ids. `--expect-title=<substring>` on

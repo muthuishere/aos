@@ -180,6 +180,19 @@ func (a *axTabs) focus(_ context.Context, t Tab) error {
 	return engine.ClickAt(t.center.X, t.center.Y)
 }
 
+// selectQuiet selects the tab with an accessibility press (UIA
+// SelectionItem/Invoke), which neither raises the window nor moves the mouse.
+func (a *axTabs) selectQuiet(_ context.Context, t Tab) error {
+	if t.center == nil {
+		return fmt.Errorf("%s: no position for tab %s", t.App, t.ID)
+	}
+	w, err := a.windowOf(t)
+	if err != nil {
+		return err
+	}
+	return engine.PressElement(w, t.center.X, t.center.Y)
+}
+
 // close selects the tab, then sends the app's close-tab shortcut. It is
 // best-effort, because a key press goes to whatever is frontmost:
 //   - apps whose shortcut aos does not know are refused, not guessed (in a

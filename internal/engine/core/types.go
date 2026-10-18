@@ -75,3 +75,39 @@ type TextItem struct {
 	Source string
 	Words  []TextItem
 }
+
+// WebNode is one accessibility element inside a browser tab's web area
+// (AXWebArea on macOS), in the order a depth-first walk meets it. Depth is
+// relative to the web area: its children are depth 0. Strings are empty
+// when the element does not have that attribute.
+type WebNode struct {
+	Depth       int
+	Role        string // raw AX role: AXHeading, AXLink, AXButton, AXTextArea, ...
+	Subrole     string
+	Title       string
+	Desc        string
+	Value       string // string values only
+	Placeholder string
+	Level       int // heading level, 0 when unknown
+	Focused     bool
+	Bounds      Rect
+}
+
+// Web-area actions for WebActor.
+const (
+	WebPress = 1 // AXPress
+	WebFocus = 2 // AXFocused = true, falling back to AXPress
+)
+
+// WebLabel is the label WebAct fingerprints a node by: the first non-empty
+// of title, description and placeholder. Never the value, which typing
+// changes. Adapters must compute it the same way.
+func (n WebNode) WebLabel() string {
+	switch {
+	case n.Title != "":
+		return n.Title
+	case n.Desc != "":
+		return n.Desc
+	}
+	return n.Placeholder
+}
