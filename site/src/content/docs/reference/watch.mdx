@@ -65,12 +65,15 @@ aos watch file ./src --recursive --interval=1s
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 ```
 
 | flag | values | meaning |
 |---|---|---|
-| `--id` | `<tab id>` | Required |
+| `--id` | `<tab id>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--app` | `<name>` | Optional |
 | `--match` | `<text>` | Optional |
 | `--exact` |  | Optional |
 | `--interval` | `<1s>` | Optional. default 1s |
@@ -79,7 +82,7 @@ aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--time
 
 ```sh
 aos watch tab --id=chrome:1658108662:1658109078
-aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m
+aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
 # with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
 ```
 
