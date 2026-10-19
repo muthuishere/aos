@@ -73,7 +73,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | place a window | `window move Chrome --zone=1B` · `--at=x,y,w,h` · `--monitor=2` · `window resize Chrome --w=900 --h=500` |
 | save / restore a layout | `window save P` captures every window · `window arrange P` (or `-` for stdin JSON) puts them back |
 | tabs (browsers, terminals) | `tab list --json` (id, title, url, cwd) · `tab focus --url=github.com/x` · `tab open URL --app=Chrome` · `tab open --app=Ghostty --cwd=D --command=C` · `tab send --id=ID --text=T` · `tab close --id=ID` (exit 3 = no such tab) |
-| the page in a browser tab | `tab read --id=ID` (markdown, refs like `[e8] Send (button)`) · `tab type --id=ID --element=e7 --text=T --enter` · `tab click --id=ID --find=Send` · `watch tab --id=ID --match=T --timeout=5m` (no focus taken) |
+| the page in a browser tab | `tab read --id=ID` (markdown, refs like `[e8] Send (button)`) · `tab type --id=ID --element=e7 --text=T --enter` · `tab click --id=ID --find=Send` · `watch tab --id=ID --match=T --timeout=5m` (no focus taken; `--url=web.whatsapp.com` or `--title=T` instead of `--id`) |
 | focus / wait | `window focus Chrome` · `launch Chrome --wait` · `window wait Chrome --timeout=5000` |
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |

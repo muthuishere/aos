@@ -33,10 +33,10 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "read",
 				Summary: "Read a browser tab's page as markdown, with refs for its buttons, links and fields",
-				Args:    "--id=<tab id> [--md | --json]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]",
 				Examples: []string{
 					"aos tab read --id=chrome:1658108662:1658109078",
-					"aos tab read --id=safari:22718:2 --json",
+					"aos tab read --url=web.whatsapp.com --json",
 					"# [e7] Message (textarea, empty)   [e8] Send (button)",
 				},
 				Platforms: platforms,
@@ -45,10 +45,10 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "type",
 				Summary: "Type into a field of a browser tab's page without taking focus",
-				Args:    "--id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]",
 				Examples: []string{
 					`aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter`,
-					`aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"`,
+					`aos tab type --url=web.whatsapp.com --into="Type a message" --text="hello" --enter`,
 					"# exit 3 when no field matches, the page changed or focus moved; 4 when several fields match",
 				},
 				Platforms: platforms,
@@ -57,10 +57,10 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "click",
 				Summary: "Press a button or link in a browser tab's page, without moving the mouse",
-				Args:    "--id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]",
 				Examples: []string{
 					"aos tab click --id=chrome:1658108662:1658109078 --element=e8",
-					"aos tab click --id=chrome:1658108662:1658109078 --find=Send --role=button",
+					`aos tab click --title="Telegram" --find=Send --role=button`,
 					"# exit 3 when nothing matches or the page changed, 4 when several elements match",
 				},
 				Platforms: platforms,
@@ -70,10 +70,10 @@ func init() {
 				Group: "watch", Name: "tab",
 				Summary:  "Print a JSON line with the new text whenever a browser tab's page changes",
 				Blocking: true,
-				Args:     "--id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
+				Args:     "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
 				Examples: []string{
 					"aos watch tab --id=chrome:1658108662:1658109078",
-					`aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m`,
+					`aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m`,
 					"# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes",
 				},
 				Platforms: platforms,
@@ -110,13 +110,26 @@ type quietSelector interface {
 	selectQuiet(ctx context.Context, t Tab) error
 }
 
-// resolvePageTab finds a browser tab by id, selects it in its window if it
-// is not already the selected one, and returns its window.
-func resolvePageTab(id string) (Tab, engine.Window, error) {
-	if id == "" {
-		return Tab{}, engine.Window{}, fmt.Errorf("--id is required: a tab id from `aos tab list --kind=browser`")
+// pageFilter is the tab a page command names: --id, or a --url / --title
+// substring (narrowed by --app). --exact belongs to the element or text
+// match, so the tab match is always a substring; several matches exit 4.
+func pageFilter(set *argSet) tabFilter {
+	return tabFilter{
+		App:   set.String("app", ""),
+		Kind:  "browser",
+		Title: set.String("title", ""),
+		URL:   set.String("url", ""),
+		ID:    set.String("id", ""),
 	}
-	t, err := pickTab(tabFilter{ID: id}, true)
+}
+
+// resolvePageTab finds one browser tab, selects it in its window if it
+// is not already the selected one, and returns its window.
+func resolvePageTab(f tabFilter) (Tab, engine.Window, error) {
+	if f.ID == "" && f.URL == "" && f.Title == "" {
+		return Tab{}, engine.Window{}, fmt.Errorf("name a tab: --id (from `aos tab list --kind=browser`), --url or --title")
+	}
+	t, err := pickTab(f, true)
 	if err != nil {
 		return Tab{}, engine.Window{}, err
 	}
@@ -174,17 +187,17 @@ type pageRead struct {
 }
 
 func runTabRead(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id")
+	set, err := parseArgs(args, "id", "url", "title", "app")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "md", "json"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "md", "json"); err != nil {
 		return err
 	}
 	if set.Has("md") && set.Has("json") {
 		return fmt.Errorf("--md and --json are exclusive")
 	}
-	t, w, err := pageTab(set.String("id", ""))
+	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
 		return err
 	}
@@ -382,11 +395,11 @@ func stillFocused(w engine.Window, target engine.WebTarget, e pageElement, allow
 }
 
 func runTabType(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "element", "into", "text", "nth")
+	set, err := parseArgs(args, "id", "url", "title", "app", "element", "into", "text", "nth")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "element", "into", "text", "nth", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "into")
@@ -401,7 +414,7 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if strings.ContainsAny(text, "\r\n") && !set.Has("allow-newline") {
 		return fmt.Errorf("--text contains a newline, which is typed as Return (it can submit the form); pass --allow-newline if you mean it, or use --enter at the end")
 	}
-	t, w, err := pageTab(set.String("id", ""))
+	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
 		return err
 	}
@@ -457,11 +470,11 @@ func runTabType(c *cli.Ctx, args []string) error {
 }
 
 func runTabClick(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "element", "find", "role", "nth")
+	set, err := parseArgs(args, "id", "url", "title", "app", "element", "find", "role", "nth")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "element", "find", "role", "nth", "exact", "allow-focus"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "find", "role", "nth", "exact", "allow-focus"); err != nil {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "find")
@@ -472,7 +485,7 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	if role != "" && !pageActionable[role] {
 		return fmt.Errorf("--role must be one of button, link, checkbox, radio, select, textbox, textarea, combobox; got %q", role)
 	}
-	t, w, err := pageTab(set.String("id", ""))
+	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
 		return err
 	}
@@ -520,11 +533,11 @@ func runTabClick(c *cli.Ctx, args []string) error {
 const minTabWatchInterval = time.Second
 
 func runWatchTab(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "match", "interval", "timeout", "max")
+	set, err := parseArgs(args, "id", "url", "title", "app", "match", "interval", "timeout", "max")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "match", "exact", "interval", "timeout", "max"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "match", "exact", "interval", "timeout", "max"); err != nil {
 		return err
 	}
 	interval, max, err := watchOptions(set)
@@ -543,11 +556,11 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 			return fmt.Errorf("--timeout must be a duration like 30s or 5m, got %q", v)
 		}
 	}
-	id := set.String("id", "")
-	t, w, err := pageTab(id)
+	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
 		return err
 	}
+	id := t.ID
 	// AXEnhancedUserInterface stays on for the watch and is restored when it
 	// ends (Ctrl-C included: the loop returns rather than being killed).
 	restore, err := webPrepare(w)

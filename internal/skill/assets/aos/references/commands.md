@@ -1285,9 +1285,9 @@ Read a browser tab's page as markdown, with refs for its buttons, links and fiel
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab read --id=<tab id> [--md | --json]
+aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]
 aos tab read --id=chrome:1658108662:1658109078
-aos tab read --id=safari:22718:2 --json
+aos tab read --url=web.whatsapp.com --json
 # [e7] Message (textarea, empty)   [e8] Send (button)
 ```
 
@@ -1298,9 +1298,9 @@ Type into a field of a browser tab's page without taking focus
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
+aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
 aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter
-aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"
+aos tab type --url=web.whatsapp.com --into="Type a message" --text="hello" --enter
 # exit 3 when no field matches, the page changed or focus moved; 4 when several fields match
 ```
 
@@ -1311,9 +1311,9 @@ Press a button or link in a browser tab's page, without moving the mouse
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
+aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
 aos tab click --id=chrome:1658108662:1658109078 --element=e8
-aos tab click --id=chrome:1658108662:1658109078 --find=Send --role=button
+aos tab click --title="Telegram" --find=Send --role=button
 # exit 3 when nothing matches or the page changed, 4 when several elements match
 ```
 
@@ -1342,9 +1342,9 @@ Print a JSON line with the new text whenever a browser tab's page changes
 *display · blocking · platforms: darwin, windows*
 
 ```bash
-aos watch tab --id=<tab id> [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 aos watch tab --id=chrome:1658108662:1658109078
-aos watch tab --id=chrome:1658108662:1658109078 --match="Build finished" --timeout=5m
+aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
 # with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
 ```
 
