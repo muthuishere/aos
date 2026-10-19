@@ -17,12 +17,15 @@ sidebar:
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
+aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
 ```
 
 | flag | values | meaning |
 |---|---|---|
-| `--id` | `<tab id>` | Required |
+| `--id` | `<tab id>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--app` | `<name>` | Optional |
 | `--element` | `<ref>` | One of these is required |
 | `--find` | `<label>` | One of these is required |
 | `--role` | `button`, `link`, `checkbox`, `radio`, `...` | Optional |
@@ -32,7 +35,7 @@ aos tab click --id=<tab id> (--element=<ref> | --find=<label>) [--role=button|li
 
 ```sh
 aos tab click --id=chrome:1658108662:1658109078 --element=e8
-aos tab click --id=chrome:1658108662:1658109078 --find=Send --role=button
+aos tab click --title="Telegram" --find=Send --role=button
 # exit 3 when nothing matches or the page changed, 4 when several elements match
 ```
 
@@ -146,18 +149,21 @@ aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab read --id=<tab id> [--md | --json]
+aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
-| `--id` | `<tab id>` | Required |
+| `--id` | `<tab id>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--app` | `<name>` | Optional |
 | `--md` |  | Optional |
 | `--json` |  | Optional |
 
 ```sh
 aos tab read --id=chrome:1658108662:1658109078
-aos tab read --id=safari:22718:2 --json
+aos tab read --url=web.whatsapp.com --json
 # [e7] Message (textarea, empty)   [e8] Send (button)
 ```
 
@@ -191,12 +197,15 @@ aos tab send --id=iterm:31:1 --key=ctrl+c
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
+aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
 ```
 
 | flag | values | meaning |
 |---|---|---|
-| `--id` | `<tab id>` | Required |
+| `--id` | `<tab id>` | One of these is required |
+| `--url` | `<substring>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--app` | `<name>` | Optional |
 | `--element` | `<ref>` | One of these is required |
 | `--into` | `<label>` | One of these is required |
 | `--text` | `<text>` | Required |
@@ -208,6 +217,6 @@ aos tab type --id=<tab id> (--element=<ref> | --into=<label>) --text=<text> [--e
 
 ```sh
 aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter
-aos tab type --id=chrome:1658108662:1658109078 --into=Message --text="hello"
+aos tab type --url=web.whatsapp.com --into="Type a message" --text="hello" --enter
 # exit 3 when no field matches, the page changed or focus moved; 4 when several fields match
 ```

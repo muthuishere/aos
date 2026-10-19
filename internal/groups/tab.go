@@ -580,7 +580,7 @@ func pickTab(f tabFilter, strict bool) (Tab, error) {
 		return Tab{}, &cli.ExitError{Code: exitNotFound, Message: msg}
 	}
 	if strict && len(tabs) > 1 {
-		msg := fmt.Sprintf("%d tabs match %s; name one with --id (or narrow with --exact / --app):", len(tabs), describeTabFilter(f))
+		msg := fmt.Sprintf("%d tabs match %s; name one with --id (or narrow with a longer --url / --title, --exact or --app):", len(tabs), describeTabFilter(f))
 		for _, t := range tabs {
 			msg += fmt.Sprintf("\n  %s  %s  %s", t.ID, t.App, t.Title)
 		}

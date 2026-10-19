@@ -73,11 +73,14 @@ ctrl+shift+w in Windows Terminal, and refuses apps it does not know.
 ```bash
 aos tab read --id=ID                 # markdown; [e7] Message (textarea, empty)  [e8] Send (button)
 aos tab read --id=ID --json          # + elements: ref, role, label, value
+# Every page command takes --id, --url=<substring> or --title=<substring> (narrow with --app).
+# Several matching tabs: exit 4 with the candidates — nothing is typed into a guessed tab.
 aos tab type --id=ID --element=e7 --text="hi" --enter
 aos tab type --id=ID --into=Message --text="hi"
 aos tab click --id=ID --element=e8
 aos tab click --id=ID --find=Send --role=button
 aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it appears, 3 on timeout
+aos watch tab --url=web.whatsapp.com --match="hi"              # name the tab by --url / --title (+ --app) instead of --id
 ```
 
 - Read first, then act by ref. A ref is an identity (role + label + HTML id

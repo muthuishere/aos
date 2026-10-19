@@ -162,6 +162,13 @@ clicked e7  Send (button)
 - If the tab is not the selected tab of its window, aos selects it there without raising the window. Only the selected tab of a window has a page in the accessibility tree.
 - Chrome and other Chromium browsers show nothing below the toolbar until a client asks for it. When the page is missing, aos turns on `AXEnhancedUserInterface` for that browser process only, and turns it off again when the command ends (`watch tab`: when the watch ends, Ctrl-C included). While it is on, that browser's window animations can be slower.
 
+Every page command (`tab read`, `tab type`, `tab click`, `watch tab`) names its tab with `--id`, or with `--url=` / `--title=` (a substring, narrowed with `--app`). When several tabs match, it exits 4 and lists them with their ids. It never types into a guessed tab:
+
+```
+$ aos watch tab --url=web.whatsapp.com --match="hello"
+$ aos tab type --url=web.whatsapp.com --into="Type a message" --text="on my way" --enter
+```
+
 `watch tab` re-reads the page and prints the lines that were not there before. The text already on the page when the watch starts is the baseline:
 
 ```console

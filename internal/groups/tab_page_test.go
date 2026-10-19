@@ -143,8 +143,10 @@ func withFakePage(t *testing.T, nodes []engine.WebNode, act func(index, action i
 		webPrepare, webFocus, frontWindow, tabNow, refCacheDir = oldPrep, oldFocus, oldFront, oldNow, oldCache
 	})
 	tab := Tab{ID: "chrome:1:2", Kind: "browser", Active: true, Title: "Chat", URL: "https://chat.example/"}
-	pageTab = func(id string) (Tab, engine.Window, error) {
-		tab.ID = id
+	pageTab = func(f tabFilter) (Tab, engine.Window, error) {
+		if f.ID != "" {
+			tab.ID = f.ID
+		}
 		return tab, engine.Window{ID: "1", App: "Google Chrome", PID: 9}, nil
 	}
 	webPrepare = func(engine.Window) (func(), error) { return func() {}, nil }
@@ -701,5 +703,19 @@ func TestResolveRetriesOnceWhenPageShiftsDuringAct(t *testing.T) {
 	c, _ := pageCtx()
 	if err := runTabClick(c, []string{"--id=chrome:1:2", "--find=Send"}); err != nil || calls != 2 {
 		t.Fatalf("retry: %v calls %d", err, calls)
+	}
+}
+
+func TestPageFilterNamesTabByURLOrTitle(t *testing.T) {
+	set, err := parseArgs([]string{"--url=web.whatsapp.com", "--app=Chrome", "--exact"}, "id", "url", "title", "app")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := pageFilter(set)
+	if f.URL != "web.whatsapp.com" || f.App != "Chrome" || f.Kind != "browser" || f.Exact {
+		t.Fatalf("filter = %+v", f)
+	}
+	if _, _, err := resolvePageTab(tabFilter{Kind: "browser"}); err == nil || !strings.Contains(err.Error(), "--url") {
+		t.Fatalf("no selector: err = %v", err)
 	}
 }
