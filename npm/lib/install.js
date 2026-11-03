@@ -35,7 +35,7 @@ function install() {
   });
   // 0.0.0 is the unpublished in-repo version: take the latest release.
   if (version && version !== '0.0.0' && !env.AOS_VERSION) env.AOS_VERSION = 'v' + version;
-  // npm's proxy config reaches scripts as npm_config_*; curl and PowerShell read
+  // npm's proxy config reaches scripts as npm_config_*; curl reads
   // the conventional variables.
   const proxy = env.npm_config_https_proxy || env.npm_config_proxy;
   if (proxy) {

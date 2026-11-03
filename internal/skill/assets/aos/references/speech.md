@@ -3,9 +3,9 @@
 Free, built-in voices only (macOS and Windows):
 
 - **macOS** — the system `say` (all installed voices, e.g. Samantha).
-- **Windows** — WinRT `Windows.Media.SpeechSynthesis` first (it has the
-  Natural / OneCore voices when installed), System.Speech (SAPI 5) as the
-  fallback. Native Windows only; not under WSL.
+- **Windows** — SAPI 5 over COM, called from Go (no PowerShell): the OneCore
+  voices first (e.g. Microsoft David, Zira, Mark), then the desktop SAPI ones
+  ("... Desktop"). Native Windows only; not under WSL.
 
 Every line is rendered to an audio file, then played, so the same audio can
 be dropped into a recording.
@@ -16,7 +16,7 @@ be dropped into a recording.
 aos say "build finished"                              # speak, return when done
 aos say "Hello" --voice=Samantha --rate=190           # voice name (or part), words per minute
 aos say "Welcome" --out=~/Desktop/welcome.mp3         # file only: .mp3 .wav .aiff .m4a (mp3/m4a via ffmpeg)
-aos say voices [--json]                               # Name, Language, Gender, Engine (say|winrt|sapi)
+aos say voices [--json]                               # Name, Language, Gender, Engine (say|onecore|sapi)
 aos say "Now I open Notepad" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
 aos say "..." --then-wait=false -- aos launch calc    # return when the command ends; speech keeps going
 aos say "step one" --async                            # return at once, keep talking

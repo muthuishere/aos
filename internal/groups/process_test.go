@@ -55,29 +55,6 @@ func TestParsePsOutputSkipsJunk(t *testing.T) {
 	}
 }
 
-func TestParseWindowsProcessOutput(t *testing.T) {
-	sample := "1234\tchrome\t12.5\t1048576\r\n" +
-		"5678\tnotepad\t\t2097152\r\n" +
-		"bad\tline\t1\t1\n" +
-		"91\tC:\\Windows\\System32\\svchost.exe\t0.5\t524288\n"
-
-	got := parseWindowsProcessOutput(sample)
-	if len(got) != 3 {
-		t.Fatalf("parsed %d rows, want 3: %+v", len(got), got)
-	}
-	if got[0].PID != 1234 || got[0].Name != "chrome" || got[0].CPU != 12.5 || got[0].MemoryMB != 1 {
-		t.Errorf("row 0 = %+v", got[0])
-	}
-	// An idle process prints an empty CPU cell; that is a zero, not a reason to
-	// drop the process from the listing.
-	if got[1].PID != 5678 || got[1].CPU != 0 || got[1].MemoryMB != 2 {
-		t.Errorf("row 1 = %+v", got[1])
-	}
-	if got[2].Name != "svchost.exe" {
-		t.Errorf("a full path should reduce to its base, got %q", got[2].Name)
-	}
-}
-
 var sampleProcesses = []processInfo{
 	{PID: 1, Name: "launchd"},
 	{PID: 300, Name: "Code"},

@@ -33,7 +33,16 @@ func sayRender(req sayRequest, out string) error {
 	return nil
 }
 
-func playCommand(clip string) *exec.Cmd { return exec.Command("afplay", clip) }
+// playClip plays a clip with afplay and blocks until it ends, recording the
+// player's PID so `say stop` can silence it.
+func playClip(dir, clip string) error {
+	cmd := exec.Command("afplay", clip)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	recordPlayer(dir, cmd.Process.Pid)
+	return cmd.Wait()
+}
 
 func sayVoices() ([]sayVoice, error) {
 	out, err := sys.Output("say", "-v", "?")

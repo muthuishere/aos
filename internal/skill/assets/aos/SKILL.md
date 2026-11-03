@@ -114,7 +114,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | packages | `pkg install X` · `search` · `list` · `upgrade` — one verb set over brew, winget, scoop, choco, apt, pacman, yay, dnf |
 | keep it running | `service create NAME --autostart --now -- <cmd>` · `start` · `status` · `stop` · `remove` · `list` |
 | tell the human | `subtitle show "what I am doing" --seconds=10 [--app=Safari]` — a film-style caption that never steals focus; `draw text "..." --position=top` for a label |
-| speak | `say "build finished"` (macOS `say`; Windows WinRT voices, SAPI fallback) · `say "text" -- key type --app=Notepad "hi"` speaks AND acts, waits for both (exit = the command's) · `say "..." --async` then `say wait` / `say stop` · `say voices` · `say "..." --out=x.mp3` · `subtitle show "..." --speak` |
+| speak | `say "build finished"` (macOS `say`; Windows SAPI/OneCore voices over COM) · `say "text" -- key type --app=Notepad "hi"` speaks AND acts, waits for both (exit = the command's) · `say "..." --async` then `say wait` / `say stop` · `say voices` · `say "..." --out=x.mp3` · `subtitle show "..." --speak` |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
 | record a demo | ASK FIRST (monitor, audio), then `capture video start smart --monitor=N --audio=mic` … `capture video stop` → `<out>.final.mp4`; follow `references/recording-a-demo.md` |
 | react to changes | `watch clipboard --max=1` · `watch window --max=1` · `watch file P --recursive --max=1` — one JSON line per event |

@@ -208,7 +208,7 @@ func isExecutable(path string) bool {
 	}
 	if runtime.GOOS == "windows" {
 		switch strings.ToLower(filepath.Ext(path)) {
-		case ".exe", ".bat", ".cmd", ".ps1", ".com":
+		case ".exe", ".bat", ".cmd", ".com": // never .ps1: aos starts no PowerShell
 			return true
 		}
 		return false

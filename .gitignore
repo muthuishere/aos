@@ -8,3 +8,5 @@ site/.astro/
 site/src/content/docs/reference/commands.mdx
 site/src/data/registry.json
 marketing/
+# Windows test helpers built on the Mac
+*.exe

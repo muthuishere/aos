@@ -14,131 +14,187 @@ rem --from / --version / --dir work too. Environment equivalents: AOS_FROM,
 rem AOS_VERSION, AOS_INSTALL_DIR. Default dir: %LOCALAPPDATA%\Programs\aos,
 rem added to your user PATH (/no-path or AOS_NO_PATH=1 leaves PATH alone).
 rem
-rem A .cmd rather than a .ps1 on purpose: PowerShell's execution policy blocks
-rem unsigned script FILES by default, but not -Command, so the PowerShell below
-rem is read out of this file and run that way.
-setlocal
-set "AOS_INSTALL_ARGS=%*"
-set "AOS_INSTALL_SELF=%~f0"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = Get-Content -Raw -LiteralPath $env:AOS_INSTALL_SELF; $m = '#' + '#AOS-POWERSHELL##'; Invoke-Expression ($s.Substring($s.IndexOf($m) + $m.Length))"
+rem Plain cmd.exe only (no PowerShell): curl.exe, tar.exe and certutil ship
+rem with Windows 10 1803+ and Windows 11.
+setlocal EnableExtensions DisableDelayedExpansion
+
+set "REPO=muthuishere/aos"
+set "FROM=%AOS_FROM%"
+if not defined FROM set "FROM=%AOS_DOWNLOAD_BASE%"
+set "VERSION=%AOS_VERSION%"
+set "DIR=%AOS_INSTALL_DIR%"
+if not defined DIR set "DIR=%LOCALAPPDATA%\Programs\aos"
+set "NOPATH=%AOS_NO_PATH%"
+
+rem ---- arguments ("/from=X" arrives as two words: cmd splits on '=') ----
+:args
+if "%~1"=="" goto args_done
+set "A=%~1"
+if /i "%A%"=="/from"      (set "FROM=%~2" & shift & shift & goto args)
+if /i "%A%"=="--from"     (set "FROM=%~2" & shift & shift & goto args)
+if /i "%A%"=="/version"   (set "VERSION=%~2" & shift & shift & goto args)
+if /i "%A%"=="--version"  (set "VERSION=%~2" & shift & shift & goto args)
+if /i "%A%"=="/dir"       (set "DIR=%~2" & shift & shift & goto args)
+if /i "%A%"=="--dir"      (set "DIR=%~2" & shift & shift & goto args)
+if /i "%A%"=="/no-path"   (set "NOPATH=1" & shift & goto args)
+if /i "%A%"=="--no-path"  (set "NOPATH=1" & shift & goto args)
+if /i "%A%"=="/?"         goto usage
+if /i "%A%"=="/h"         goto usage
+if /i "%A%"=="--help"     goto usage
+call :fail "unknown argument: %A%"
+exit /b 1
+:usage
+echo install.cmd [/from ^<folder^|url^|aos.exe^|archive.zip^>] [/version vX.Y.Z] [/dir ^<path^>] [/no-path]
+exit /b 0
+:args_done
+
+for %%T in (curl.exe tar.exe certutil.exe) do (
+  where %%T >nul 2>nul || (call :fail "%%T is missing; it ships with Windows 10 1803+ and Windows 11" & exit /b 1)
+)
+
+set "ARCH=amd64"
+if /i "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "ARCH=arm64"
+if /i "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "ARCH=arm64"
+
+set "TMPD=%TEMP%\aos-install-%RANDOM%%RANDOM%"
+mkdir "%TMPD%" >nul 2>nul
+if not exist "%DIR%" mkdir "%DIR%"
+if not exist "%DIR%" (call :fail "could not create %DIR%" & goto cleanup_fail)
+set "TARGET=%DIR%\aos.exe"
+
+rem ---- a single local file: an archive or the executable ----
+if defined FROM if exist "%FROM%" if not exist "%FROM%\*" goto from_file
+goto from_release
+
+:from_file
+for %%F in ("%FROM%") do set "FEXT=%%~xF"
+if /i "%FEXT%"==".zip" (
+  echo ==^> Installing from the archive %FROM%
+  mkdir "%TMPD%\x" >nul 2>nul
+  tar -xf "%FROM%" -C "%TMPD%\x" || (call :fail "could not unpack %FROM%" & goto cleanup_fail)
+  if not exist "%TMPD%\x\aos.exe" (call :fail "%FROM% does not contain aos.exe" & goto cleanup_fail)
+  copy /y "%TMPD%\x\aos.exe" "%TARGET%" >nul || (call :fail "could not write %TARGET%" & goto cleanup_fail)
+) else (
+  echo ==^> Installing the executable %FROM%
+  copy /y "%FROM%" "%TARGET%" >nul || (call :fail "could not write %TARGET%" & goto cleanup_fail)
+)
+goto installed
+
+rem ---- a release: GitHub, a mirror URL or a local folder ----
+:from_release
+set "ISURL=0"
+if defined FROM goto have_base
+if not defined VERSION (
+  for /f "delims=" %%U in ('curl -fsSL -o nul -w "%%{url_effective}" "https://github.com/%REPO%/releases/latest"') do set "LATEST=%%U"
+)
+if not defined VERSION (
+  if not defined LATEST (call :fail "could not resolve the latest release of %REPO%" & goto cleanup_fail)
+  for %%V in ("%LATEST:/=" "%") do set "VERSION=%%~V"
+)
+if not "%VERSION:~0,1%"=="v" set "VERSION=v%VERSION%"
+set "BASE=https://github.com/%REPO%/releases/download/%VERSION%"
+set "ISURL=1"
+goto base_ready
+:have_base
+set "BASE=%FROM%"
+if "%BASE:~-1%"=="/" set "BASE=%BASE:~0,-1%"
+if "%BASE:~-1%"=="\" set "BASE=%BASE:~0,-1%"
+if /i "%BASE:~0,7%"=="http://" set "ISURL=1"
+if /i "%BASE:~0,8%"=="https://" set "ISURL=1"
+if "%ISURL%"=="0" if not exist "%BASE%\*" (call :fail "/from %FROM% is not a folder, an executable, or an http(s) URL" & goto cleanup_fail)
+:base_ready
+echo ==^> Installing aos for windows/%ARCH% from %BASE%
+
+set "VNUM="
+if defined VERSION set "VNUM=%VERSION:v=%"
+set "ARCHIVE="
+set "SUMS=%TMPD%\checksums.txt"
+call :fetch checksums.txt "%SUMS%"
+if errorlevel 1 goto no_sums
+for /f "usebackq tokens=1,2" %%a in ("%SUMS%") do call :pick "%%b"
+if not defined ARCHIVE (call :fail "no aos archive for windows/%ARCH% at %BASE%" & goto cleanup_fail)
+goto have_archive
+:no_sums
+del "%SUMS%" >nul 2>nul
+if defined VNUM (
+  set "ARCHIVE=aos_%VNUM%_windows_%ARCH%.zip"
+  goto have_archive
+)
+if "%ISURL%"=="1" (call :fail "%BASE% has no checksums.txt to find the archive by; pass /version" & goto cleanup_fail)
+for /f "delims=" %%n in ('dir /b /a-d "%BASE%\aos_*_windows_%ARCH%.zip" 2^>nul') do if not defined ARCHIVE set "ARCHIVE=%%n"
+if not defined ARCHIVE (call :fail "no aos archive for windows/%ARCH% at %BASE%" & goto cleanup_fail)
+:have_archive
+
+set "ZIP=%TMPD%\%ARCHIVE%"
+call :fetch "%ARCHIVE%" "%ZIP%"
+if errorlevel 1 (call :fail "download failed: %BASE%/%ARCHIVE%" & goto cleanup_fail)
+if exist "%SUMS%" (
+  call :verify
+  if errorlevel 1 goto cleanup_fail
+  echo     sha256 verified
+) else (
+  echo WARNING: %BASE% has no checksums.txt -- installing %ARCHIVE% WITHOUT verifying it 1>&2
+)
+mkdir "%TMPD%\x" >nul 2>nul
+tar -xf "%ZIP%" -C "%TMPD%\x" || (call :fail "could not unpack %ARCHIVE%" & goto cleanup_fail)
+if not exist "%TMPD%\x\aos.exe" (call :fail "%ARCHIVE% does not contain aos.exe" & goto cleanup_fail)
+copy /y "%TMPD%\x\aos.exe" "%TARGET%" >nul || (call :fail "could not write %TARGET%" & goto cleanup_fail)
+
+:installed
+rd /s /q "%TMPD%" >nul 2>nul
+echo     %TARGET%
+if defined NOPATH goto run_once
+set "UPATH="
+for /f "skip=2 tokens=2,*" %%a in ('reg query HKCU\Environment /v Path 2^>nul') do set "UPATH=%%b"
+echo ;%UPATH%; | find /i ";%DIR%;" >nul && goto run_once
+if defined UPATH (set "NEWPATH=%UPATH%;%DIR%") else (set "NEWPATH=%DIR%")
+rem reg, not setx: setx truncates PATH at 1024 characters.
+reg add HKCU\Environment /v Path /t REG_EXPAND_SZ /d "%NEWPATH%" /f >nul || (call :fail "could not update your user PATH" & exit /b 1)
+rem setx broadcasts the environment change so new terminals see the PATH.
+setx AOS_INSTALLED 1 >nul 2>nul
+reg delete HKCU\Environment /v AOS_INSTALLED /f >nul 2>nul
+echo     added %DIR% to your user PATH (open a new terminal to pick it up)
+:run_once
+rem Running it once also installs the bundled agent skill.
+endlocal & set "PATH=%DIR%;%PATH%" & "%DIR%\aos.exe" --version
 exit /b %ERRORLEVEL%
 
-##AOS-POWERSHELL##
-$ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'
-$repo = 'muthuishere/aos'
-$from = if ($env:AOS_FROM) { $env:AOS_FROM } else { $env:AOS_DOWNLOAD_BASE }
-$version = $env:AOS_VERSION
-$dir = if ($env:AOS_INSTALL_DIR) { $env:AOS_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\aos' }
-$noPath = [bool]$env:AOS_NO_PATH
+rem ---- helpers ----------------------------------------------------------------
 
-function Fail($msg) { [Console]::Error.WriteLine("install: $msg"); exit 1 }
+:fetch
+rem :fetch <name> <dest> -- download or copy one release file; errorlevel 1 on failure
+if "%ISURL%"=="1" (
+  curl -fsSL -o "%~2" "%BASE%/%~1" 2>nul || exit /b 1
+) else (
+  copy /y "%BASE%\%~1" "%~2" >nul 2>nul || exit /b 1
+)
+exit /b 0
 
-# Split the argument string the way cmd passed it, honouring quotes.
-$argv = @([regex]::Matches("$env:AOS_INSTALL_ARGS", '"([^"]*)"|(\S+)') | ForEach-Object {
-    if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value } })
-for ($i = 0; $i -lt $argv.Count; $i++) {
-    $a = $argv[$i]
-    $name = $a -replace '^(--|/)', ''
-    $val = $null
-    if ($name -match '^(\w+)[=:](.*)$') { $name = $Matches[1]; $val = $Matches[2] }
-    if ($name -in @('from', 'version', 'dir')) {
-        if ($null -eq $val) { $i++; if ($i -ge $argv.Count) { Fail "$a needs a value" }; $val = $argv[$i] }
-        Set-Variable -Name $name -Value $val
-    } elseif ($name -eq 'no-path') {
-        $noPath = $true
-    } elseif ($name -in @('h', 'help', '?')) {
-        Write-Host 'install.cmd [/from <folder|url|aos.exe>] [/version vX.Y.Z] [/dir <path>] [/no-path]'; exit 0
-    } else { Fail "unknown argument: $a" }
-}
+:pick
+rem :pick <name> -- the first checksums entry that is this arch's archive (and version)
+if defined ARCHIVE exit /b 0
+set "N=%~1"
+echo %N%| findstr /r /i /c:"^aos_.*_windows_%ARCH%\.zip$" >nul || exit /b 0
+if defined VNUM (
+  echo %N%| find "_%VNUM%_" >nul || exit /b 0
+)
+set "ARCHIVE=%N%"
+exit /b 0
 
-$arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64') { 'arm64' } else { 'amd64' }
-$tmp = Join-Path ([IO.Path]::GetTempPath()) ('aos-install-' + [guid]::NewGuid())
-New-Item -ItemType Directory -Force -Path $tmp | Out-Null
-New-Item -ItemType Directory -Force -Path $dir | Out-Null
-$target = Join-Path $dir 'aos.exe'
+:verify
+set "WANT="
+for /f "usebackq tokens=1,2" %%a in ("%SUMS%") do if /i "%%b"=="%ARCHIVE%" set "WANT=%%a"
+set "GOT="
+for /f "skip=1 delims=" %%h in ('certutil -hashfile "%ZIP%" SHA256') do if not defined GOT set "GOT=%%h"
+if defined GOT set "GOT=%GOT: =%"
+if not defined WANT (call :fail "%ARCHIVE% is not listed in checksums.txt -- refusing to install" & exit /b 1)
+if /i not "%WANT%"=="%GOT%" (call :fail "checksum mismatch for %ARCHIVE% -- refusing to install" & exit /b 1)
+exit /b 0
 
-try {
-    if ($from -and (Test-Path -LiteralPath $from -PathType Leaf) -and $from -like '*.zip') {
-        Write-Host "==> Installing from the archive $from"
-        $tmpa = Join-Path ([IO.Path]::GetTempPath()) ("aos-" + [guid]::NewGuid())
-        Expand-Archive -LiteralPath $from -DestinationPath $tmpa -Force
-        $exe = Join-Path $tmpa 'aos.exe'
-        if (-not (Test-Path -LiteralPath $exe)) { Fail "$from does not contain aos.exe" }
-        Copy-Item -LiteralPath $exe -Destination $target -Force
-        Remove-Item -Recurse -Force $tmpa
-    } elseif ($from -and (Test-Path -LiteralPath $from -PathType Leaf)) {
-        Write-Host "==> Installing the executable $from"
-        Copy-Item -LiteralPath $from -Destination $target -Force
-    } else {
-        $isUrl = $false
-        if (-not $from) {
-            if (-not $version) {
-                $version = (Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/$repo/releases/latest").tag_name
-                if (-not $version) { Fail "could not resolve the latest release of $repo" }
-            }
-            if ($version -notmatch '^v') { $version = "v$version" }
-            $base = "https://github.com/$repo/releases/download/$version"; $isUrl = $true
-        } else {
-            $base = $from.TrimEnd('/', '\')
-            $isUrl = $base -match '^https?://'
-            if (-not $isUrl -and -not (Test-Path -LiteralPath $base -PathType Container)) {
-                Fail "/from $from is not a folder, an executable, or an http(s) URL"
-            }
-        }
-        Write-Host "==> Installing aos for windows/$arch from $base"
+:fail
+echo install: %~1 1>&2
+exit /b 1
 
-        function Fetch($name, $dest) {
-            try {
-                if ($isUrl) { Invoke-WebRequest -UseBasicParsing -Uri "$base/$name" -OutFile $dest }
-                else { Copy-Item -LiteralPath (Join-Path $base $name) -Destination $dest -ErrorAction Stop }
-                return $true
-            } catch { return $false }
-        }
-
-        $sumsFile = Join-Path $tmp 'checksums.txt'
-        $sums = @{}
-        if (Fetch 'checksums.txt' $sumsFile) {
-            Get-Content $sumsFile | ForEach-Object { $p = $_ -split '\s+', 2; if ($p.Count -eq 2) { $sums[$p[1].Trim()] = $p[0] } }
-        }
-        $pattern = "^aos_.*_windows_$arch\.zip$"
-        $archive = $null
-        if ($sums.Count -gt 0) {
-            $names = @($sums.Keys | Where-Object { $_ -match $pattern })
-            if ($version) { $names = @($names | Where-Object { $_ -like "*_$($version.TrimStart('v'))_*" }) }
-            $archive = $names | Select-Object -First 1
-        } elseif ($version) {
-            $archive = "aos_$($version.TrimStart('v'))_windows_$arch.zip"
-        } elseif (-not $isUrl) {
-            $archive = Get-ChildItem -LiteralPath $base -File | Where-Object { $_.Name -match $pattern } | Select-Object -First 1 -ExpandProperty Name
-        } else { Fail "$base has no checksums.txt to find the archive by; pass /version" }
-        if (-not $archive) { Fail "no aos archive for windows/$arch at $base" }
-
-        $zip = Join-Path $tmp $archive
-        if (-not (Fetch $archive $zip)) { Fail "download failed: $base/$archive" }
-        if ($sums.Count -gt 0) {
-            $got = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLower()
-            if ($sums[$archive] -ne $got) { Fail "checksum mismatch for $archive -- refusing to install" }
-            Write-Host '    sha256 verified'
-        } else {
-            Write-Warning "$base has no checksums.txt -- installing $archive WITHOUT verifying it"
-        }
-        Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $tmp 'x') -Force
-        $exe = Join-Path $tmp 'x\aos.exe'
-        if (-not (Test-Path -LiteralPath $exe)) { Fail "$archive does not contain aos.exe" }
-        Copy-Item -LiteralPath $exe -Destination $target -Force
-    }
-} finally {
-    if ($tmp -and (Test-Path -LiteralPath $tmp)) { Remove-Item -LiteralPath $tmp -Recurse -Force }
-}
-
-Write-Host "    $target"
-$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-if (-not $noPath -and -not (($userPath -split ';') -contains $dir)) {
-    [Environment]::SetEnvironmentVariable('Path', ($(if ($userPath) { "$userPath;$dir" } else { $dir })), 'User')
-    Write-Host "    added $dir to your user PATH (open a new terminal to pick it up)"
-}
-$env:Path = "$dir;$env:Path"
-# Running it once also installs the bundled agent skill.
-& $target --version
-exit $LASTEXITCODE
+:cleanup_fail
+if defined TMPD rd /s /q "%TMPD%" >nul 2>nul
+exit /b 1

@@ -296,37 +296,6 @@ func parsePsOutput(out string) []processInfo {
 	return found
 }
 
-// parseWindowsProcessOutput reads the tab-separated lines the PowerShell
-// backend emits: pid, name, cpu seconds, working set bytes.
-func parseWindowsProcessOutput(out string) []processInfo {
-	var found []processInfo
-	for _, line := range strings.Split(out, "\n") {
-		fields := strings.Split(strings.TrimRight(line, "\r"), "\t")
-		if len(fields) < 4 {
-			continue
-		}
-		pid, err := strconv.Atoi(strings.TrimSpace(fields[0]))
-		if err != nil {
-			continue
-		}
-		name := processBase(strings.TrimSpace(fields[1]))
-		if name == "" {
-			continue
-		}
-		// An idle process reports no CPU at all rather than 0, so a failed
-		// parse is a zero, not a dropped row.
-		cpu, _ := strconv.ParseFloat(strings.TrimSpace(fields[2]), 64)
-		bytesUsed, _ := strconv.ParseFloat(strings.TrimSpace(fields[3]), 64)
-		found = append(found, processInfo{
-			PID:      pid,
-			Name:     name,
-			CPU:      cpu,
-			MemoryMB: bytesUsed / (1024 * 1024),
-		})
-	}
-	return found
-}
-
 // processBase reduces a command to the name people recognise: the last path
 // element, with a kernel thread's brackets and a trailing .exe left intact so
 // the name still matches what other tools show.

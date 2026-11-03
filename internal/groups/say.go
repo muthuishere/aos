@@ -18,8 +18,8 @@ import (
 )
 
 // `aos say` speaks text with the machine's own free voices: `say` on macOS,
-// WinRT Windows.Media.SpeechSynthesis (falling back to System.Speech / SAPI)
-// on Windows. Every utterance is rendered to an audio file first and then
+// SAPI 5 over COM on Windows (the OneCore voices first, then the desktop
+// ones), called from Go with no PowerShell. Every utterance is rendered to an audio file first and then
 // played, so the same bytes the person hears can be dropped into a recording's
 // narration track at the moment they were spoken.
 //
@@ -33,7 +33,7 @@ type sayVoice struct {
 	Name     string `json:"Name"`
 	Language string `json:"Language"`
 	Gender   string `json:"Gender,omitempty"`
-	Engine   string `json:"Engine"` // say | winrt | sapi
+	Engine   string `json:"Engine"` // say | onecore | sapi
 }
 
 // sayRequest is one utterance to render.
@@ -181,7 +181,7 @@ func runSay(c *cli.Ctx, args []string) error {
 		_ = appendVideoEvent(rec.Events, videoEvent{T: since(rec.Started), Kind: "say", Label: clip, Hold: dur, Cmd: o.req.Text})
 	}
 	if play {
-		if err := sayPlay(dir, clip); err != nil {
+		if err := playClip(dir, clip); err != nil {
 			return err
 		}
 	} else if o.narrate {
@@ -386,23 +386,17 @@ func sayDequeue(dir string) {
 	_ = os.Remove(sayEntryPath(dir, me))
 }
 
-// sayPlay plays a clip and blocks until it ends, recording the player's PID
-// so `say stop` can silence it.
-func sayPlay(dir, clip string) error {
-	cmd := playCommand(clip)
-	hideChild(cmd)
-	if err := cmd.Start(); err != nil {
-		return err
-	}
+// recordPlayer notes the PID of an external player so `say stop` can silence
+// it. Players that run inside this process need nothing recorded.
+func recordPlayer(dir string, pid int) {
 	me := os.Getpid()
 	if data, err := os.ReadFile(sayEntryPath(dir, me)); err == nil {
 		var e sayEntry
 		if json.Unmarshal(data, &e) == nil {
-			e.Player = cmd.Process.Pid
+			e.Player = pid
 			_ = writeSayEntry(dir, e)
 		}
 	}
-	return cmd.Wait()
 }
 
 func runSayWait(c *cli.Ctx, args []string) error {

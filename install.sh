@@ -184,7 +184,8 @@ install_windows_host() {
     if command -v unzip >/dev/null 2>&1; then
         unzip -oq "$tmp/$zip" -d "$tmp/w"
     else
-        powershell.exe -NoProfile -Command "Expand-Archive -Force -LiteralPath '$(wslpath -w "$tmp/$zip")' -DestinationPath '$(wslpath -w "$tmp/w")'" >/dev/null
+        # Windows' own tar.exe reads zip archives (no PowerShell).
+        tar.exe -xf "$(wslpath -w "$tmp/$zip")" -C "$(wslpath -w "$tmp/w")" >/dev/null
     fi
     [ -f "$tmp/w/aos.exe" ] || die "$zip does not contain aos.exe"
     cp "$tmp/w/aos.exe" "$win_dir/aos.exe"
