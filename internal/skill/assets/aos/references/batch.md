@@ -49,7 +49,7 @@ Short names:
 | `screenshot: Calculator --out=c.png` | `capture screenshot window --app=Calculator` (no app: the screen) |
 | `record: demo.mp4 window --app=TextEdit` | `capture video start window --app=TextEdit --out=demo.mp4` |
 | `record-stop` | `capture video stop` (+ its flags, e.g. `--narration=replace`) |
-| `say: Hello there --voice=Zira` | speaks; while recording, the line is mixed into `.final.mp4` in sync |
+| `say: Hello there --voice=Zira` | speaks and shows the text as a subtitle while it plays (`--no-subtitle` for voice only); while recording, voice and caption land in `.final.mp4` in sync |
 | `wait: 2s` | pause (`500` = ms, `2s`, `1m`) |
 | `do: window focus Notepad` | any aos command as typed (the escape hatch) |
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,7 +57,7 @@ func init() {
 			&cli.Command{
 				Group: "say", Name: "",
 				Summary: "Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once",
-				Args:    "<text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]",
+				Args:    "<text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]",
 				Examples: []string{
 					`aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both`,
 					`aos say "build finished"`,
@@ -66,6 +67,7 @@ func init() {
 					"aos say wait",
 					"# while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken",
 					"# --narrate adds it to the recording's narration track without playing it aloud",
+					"# the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off",
 				},
 				Platforms: plat,
 				Run:       runSay,
@@ -104,6 +106,7 @@ type sayOptions struct {
 	out     string
 	async   bool
 	narrate bool
+	caption bool // show the text as a subtitle while it is spoken
 	json    bool
 }
 
@@ -113,7 +116,7 @@ func parseSay(args []string) (sayOptions, error) {
 	if err != nil {
 		return o, err
 	}
-	if err := set.Reject(append([]string{"async", "narrate", "json"}, sayValueFlags...)...); err != nil {
+	if err := set.Reject(append([]string{"async", "narrate", "json", "no-subtitle"}, sayValueFlags...)...); err != nil {
 		return o, err
 	}
 	o.req.Text = strings.TrimSpace(strings.Join(set.Rest, " "))
@@ -136,6 +139,7 @@ func parseSay(args []string) (sayOptions, error) {
 		}
 	}
 	o.async, o.narrate, o.json = set.Has("async"), set.Has("narrate"), set.Has("json")
+	o.caption = !set.Has("no-subtitle")
 	return o, nil
 }
 
@@ -180,6 +184,12 @@ func runSay(c *cli.Ctx, args []string) error {
 	if rec != nil {
 		_ = appendVideoEvent(rec.Events, videoEvent{T: since(rec.Started), Kind: "say", Label: clip, Hold: dur, Cmd: o.req.Text})
 	}
+	// Speech and subtitle go together: the same text is on screen for exactly
+	// as long as it is heard (and so lands in a recording in sync with it).
+	captioned := o.caption && (play || o.narrate) && showSayCaption(c, o.req.Text, dur)
+	if captioned {
+		defer cli.Invoke(c, []string{"subtitle", "stop"}, "")
+	}
 	if play {
 		if err := playClip(dir, clip); err != nil {
 			return err
@@ -189,6 +199,18 @@ func runSay(c *cli.Ctx, args []string) error {
 		time.Sleep(time.Duration(dur * float64(time.Second)))
 	}
 	return sayReport(c, o, map[string]any{"Spoken": play, "Seconds": dur, "Narration": rec != nil, "Out": o.out})
+}
+
+// showSayCaption puts the spoken text up as a subtitle for the clip's length.
+// A caption that cannot be shown (no display, say) never fails the speech.
+func showSayCaption(c *cli.Ctx, text string, seconds float64) bool {
+	secs := math.Max(1, math.Ceil(seconds*10)/10)
+	res := cli.Invoke(c, []string{"subtitle", "show", text, "--seconds=" + strconv.FormatFloat(secs, 'f', 1, 64)}, "")
+	if res.Exit != 0 {
+		fmt.Fprintf(c.Stderr, "aos say: no subtitle (%s)\n", strings.TrimSpace(res.Stderr))
+		return false
+	}
+	return true
 }
 
 func sayReport(c *cli.Ctx, o sayOptions, res map[string]any) error {

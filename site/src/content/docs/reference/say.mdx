@@ -17,7 +17,7 @@ sidebar:
 <p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
 ```
 
 | flag | values | meaning |
@@ -27,6 +27,7 @@ aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|
 | `--voice` | `<name>` | Optional |
 | `--rate` | `<words per minute>` | Optional |
 | `--out` | `file.mp3`, `.wav`, `.aiff` | Optional |
+| `--no-subtitle` |  | Optional |
 | `--async` |  | Optional |
 | `--narrate` |  | Optional |
 | `--json` |  | Optional |
@@ -42,6 +43,7 @@ aos say "now I open the settings" --async   # keeps talking while the script goe
 aos say wait
 # while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken
 # --narrate adds it to the recording's narration track without playing it aloud
+# the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off
 ```
 
 ### aos say stop

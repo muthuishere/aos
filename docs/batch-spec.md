@@ -26,6 +26,7 @@ aos batch '[launch: calc, parallel: [say: seven, click: Calculator Seven], type:
 ## Verbs
 Every aos command is a verb named `<group>-<command>`, with the same arguments and flags as the CLI.
 Short names: `click` (mouse-click --find), `type` (key-type), `key` (key-press), `screenshot`, `record` / `record-stop`, `say`, `wait` (a duration).
+`say:` speaks the text and shows it as a subtitle while it is spoken (cleared when it ends; `--no-subtitle` turns that off), so a recorded batch gets voice and captions in sync with no editing.
 Long form allowed: `click: { app: Calculator, target: Seven }`.
 `do: <any aos command>` is the escape hatch.
 System-level commands (power, system, pkg, service, network) are not verbs. Through `do:` the check warns.

@@ -82,8 +82,10 @@ aos draw text "Account created ✓" --position=top-center --color=green --durati
 
 - **Voice-over, no mic, no editing:** every `aos say` while the recording runs
   is time-stamped and mixed into `<out>.final.mp4` at the moment it was spoken.
+  Each line is also shown as a subtitle while it is spoken, so the video gets
+  voice and captions in sync (`--no-subtitle` for voice only).
   `aos say "Now I type the note" -- aos key type --app=TextEdit "hello"` talks
-  while it acts; `subtitle show "..." --speak` captions and says it;
+  while it acts; `subtitle show "..." --say` is a caption that speaks;
   `say --narrate` adds a line to the track without playing it aloud.
   `capture video stop --narration=replace` drops system audio for the voice;
   `--narration=off` leaves it out. See `references/speech.md`.

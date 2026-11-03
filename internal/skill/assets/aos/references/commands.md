@@ -1036,7 +1036,7 @@ Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once
 *platforms: darwin, windows*
 
 ```bash
-aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
 aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
 aos say "build finished"
 aos say "Hello there" --voice=Samantha --rate=190
@@ -1045,6 +1045,7 @@ aos say "now I open the settings" --async   # keeps talking while the script goe
 aos say wait
 # while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken
 # --narrate adds it to the recording's narration track without playing it aloud
+# the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off
 ```
 
 ### `aos say voices`
@@ -1217,12 +1218,12 @@ Show a film-style caption over everything (or over one app's window) for a few s
 *display*
 
 ```bash
-aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--speak] [--detach] [--wait] [--preview=<out.png>] [--json]
+aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--say] [--detach] [--wait] [--preview=<out.png>] [--json]
 aos subtitle show "installing dependencies"
 aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom
 aos subtitle show "running the migration" --seconds=30 --position=top
 aos subtitle show "step 1 of 3" --seconds=4 --wait
-aos subtitle show "Saving the report" --speak   # show it and say it
+aos subtitle show "Saving the report" --say   # show it and say it
 aos subtitle stop
 # white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last
 ```

@@ -11,14 +11,18 @@ Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`)
   ones). `--voice`, `--rate` (words per minute), `--out=.mp3|.wav|.aiff|.m4a`
   (mp3/m4a through ffmpeg), `--async`, `--json`. `say voices`, `say wait`,
   `say stop`. Lines queue, so they never talk over each other.
+- **Speech and subtitle go together:** `aos say` shows the same text as an
+  aos subtitle while it speaks, timed to the speech and cleared when it ends
+  (`--no-subtitle` for voice only). A recording gets voice and captions in
+  sync with no editing; in `aos batch`, `say:` shows the caption too.
 - **Speak while acting:** `aos say "Now I type the note" -- aos key type
   --app=Notepad "hello"` speaks and runs the command together and waits for
   both; the exit code is the command's.
 - **Narrated recordings, no mic, no editing:** while `capture video` runs,
   every `aos say` is time-stamped and `capture video stop` mixes it into
   `<out>.final.mp4` at the moment it was spoken (`--narration=mix|replace|off`).
-  `say --narrate` adds a line without playing it aloud. `subtitle show --speak`
-  captions and speaks.
+  `say --narrate` adds a line without playing it aloud. `subtitle show` stays
+  a silent caption; `subtitle show --say` also speaks it.
 - **`aos batch`** runs many steps from YAML (a file, `-`, or the YAML inline).
   Steps run in order; `parallel:` runs its list together. Every aos command is
   a verb (`<group>-<command>`), plus `click`, `type`, `key`, `screenshot`,

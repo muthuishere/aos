@@ -13,7 +13,8 @@ be dropped into a recording.
 ## Commands
 
 ```bash
-aos say "build finished"                              # speak, return when done
+aos say "build finished"                              # speak AND show it as a subtitle, return when done
+aos say "build finished" --no-subtitle                # speak only
 aos say "Hello" --voice=Samantha --rate=190           # voice name (or part), words per minute
 aos say "Welcome" --out=~/Desktop/welcome.mp3         # file only: .mp3 .wav .aiff .m4a (mp3/m4a via ffmpeg)
 aos say voices [--json]                               # Name, Language, Gender, Engine (say|onecore|sapi)
@@ -22,9 +23,15 @@ aos say "..." --then-wait=false -- aos launch calc    # return when the command 
 aos say "step one" --async                            # return at once, keep talking
 aos say wait [--timeout=30]                           # block until every queued line has finished
 aos say stop                                          # silence now, drop the queue
-aos subtitle show "Saving the report" --speak         # caption and say it
+aos subtitle show "Saving the report" --say           # a caption that speaks (plain `subtitle show` stays silent)
 ```
 
+- **Speech and subtitle go together.** `say` shows the same text as an aos
+  subtitle for exactly as long as it is heard, and clears it when the line
+  ends (`--no-subtitle` turns that off; a file-only `--out` shows nothing). In
+  a recording the caption is on screen in sync with the voice, so the video
+  gets both with no editing. `subtitle show` stays a silent caption;
+  `subtitle show --say` also speaks it.
 - Lines **queue**: a second `say` (async or not) waits for the one speaking,
   so narration never talks over itself.
 - With `-- <command>`, the exit code is the command's; a speech failure only
