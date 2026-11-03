@@ -149,12 +149,14 @@ Start recording the screen with ffmpeg (detached; ask the person first)
 *display*
 
 ```bash
-aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
+aos capture video start [smart|monitor|window|region|app|mouse|windows] [--monitor=<n>] [--app=<name>[,<name>...]|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--dry-run] [--json]
 aos capture video start smart --audio=mic --out=~/Movies/demo.mp4
 aos capture video start monitor --monitor=2
 aos capture video start mouse --zoom=2
 aos capture video start app --app=Chrome
 aos capture video start window --app=Terminal
+aos capture video start windows --app=Ghostty,"Google Chrome"   # macOS: only those windows' own pixels, never what covers them
+aos capture video start windows --app=Ghostty --dry-run         # resolve the windows, record nothing
 aos capture video start region --region=0,0,1280,720 --max=2m
 # exit 2 when ffmpeg (or a loopback device for --audio=system) is missing
 ```

@@ -134,11 +134,12 @@ aos capture video mark "the chart" --rect=200,150,800,450
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
+aos capture video start [smart|monitor|window|region|app|mouse|windows] [--monitor=<n>] [--app=<name>[,<name>...]|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--dry-run] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
+| `<name>` | | Optional positional argument |
 | `--monitor` | `<n>` | Optional |
 | `--app` | `<name>` | Optional |
 | `--title` | `<s>` | Optional |
@@ -150,6 +151,7 @@ aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] 
 | `--out` | `<path.mp4>` | Optional |
 | `--max` | `<10m>` | Optional. default 10m |
 | `--indicator` | `<false>` | Optional |
+| `--dry-run` |  | Optional |
 | `--json` |  | Optional |
 
 ```sh
@@ -158,6 +160,8 @@ aos capture video start monitor --monitor=2
 aos capture video start mouse --zoom=2
 aos capture video start app --app=Chrome
 aos capture video start window --app=Terminal
+aos capture video start windows --app=Ghostty,"Google Chrome"   # macOS: only those windows' own pixels, never what covers them
+aos capture video start windows --app=Ghostty --dry-run         # resolve the windows, record nothing
 aos capture video start region --region=0,0,1280,720 --max=2m
 # exit 2 when ffmpeg (or a loopback device for --audio=system) is missing
 ```
