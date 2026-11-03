@@ -11,8 +11,10 @@
 package windows
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 	"unsafe"
 
 	"github.com/muthuishere/aos/internal/engine/core"
@@ -279,8 +281,29 @@ func foreground(hwnd uintptr) error {
 
 	procBringWindowToTop.Call(hwnd)
 	ret, _, err := procSetForegroundWnd.Call(hwnd)
-	if ret == 0 {
-		return err
+	if ret != 0 {
+		return nil
 	}
-	return nil
+	// The foreground lock refused it: this process does not own the
+	// foreground (e.g. handing focus back after an app activated itself).
+	// Windows lets the process that sent the last input event set the
+	// foreground, so send one key nothing is bound to (F24 down/up: no
+	// Alt, so no menu cues) and try again.
+	_ = sendKeyboardInputs([]keyboardEventInput{
+		{Type: inputKeyboard, WVk: vkF24},
+		{Type: inputKeyboard, WVk: vkF24, DwFlags: keyeventfKeyUp},
+	})
+	procBringWindowToTop.Call(hwnd)
+	if ret, _, _ := procSetForegroundWnd.Call(hwnd); ret != 0 {
+		return nil
+	}
+	for i := 0; i < 10; i++ {
+		if fg, _, _ := procGetForegroundWnd.Call(); fg == hwnd {
+			return nil
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return fmt.Errorf("SetForegroundWindow refused by the foreground lock (%v)", err)
 }
+
+const vkF24 = 0x87

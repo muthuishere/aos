@@ -542,7 +542,7 @@ Find text inside a window and print its global bounds and center
 *display*
 
 ```bash
-aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--no-raise] [--json]
+aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--raise] [--json]
 aos find --app=Calculator --text=7
 aos find Safari --text="Reload this page" --role=button --json
 aos find --title=Settings --text=Wi-Fi --source=ocr --all
@@ -628,7 +628,7 @@ Type text; with --app/--title it goes to that window without needing focus
 *display*
 
 ```bash
-aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]]
+aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--force]
 aos key type "hello world"
 aos key type "hello" --app=TextEdit --verify   # posted to the app, read back from its text field
 aos key type "hello" --app=Chrome --focus      # real focus + verify, focus handed back after
@@ -642,7 +642,7 @@ Press a key combination
 *display*
 
 ```bash
-aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]]
+aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]] [--force]
 aos key press cmd+shift+s
 aos key press enter --app=TextEdit   # posted to the app, no focus change
 ```
@@ -676,7 +676,7 @@ Move the pointer
 *display*
 
 ```bash
-aos mouse move <x> <y> [--monitor=<n>]
+aos mouse move <x> <y> [--monitor=<n>] [--force]
 aos mouse move 400 300
 aos mouse move 400 300 --monitor=2
 ```
@@ -688,7 +688,7 @@ Click, optionally moving to a point first
 *display*
 
 ```bash
-aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json]
+aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json] [--force]
 aos mouse click
 aos mouse click --app=Calculator --find=7 --role=button   # AXPress / UIA Invoke: no pointer, no focus
 aos mouse click 400 300 --double
@@ -788,6 +788,16 @@ How much this machine is actually used, and by what
 aos obs summary [--since=<duration>] [--json]
 aos obs summary
 aos obs summary --since=7d
+```
+
+### `aos obs focus`
+
+Who took (or tried to take) focus or the pointer through aos, newest last
+
+```bash
+aos obs focus [--limit=<n>] [--since=<duration>] [--json]
+aos obs focus --since=1h
+# columns: time, action, refused or done, the person's idle time, caller (agent via parent process)
 ```
 
 ### `aos obs path`
@@ -1426,8 +1436,9 @@ Bring a window to the front
 *display*
 
 ```bash
-aos window focus <app> | --app=<name> | --title=<substring>
+aos window focus <app> | --app=<name> | --title=<substring> [--force]
 aos window focus Chrome
+# polite: exit 5 when someone used the machine in the last 5s; --force overrides
 ```
 
 ### `aos window move`
@@ -1510,11 +1521,11 @@ Print all the text of a window, in reading order (accessibility, OCR fallback)
 *display*
 
 ```bash
-aos window text (<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--no-raise]
+aos window text (<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--raise]
 aos window text TextEdit
 aos window text --focused --max-chars=4000
 aos window text --app=Chrome --json
-aos window text --id=12345 --source=ocr --no-raise
+aos window text --id=12345 --source=ocr --raise   # OCR a covered window: brings it to the front, then hands focus back
 # auto reads the accessibility tree (AX / UI Automation / AT-SPI) and falls back to OCR when it has almost no text
 # exit 3 when no window matches
 ```

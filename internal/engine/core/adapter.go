@@ -211,6 +211,13 @@ type WebTarget interface {
 	Release()
 }
 
+// ElementTextSetter puts text into a window's editable element without
+// focusing it (Windows: EM_REPLACESEL, UIA ValuePattern / LegacyIAccessible
+// SetValue) and says which way it went.
+type ElementTextSetter interface {
+	SetTextTo(w Window, text string) (how string, err error)
+}
+
 // ElementPresser activates the accessibility element of window w at the
 // global point (x, y) without moving the pointer or focusing the window
 // (macOS AXPress, Windows UIA Invoke).

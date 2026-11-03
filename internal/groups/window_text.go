@@ -14,12 +14,12 @@ func init() {
 		r.Add(&cli.Command{
 			Group: "window", Name: "text",
 			Summary: "Print all the text of a window, in reading order (accessibility, OCR fallback)",
-			Args:    "(<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--no-raise]",
+			Args:    "(<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--raise]",
 			Examples: []string{
 				"aos window text TextEdit",
 				"aos window text --focused --max-chars=4000",
 				"aos window text --app=Chrome --json",
-				"aos window text --id=12345 --source=ocr --no-raise",
+				"aos window text --id=12345 --source=ocr --raise   # OCR a covered window: brings it to the front, then hands focus back",
 				"# auto reads the accessibility tree (AX / UI Automation / AT-SPI) and falls back to OCR when it has almost no text",
 				"# exit 3 when no window matches",
 			},
@@ -36,7 +36,7 @@ func runWindowText(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject(append(windowTextFlags, "focused", "json", "plain", "no-raise")...); err != nil {
+	if err := set.Reject(append(windowTextFlags, "focused", "json", "plain", "no-raise", "raise", "force")...); err != nil {
 		return err
 	}
 	maxChars, err := set.Int("max-chars", 0)
@@ -46,6 +46,11 @@ func runWindowText(c *cli.Ctx, args []string) error {
 	timeout, err := set.Int("timeout", 5000)
 	if err != nil {
 		return err
+	}
+	if set.Has("raise") {
+		if err := politeCheck(c, set, "window text --raise"); err != nil {
+			return err
+		}
 	}
 	w, err := windowForText(set)
 	if err != nil {
@@ -66,7 +71,7 @@ func runWindowText(c *cli.Ctx, args []string) error {
 	}
 	t, err := engine.ReadWindowText(w, engine.WindowTextOptions{
 		Source:   source,
-		NoRaise:  set.Has("no-raise"),
+		NoRaise:  !set.Has("raise"),
 		MaxChars: maxChars,
 		Timeout:  time.Duration(timeout) * time.Millisecond,
 	})

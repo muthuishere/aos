@@ -49,6 +49,31 @@ aos <group> <cmd> --help
 If a command is not in `commands`, it does not exist here. Do not invent flags —
 `--help` lists the real ones, and an unknown flag is rejected rather than ignored.
 
+## Never take the person's focus
+
+Someone is usually working at this machine while you drive it. **Always target
+a window by name and act through accessibility; never through focus or bare
+coordinates, unless the owner asked for exactly that.**
+
+- Type: `key type --app=Notepad "text"` / `key press enter --title=T`. That puts
+  the text into that window without focusing it (macOS posts to the process;
+  Windows uses EM_REPLACESEL or UIA SetValue). Never use a bare `key type`, which
+  types into whatever has focus (it warns on stderr).
+- Click: `mouse click --app=X --find=Save` (AXPress / UIA Invoke, Toggle,
+  Select, ExpandCollapse; no pointer move, and it works when the window is
+  covered). Never use `mouse click X Y`.
+- Read: `window text --app=X`, `find --app=X --text=T`. Neither raises the
+  window; `--raise` (needed only to OCR a covered window) opts in.
+- `window focus`, bare key / mouse input, `--focus` and `--raise` are polite. If
+  the person touched the keyboard or mouse in the last 5 s they **exit 5**:
+  wait and retry, or switch to the targeted form. `--force` (or `AOS_FOCUS=allow`)
+  only when the owner asked for it. Whatever takes focus hands the previous
+  front window and the pointer back afterwards.
+- Some things cannot be done focus-free (a WinUI app with no editable field,
+  modifier chords on Windows, Chrome keystrokes on macOS). aos then fails and
+  says `--focus` would do it. Ask the owner rather than adding `--focus`.
+- `aos obs focus` lists every focus-taking call and the agent behind it.
+
 ## Read the exit code
 
 - **0** — worked.
@@ -59,6 +84,8 @@ If a command is not in `commands`, it does not exist here. Do not invent flags �
 - **3** — not found: `find` / `draw --find` could not find the window or the text;
   `tab focus` / `tab close` found no matching tab.
   The message lists the closest labels it did see; retry with one of them.
+- **5** — refused politely: the command would take focus or move the pointer and
+  the person used the machine in the last 5 s. Use the targeted form, or wait.
 
 Exit 2 on Linux is fixable: `aos headless start --wm` provides a virtual
 display, and later commands adopt it automatically. On macOS and Windows it means
@@ -216,6 +243,7 @@ Neither can shadow a built-in command.
 
 ```bash
 aos obs audit --since=24h   # what was run, oldest first — the audit trail
+aos obs focus               # who took (or was refused) focus / the pointer, and which agent
 aos obs audit --source=mcp  # only what agents asked for
 aos obs summary             # is this being used, and by what
 aos obs stats               # p50/p95 and failure rate per route

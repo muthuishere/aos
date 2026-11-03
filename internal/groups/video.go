@@ -1288,7 +1288,7 @@ func parseVideoFocus(args []string) (videoFocusSpec, error) {
 			return f, fmt.Errorf("--find needs --app or --title: the window to search")
 		}
 		f.Find = engine.FindOptions{Text: text, Role: set.String("role", ""),
-			Source: engine.FindSource(set.String("source", "")), Exact: set.Has("exact")}
+			Source: engine.FindSource(set.String("source", "")), Exact: set.Has("exact"), NoRaise: true}
 	}
 	if targets != 1 {
 		return f, fmt.Errorf("give exactly one of --rect, --at, or --app/--title")

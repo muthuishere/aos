@@ -214,3 +214,22 @@ func TestFindIgnoresBidiMarks(t *testing.T) {
 		t.Fatalf("tier %d", tier)
 	}
 }
+
+// aos never falls back to taking focus on its own: an app that needs real
+// focus is refused with ErrNeedsFocus and nothing is typed or focused.
+func TestTypeToNeverTakesFocusUnasked(t *testing.T) {
+	a := newTargeted()
+	a.windows = append(a.windows, Window{ID: "gc", Title: "Inbox", App: "Google Chrome", Bounds: Rect{X: 0, Y: 0, W: 900, H: 700}})
+	a.focused = "mine"
+	_, err := typeToWith(a, "darwin", Match{App: "Google Chrome"}, "hello", InputOptions{})
+	if !errors.Is(err, ErrNeedsFocus) || !strings.Contains(err.Error(), "--focus") {
+		t.Fatalf("want ErrNeedsFocus with a --focus hint, got %v", err)
+	}
+	if a.typedText != "" || a.postedText != "" || a.focused != "mine" {
+		t.Fatalf("input sent or focus moved: typed %q posted %q focused %q", a.typedText, a.postedText, a.focused)
+	}
+	_, err = pressToWith(a, "windows", Match{App: "TextEdit"}, Chord{Ctrl: true, Key: "s"}, InputOptions{})
+	if !errors.Is(err, ErrNeedsFocus) {
+		t.Fatalf("modifier chord on windows: want ErrNeedsFocus, got %v", err)
+	}
+}

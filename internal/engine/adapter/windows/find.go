@@ -182,7 +182,9 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 		var ct int32
 		vcall(el, elCurrentControlType, uintptr(unsafe.Pointer(&ct)))
 		value := ""
-		if off == 0 {
+		var pw int32
+		vcall(el, 35 /* get_CurrentIsPassword */, uintptr(unsafe.Pointer(&pw)))
+		if off == 0 && pw == 0 { // never read a password field's contents
 			value = uiaContents(el, ct)
 		}
 		if text == "" {

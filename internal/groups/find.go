@@ -22,7 +22,7 @@ func init() {
 		r.Add(&cli.Command{
 			Group:   "find",
 			Summary: "Find text inside a window and print its global bounds and center",
-			Args:    "(<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--no-raise] [--json]",
+			Args:    "(<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--raise] [--json]",
 			Examples: []string{
 				`aos find --app=Calculator --text=7`,
 				`aos find Safari --text="Reload this page" --role=button --json`,
@@ -41,7 +41,7 @@ func findOptionsFrom(args []string) (engine.FindOptions, *argSet, error) {
 	if err != nil {
 		return engine.FindOptions{}, nil, err
 	}
-	if err := set.Reject("app", "title", "text", "source", "role", "exact", "all", "no-raise", "json"); err != nil {
+	if err := set.Reject("app", "title", "text", "source", "role", "exact", "all", "no-raise", "raise", "force", "json"); err != nil {
 		return engine.FindOptions{}, nil, err
 	}
 	match, err := matchFrom(set)
@@ -58,7 +58,7 @@ func findOptionsFrom(args []string) (engine.FindOptions, *argSet, error) {
 		Source:  engine.FindSource(set.String("source", "")),
 		Role:    set.String("role", ""),
 		Exact:   set.Has("exact"),
-		NoRaise: set.Has("no-raise"),
+		NoRaise: !set.Has("raise"), // never take the foreground unless asked
 	}, set, nil
 }
 
@@ -75,6 +75,11 @@ func runFind(c *cli.Ctx, args []string) error {
 	opts, set, err := findOptionsFrom(args)
 	if err != nil {
 		return err
+	}
+	if set.Has("raise") {
+		if err := politeCheck(c, set, "find --raise"); err != nil {
+			return err
+		}
 	}
 	if resolved, err := resolveMatch(opts.Match); err == nil {
 		opts.Match = resolved

@@ -96,6 +96,8 @@ func readWindowText(a Adapter, w Window, o WindowTextOptions) (WindowText, error
 		}
 	}
 	if !o.NoRaise {
+		back := takeFocus(a, w.ID)
+		defer back() // the raise is only for the capture
 		if err := a.Focus(w.ID); err == nil {
 			sleepFn(250 * time.Millisecond)
 		}
@@ -133,6 +135,10 @@ func visibleIn(items []TextItem, wb Rect) []WindowTextItem {
 		}
 		if wb.W > 0 && !(b.X < wb.X+wb.W && b.X+b.W > wb.X && b.Y < wb.Y+wb.H && b.Y+b.H > wb.Y) {
 			continue
+		}
+		if titleBarButton[strings.ToLower(t)] && (it.Role == "button" || it.Role == "menuitem") &&
+			wb.W > 0 && b.Y < wb.Y+50 {
+			continue // Windows caption buttons and the system menu
 		}
 		out = append(out, WindowTextItem{Text: t, Value: strings.TrimSpace(bidiMarks.Replace(it.Value)),
 			Role: it.Role, Source: it.Source, Bounds: b})
@@ -196,6 +202,11 @@ func mergeText(items []WindowTextItem) []WindowTextItem {
 var windowChrome = map[string]bool{"close button": true, "minimise button": true,
 	"minimize button": true, "full screen button": true, "zoom button": true}
 
+// titleBarButton: Windows caption buttons, dropped only in the window's
+// top strip (a dialog's own Close button further down is text).
+var titleBarButton = map[string]bool{"system": true, "minimize": true, "maximize": true,
+	"restore": true, "close": true}
+
 func holdsCenter(outer, inner Rect) bool {
 	cx, cy := inner.X+inner.W/2, inner.Y+inner.H/2
 	return cx >= outer.X && cx <= outer.X+outer.W && cy >= outer.Y && cy <= outer.Y+outer.H
@@ -240,6 +251,9 @@ func orderText(items []WindowTextItem) []WindowTextItem {
 func contentChars(items []WindowTextItem) int {
 	n := 0
 	for _, it := range items {
+		if it.Role == "textfield" && it.Text+it.Value != "" {
+			return minAXChars // an editor's contents are the window's text, however short
+		}
 		if it.Role == "button" || it.Role == "menuitem" {
 			continue
 		}

@@ -59,9 +59,11 @@ func TestVisibleInDropsChromeOffWindowAndEmpty(t *testing.T) {
 		ti("  ", "text", 20, 20, 10, 10),
 		ti("body", "text", 20, 40, 100, 20),
 		ti("scrolled away", "text", 20, 5000, 100, 20),
+		ti("Close", "button", 700, 5, 40, 30),   // caption button
+		ti("Close", "button", 300, 500, 80, 30), // a dialog's own button: kept
 	}
 	got := texts(visibleIn(in, Rect{X: 0, Y: 0, W: 800, H: 600}))
-	if !reflect.DeepEqual(got, []string{"body"}) {
+	if !reflect.DeepEqual(got, []string{"body", "Close"}) {
 		t.Fatalf("visible = %q", got)
 	}
 }

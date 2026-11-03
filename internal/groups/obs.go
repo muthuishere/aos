@@ -62,6 +62,16 @@ func init() {
 				Run:      runObsSummary,
 			},
 			&cli.Command{
+				Group: "obs", Name: "focus",
+				Summary: "Who took (or tried to take) focus or the pointer through aos, newest last",
+				Args:    "[--limit=<n>] [--since=<duration>] [--json]",
+				Examples: []string{
+					"aos obs focus --since=1h",
+					"# columns: time, action, refused or done, the person's idle time, caller (agent via parent process)",
+				},
+				Run: runObsFocus,
+			},
+			&cli.Command{
 				Group: "obs", Name: "path",
 				Summary:  "Print where telemetry is written",
 				Examples: []string{"aos obs path"},
@@ -514,6 +524,84 @@ func runObsSummary(c *cli.Ctx, args []string) error {
 	c.Println("most used:")
 	for _, route := range report.TopRoutes {
 		c.Printf("  %-28s %d\n", route.Route, route.Calls)
+	}
+	return nil
+}
+
+// runObsFocus lists the invocations that took focus or moved the pointer
+// (or were refused for it), with the caller that asked. It covers what went
+// through aos; focus changes made by other programs show up in
+// `aos watch window` with the app that gained focus.
+func runObsFocus(c *cli.Ctx, args []string) error {
+	set, err := parseArgs(args, "limit", "since")
+	if err != nil {
+		return err
+	}
+	if err := set.Reject("limit", "since", "json"); err != nil {
+		return err
+	}
+	limit, err := set.Int("limit", 50)
+	if err != nil {
+		return err
+	}
+	since, err := parseSince(set)
+	if err != nil {
+		return err
+	}
+	spans, err := loadSpans(c, since, "")
+	if err != nil {
+		return err
+	}
+	type row struct {
+		Time    string `json:"time"`
+		Route   string `json:"route"`
+		Action  string `json:"action"`
+		Refused bool   `json:"refused"`
+		IdleMS  int64  `json:"user_idle_ms"`
+		Caller  string `json:"caller"`
+		Exit    int64  `json:"exit"`
+	}
+	var rows []row
+	for _, span := range spans {
+		action := attrString(span, "agentic_os.focus.action")
+		if action == "" {
+			continue
+		}
+		refused := false
+		for _, a := range span.Attributes {
+			if a.Key == "agentic_os.focus.refused" && a.Value.Bool != nil {
+				refused = *a.Value.Bool
+			}
+		}
+		rows = append(rows, row{
+			Time:    time.Unix(0, span.StartNanos).Format(time.RFC3339),
+			Route:   attrString(span, "agentic_os.route"),
+			Action:  action,
+			Refused: refused,
+			IdleMS:  attrInt(span, "agentic_os.focus.user_idle_ms"),
+			Caller:  attrString(span, "agentic_os.focus.caller"),
+			Exit:    attrInt(span, "agentic_os.exit_code"),
+		})
+	}
+	if len(rows) > limit {
+		rows = rows[len(rows)-limit:]
+	}
+	if set.Has("json") {
+		if rows == nil {
+			rows = []row{}
+		}
+		return json.NewEncoder(c.Stdout).Encode(rows)
+	}
+	if len(rows) == 0 {
+		c.Println("nothing took focus through aos in this window")
+		return nil
+	}
+	for _, r := range rows {
+		mark := "done   "
+		if r.Refused {
+			mark = "REFUSED"
+		}
+		c.Printf("%s  %s  %-32s idle %5.1fs  %s\n", r.Time[11:19], mark, r.Action, float64(r.IdleMS)/1000, r.Caller)
 	}
 	return nil
 }
