@@ -58,8 +58,6 @@ type videoState struct {
 	Max       float64       `json:"Max"`
 	FFArgs    []string      `json:"FFArgs"`
 	Log       string        `json:"Log"`
-	WinIDs    []uint32      `json:"WinIDs,omitempty"`  // windows mode
-	WinOuts   []string      `json:"WinOuts,omitempty"` // windows mode: one mp4 per window
 	Finished  bool          `json:"Finished,omitempty"`
 	Error     string        `json:"Error,omitempty"`
 }
@@ -86,16 +84,14 @@ func init() {
 			&cli.Command{
 				Group: "capture", Name: "video start",
 				Summary: "Start recording the screen with ffmpeg (detached; ask the person first)",
-				Args: "[smart|monitor|window|region|app|mouse|windows] [--monitor=<n>] [--app=<name>[,<name>...]|--title=<s>] [--region=<x,y,w,h>] " +
-					"[--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--dry-run] [--json]",
+				Args: "[smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] " +
+					"[--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]",
 				Examples: []string{
 					"aos capture video start smart --audio=mic --out=~/Movies/demo.mp4",
 					"aos capture video start monitor --monitor=2",
 					"aos capture video start mouse --zoom=2",
 					"aos capture video start app --app=Chrome",
 					"aos capture video start window --app=Terminal",
-					"aos capture video start windows --app=Ghostty,\"Google Chrome\"   # macOS: only those windows' own pixels, never what covers them",
-					"aos capture video start windows --app=Ghostty --dry-run         # resolve the windows, record nothing",
 					"aos capture video start region --region=0,0,1280,720 --max=2m",
 					"# exit 2 when ffmpeg (or a loopback device for --audio=system) is missing",
 				},
@@ -103,10 +99,9 @@ func init() {
 			},
 			&cli.Command{
 				Group: "capture", Name: "video stop",
-				Summary: "Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera",
-				Args:    "[--raw] [--narration=mix|replace|off] [--json]",
-				Examples: []string{"aos capture video stop", "aos capture video stop --raw --json",
-					"aos capture video stop --narration=replace   # the `aos say` voice instead of system audio"},
+				Summary:  "Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera",
+				Args:     "[--raw] [--json]",
+				Examples: []string{"aos capture video stop", "aos capture video stop --raw --json"},
 				Blocking: true,
 				Run:      runVideoStop,
 			},
@@ -184,9 +179,7 @@ func init() {
 
 // videoStartOptions is `capture video start` after parsing.
 type videoStartOptions struct {
-	Mode      string   // monitor, window, region, app, mouse, smart, windows
-	Apps      []string // windows mode: one window per app
-	DryRun    bool
+	Mode      string // monitor, window, region, app, mouse, smart
 	Follow    string // "", mouse, window, smart
 	Monitor   *int
 	Match     engine.Match
@@ -209,7 +202,7 @@ func parseVideoStart(args []string) (videoStartOptions, error) {
 	if err != nil {
 		return o, err
 	}
-	if err := set.Reject(append([]string{"indicator", "json", "dry-run"}, videoStartFlags...)...); err != nil {
+	if err := set.Reject(append([]string{"indicator", "json"}, videoStartFlags...)...); err != nil {
 		return o, err
 	}
 	if len(set.Rest) > 1 {
@@ -223,7 +216,7 @@ func parseVideoStart(args []string) (videoStartOptions, error) {
 			o.Mode = "window"
 		case "region", "area":
 			o.Mode = "region"
-		case "app", "mouse", "smart", "windows":
+		case "app", "mouse", "smart":
 			o.Mode = m
 		default:
 			return o, fmt.Errorf("unknown mode %q: use smart, monitor, window, region, app or mouse", set.Rest[0])
@@ -231,22 +224,7 @@ func parseVideoStart(args []string) (videoStartOptions, error) {
 	}
 	o.Match = engine.Match{App: set.String("app", ""), Title: set.String("title", "")}
 	hasMatch := o.Match.App != "" || o.Match.Title != ""
-	o.DryRun = set.Has("dry-run")
-	if o.DryRun && o.Mode != "windows" {
-		return o, fmt.Errorf("--dry-run goes with the windows mode")
-	}
 	switch o.Mode {
-	case "windows":
-		if !hasMatch {
-			return o, fmt.Errorf("`windows` mode needs --app=<name>[,<name>...] or --title=<s>")
-		}
-		if o.Match.App != "" {
-			for _, a := range strings.Split(o.Match.App, ",") {
-				if a = strings.TrimSpace(a); a != "" {
-					o.Apps = append(o.Apps, a)
-				}
-			}
-		}
 	case "window", "app":
 		if !hasMatch {
 			return o, fmt.Errorf("`%s` mode needs --app=<name> or --title=<s>", o.Mode)
@@ -582,9 +560,6 @@ func runVideoStart(c *cli.Ctx, args []string) error {
 	o, err := parseVideoStart(args)
 	if err != nil {
 		return err
-	}
-	if o.Mode == "windows" {
-		return runWindowsStart(c, o)
 	}
 	ffmpeg, err := ffmpegPath(c.GOOS)
 	if err != nil {
@@ -949,9 +924,6 @@ func runVideoSupervise(c *cli.Ctx, args []string) error {
 	if err != nil || st == nil {
 		return fmt.Errorf("no recording to supervise")
 	}
-	if st.Mode == "windows" {
-		return superviseWindows(dir, st)
-	}
 	cmd := exec.Command(st.FFArgs[0], st.FFArgs[1:]...)
 	hideChild(cmd)
 	stdin, err := cmd.StdinPipe()
@@ -1073,16 +1045,12 @@ func (s *videoSampler) sample(n int) {
 // ---- stop / status ----------------------------------------------------------
 
 func runVideoStop(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "narration")
+	set, err := parseArgs(args)
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("raw", "json", "narration"); err != nil {
+	if err := set.Reject("raw", "json"); err != nil {
 		return err
-	}
-	narration := set.String("narration", "mix")
-	if narration != "mix" && narration != "replace" && narration != "off" {
-		return fmt.Errorf("--narration must be mix, replace or off")
 	}
 	dir := videoDir(c)
 	st, err := readVideoState(dir)
@@ -1117,23 +1085,8 @@ func runVideoStop(c *cli.Ctx, args []string) error {
 	var renderErr error
 	if !set.Has("raw") {
 		final := finalPath(st.Out)
-		render := func() error { return renderVideo(st.Out, doc, zoomOptions{}, final) }
-		if st.Mode == "windows" {
-			// No camera moves: the windows were captured on their own.
-			render = func() error { return copyFile(st.Out, final) }
-		}
-		if renderErr = render(); renderErr == nil {
+		if renderErr = renderVideo(st.Out, doc, zoomOptions{}, final); renderErr == nil {
 			res["Final"] = final
-			// Spoken lines (`aos say` during the recording) go in at the
-			// moment they were said, over or instead of the system audio.
-			if narration != "off" {
-				if n, err := mixNarration(final, doc, narration == "mix"); err != nil {
-					res["NarrationError"] = err.Error()
-					fmt.Fprintf(c.Stderr, "aos: mixing the narration failed (final cut kept silent): %v\n", err)
-				} else if n > 0 {
-					res["Narration"] = n
-				}
-			}
 		} else {
 			res["RenderError"] = renderErr.Error()
 		}
@@ -1146,9 +1099,6 @@ func runVideoStop(c *cli.Ctx, args []string) error {
 		c.Printf("raw:    %s (%.1fs)\n", st.Out, doc.Duration)
 		if f, ok := res["Final"]; ok {
 			c.Printf("final:  %s\n", f)
-		}
-		if n, ok := res["Narration"]; ok {
-			c.Printf("voice:  %v spoken line(s) mixed in\n", n)
 		}
 		c.Printf("events: %s\n", eventsJSONPath(st.Out))
 	}

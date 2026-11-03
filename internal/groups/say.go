@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
@@ -20,12 +22,12 @@ import (
 
 // `aos say` speaks text with the machine's own free voices: `say` on macOS,
 // SAPI 5 over COM on Windows (the OneCore voices first, then the desktop
-// ones), called from Go with no PowerShell. Every utterance is rendered to an audio file first and then
-// played, so the same bytes the person hears can be dropped into a recording's
-// narration track at the moment they were spoken.
+// ones), called from Go with no PowerShell. Text is split into caption-sized
+// chunks; each is rendered to an audio file and played while the same text is
+// shown as an aos subtitle, so voice and caption stay in step.
 //
 // Speakers queue: a second `say` (async or not) waits for the first to finish,
-// so narration lines never talk over each other. State lives under
+// so lines never talk over each other. State lives under
 // <config>/say: lock (the PID speaking now) and q/<pid>.json (every speaker
 // alive, queued or speaking), which `say wait` and `say stop` read.
 
@@ -51,13 +53,13 @@ var sayValueFlags = []string{"voice", "rate", "out", "then-wait"}
 
 func init() {
 	register(func(r *cli.Registry) {
-		r.Describe("say", "Speak text aloud with the machine's built-in voices; narrate recordings")
+		r.Describe("say", "Speak text aloud with the machine's built-in voices, shown as a subtitle while it plays")
 		plat := []string{"darwin", "windows"}
 		r.Add(
 			&cli.Command{
 				Group: "say", Name: "",
 				Summary: "Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once",
-				Args:    "<text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]",
+				Args:    "<text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--json] [-- <command...> [--then-wait=false]] [any `subtitle show` style flag: --position --size --color --bg --font --weight --align --max-width --margin --app/--title ...]",
 				Examples: []string{
 					`aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both`,
 					`aos say "build finished"`,
@@ -65,9 +67,9 @@ func init() {
 					`aos say "welcome to the demo" --out=~/Desktop/welcome.mp3`,
 					`aos say "now I open the settings" --async   # keeps talking while the script goes on`,
 					"aos say wait",
-					"# while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken",
-					"# --narrate adds it to the recording's narration track without playing it aloud",
 					"# the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off",
+					`aos say "Saving the report now" --position=top-center --size=L --app=Notepad   # caption style: the subtitle show flags`,
+					"# long text is captioned a sentence (or clause, ~2 lines) at a time, each timed to its own audio",
 				},
 				Platforms: plat,
 				Run:       runSay,
@@ -105,19 +107,26 @@ type sayOptions struct {
 	req     sayRequest
 	out     string
 	async   bool
-	narrate bool
-	caption bool // show the text as a subtitle while it is spoken
+	caption bool     // show the text as a subtitle while it is spoken
+	style   []string // subtitle style flags, passed through to `subtitle show`
 	json    bool
 }
 
 func parseSay(args []string) (sayOptions, error) {
 	var o sayOptions
-	set, err := parseArgs(args, sayValueFlags...)
+	styleFlags := sayCaptionFlags()
+	set, err := parseArgs(args, append(append([]string{}, sayValueFlags...), styleFlags...)...)
 	if err != nil {
 		return o, err
 	}
-	if err := set.Reject(append([]string{"async", "narrate", "json", "no-subtitle"}, sayValueFlags...)...); err != nil {
+	known := append(append([]string{"async", "json", "no-subtitle"}, sayValueFlags...), styleFlags...)
+	if err := set.Reject(known...); err != nil {
 		return o, err
+	}
+	for _, f := range styleFlags {
+		if set.Has(f) {
+			o.style = append(o.style, "--"+f+"="+set.String(f, ""))
+		}
 	}
 	o.req.Text = strings.TrimSpace(strings.Join(set.Rest, " "))
 	if o.req.Text == "" {
@@ -138,7 +147,7 @@ func parseSay(args []string) (sayOptions, error) {
 			return o, fmt.Errorf("--out must end in .mp3, .wav, .aiff or .m4a")
 		}
 	}
-	o.async, o.narrate, o.json = set.Has("async"), set.Has("narrate"), set.Has("json")
+	o.async, o.json = set.Has("async"), set.Has("json")
 	o.caption = !set.Has("no-subtitle")
 	return o, nil
 }
@@ -156,56 +165,81 @@ func runSay(c *cli.Ctx, args []string) error {
 	if o.async {
 		return spawnSay(c, withoutFlag(args, "async"))
 	}
-	dir := sayDir(c)
-	// A file-only render (--out with no recording) does not need the queue.
-	rec := activeRecording(c)
-	play := !o.narrate && o.out == ""
-	if !play && rec == nil {
+	if o.out != "" { // a file only: nothing is played or shown
 		return sayToFile(c, o)
 	}
+	dir := sayDir(c)
 	if err := sayEnqueue(dir); err != nil {
 		return err
 	}
 	defer sayDequeue(dir)
 
-	if !play && o.out != "" { // --out during a recording: write the file, and narrate it too
-		if err := sayRenderTo(o.req, o.out); err != nil {
+	// Long text becomes caption-sized chunks (a sentence, else a clause, about
+	// two lines at most). Each chunk is its own clip, so its caption goes up
+	// when its audio starts and is replaced when the next chunk starts.
+	chunks := []string{o.req.Text}
+	if o.caption {
+		chunks = captionChunks(o.req.Text, captionMaxChars)
+	}
+	// Render every chunk at once: the engine runs per clip, so in parallel the
+	// first words start about as soon as a single line would.
+	clips := make([]string, len(chunks))
+	errs := make([]error, len(chunks))
+	var wg sync.WaitGroup
+	for i, chunk := range chunks {
+		wg.Add(1)
+		go func(i int, text string) {
+			defer wg.Done()
+			req := o.req
+			req.Text = text
+			clips[i], errs[i] = sayRenderClip(req)
+		}(i, chunk)
+	}
+	wg.Wait()
+	for _, clip := range clips {
+		if clip != "" {
+			defer os.Remove(clip)
+		}
+	}
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
+	}
+	dur := 0.0
+	captioned := false
+	for i, clip := range clips {
+		d := audioDuration(clip)
+		dur += d
+		// The caption goes up while the audio starts, so the speech never
+		// waits on the overlay (which takes a moment to appear). +1 s keeps it
+		// up until the next chunk's caption replaces it, so there is no blank
+		// flash; the last one is cleared when the speech ends.
+		var shown chan bool
+		if o.caption {
+			shown = make(chan bool, 1)
+			go func(text string, secs float64) { shown <- showSayCaption(c, text, secs+1, o.style) }(chunks[i], d)
+		}
+		err := playClip(dir, clip)
+		if shown != nil && <-shown {
+			captioned = true
+		}
+		if err != nil {
 			return err
 		}
 	}
-	clip, err := sayRenderClip(c, dir, o.req, rec != nil)
-	if err != nil {
-		return err
-	}
-	if rec == nil {
-		defer os.Remove(clip)
-	}
-	dur := audioDuration(clip)
-	if rec != nil {
-		_ = appendVideoEvent(rec.Events, videoEvent{T: since(rec.Started), Kind: "say", Label: clip, Hold: dur, Cmd: o.req.Text})
-	}
-	// Speech and subtitle go together: the same text is on screen for exactly
-	// as long as it is heard (and so lands in a recording in sync with it).
-	captioned := o.caption && (play || o.narrate) && showSayCaption(c, o.req.Text, dur)
 	if captioned {
-		defer cli.Invoke(c, []string{"subtitle", "stop"}, "")
+		cli.Invoke(c, []string{"subtitle", "stop"}, "")
 	}
-	if play {
-		if err := playClip(dir, clip); err != nil {
-			return err
-		}
-	} else if o.narrate {
-		// keep the queue honest: the next line must not start inside this one.
-		time.Sleep(time.Duration(dur * float64(time.Second)))
-	}
-	return sayReport(c, o, map[string]any{"Spoken": play, "Seconds": dur, "Narration": rec != nil, "Out": o.out})
+	return sayReport(c, o, map[string]any{"Spoken": true, "Seconds": dur, "Chunks": len(chunks), "Subtitle": captioned})
 }
 
 // showSayCaption puts the spoken text up as a subtitle for the clip's length.
 // A caption that cannot be shown (no display, say) never fails the speech.
-func showSayCaption(c *cli.Ctx, text string, seconds float64) bool {
+func showSayCaption(c *cli.Ctx, text string, seconds float64, style []string) bool {
 	secs := math.Max(1, math.Ceil(seconds*10)/10)
-	res := cli.Invoke(c, []string{"subtitle", "show", text, "--seconds=" + strconv.FormatFloat(secs, 'f', 1, 64)}, "")
+	argv := append([]string{"subtitle", "show", text, "--seconds=" + strconv.FormatFloat(secs, 'f', 1, 64)}, style...)
+	res := cli.Invoke(c, argv, "")
 	if res.Exit != 0 {
 		fmt.Fprintf(c.Stderr, "aos say: no subtitle (%s)\n", strings.TrimSpace(res.Stderr))
 		return false
@@ -231,22 +265,18 @@ func sayToFile(c *cli.Ctx, o sayOptions) error {
 	return sayReport(c, o, map[string]any{"Spoken": false, "Seconds": audioDuration(o.out), "Out": o.out})
 }
 
-// sayRenderClip renders to a native-format file: in the recording's narration
-// folder when one runs (kept for the final mix), else a temp file.
-func sayRenderClip(c *cli.Ctx, dir string, req sayRequest, keep bool) (string, error) {
+// sayRenderClip renders one utterance to a temp file in the native format.
+func sayRenderClip(req sayRequest) (string, error) {
 	folder := os.TempDir()
-	if keep {
-		folder = filepath.Join(videoDir(c), "narration")
-	}
-	if err := os.MkdirAll(folder, 0o755); err != nil {
-		return "", err
-	}
-	path := filepath.Join(folder, fmt.Sprintf("say-%d-%d%s", time.Now().UnixMilli(), os.Getpid(), sayNativeExt))
+	path := filepath.Join(folder, fmt.Sprintf("say-%d-%d-%d%s", time.Now().UnixMilli(), os.Getpid(), clipSeq.Add(1), sayNativeExt))
 	if err := sayRender(req, path); err != nil {
 		return "", err
 	}
 	return path, nil
 }
+
+// clipSeq keeps clip names unique when chunks render in parallel.
+var clipSeq atomic.Int64
 
 // sayRenderTo renders to any supported extension, converting with ffmpeg when
 // the native format (aiff on macOS, wav on Windows) is not what was asked for.
@@ -489,87 +519,6 @@ func runSayVoices(c *cli.Ctx, args []string) error {
 	return nil
 }
 
-// ---- recording mix ---------------------------------------------------------
-
-// narrationClip is one spoken line placed on the video's timeline.
-type narrationClip struct {
-	Path string
-	At   float64 // seconds into the video
-}
-
-// narrationClips picks the `say` events out of a finished recording.
-func narrationClips(doc videoDoc) []narrationClip {
-	var out []narrationClip
-	for _, ev := range doc.Events {
-		if ev.Kind != "say" || ev.Label == "" {
-			continue
-		}
-		at := ev.T - doc.Offset
-		if at < 0 {
-			at = 0
-		}
-		if doc.Duration > 0 && at >= doc.Duration {
-			continue
-		}
-		out = append(out, narrationClip{Path: ev.Label, At: at})
-	}
-	return out
-}
-
-// narrationMixArgs builds the ffmpeg call that lays clips over a video. With
-// keepAudio the recording's own sound stays underneath; otherwise the
-// narration replaces it.
-func narrationMixArgs(video string, clips []narrationClip, keepAudio bool, duration float64, out string) []string {
-	args := []string{"-hide_banner", "-loglevel", "error", "-y", "-i", video}
-	for _, c := range clips {
-		args = append(args, "-i", c.Path)
-	}
-	var f strings.Builder
-	var labels []string
-	if keepAudio {
-		labels = append(labels, "[0:a]")
-	}
-	for i, c := range clips {
-		ms := int(c.At*1000 + 0.5)
-		fmt.Fprintf(&f, "[%d:a]aresample=48000,adelay=%d|%d[n%d];", i+1, ms, ms, i)
-		labels = append(labels, fmt.Sprintf("[n%d]", i))
-	}
-	fmt.Fprintf(&f, "%samix=inputs=%d:duration=longest:dropout_transition=0:normalize=0[a]", strings.Join(labels, ""), len(labels))
-	args = append(args, "-filter_complex", f.String(), "-map", "0:v", "-map", "[a]",
-		"-c:v", "copy", "-c:a", "aac", "-b:a", "160k")
-	if duration > 0 {
-		args = append(args, "-t", strconv.FormatFloat(duration, 'f', 3, 64))
-	}
-	return append(args, "-movflags", "+faststart", out)
-}
-
-// mixNarration lays the recording's spoken lines into video in place.
-// It returns how many lines were mixed.
-func mixNarration(video string, doc videoDoc, keepAudio bool) (int, error) {
-	clips := narrationClips(doc)
-	if len(clips) == 0 {
-		return 0, nil
-	}
-	info, err := probeVideo(video)
-	if err != nil {
-		return 0, err
-	}
-	tmp := strings.TrimSuffix(video, filepath.Ext(video)) + ".narrated.tmp.mp4"
-	cmd := exec.Command("ffmpeg", narrationMixArgs(video, clips, keepAudio && info.Audio, info.Duration, tmp)...)
-	hideChild(cmd)
-	if msg, err := cmd.CombinedOutput(); err != nil {
-		_ = os.Remove(tmp)
-		return 0, fmt.Errorf("ffmpeg: %v: %s", err, strings.TrimSpace(string(msg)))
-	}
-	if err := os.Rename(tmp, video); err != nil {
-		return 0, err
-	}
-	for _, c := range clips {
-		_ = os.Remove(c.Path)
-	}
-	return len(clips), nil
-}
-
 var sayVoiceLine = regexp.MustCompile(`^(.+?)\s+([a-z]{2,3}_[A-Za-z0-9]+)\s+#`)
 
 // parseMacVoices reads `say -v ?`: "Name   lang_RE   # sample".
@@ -674,4 +623,104 @@ func runAosOrExternal(c *cli.Ctx, argv []string) int {
 func isAosWord(w string) bool {
 	base := strings.ToLower(filepath.Base(w))
 	return base == "aos" || base == "aos.exe"
+}
+
+// ---- captions -----------------------------------------------------------------
+
+// sayCaptionFlags are the `subtitle show` style flags `say` passes through:
+// the same list subtitle uses, minus the ones say owns (timing, preview).
+func sayCaptionFlags() []string {
+	var out []string
+	for _, f := range subtitleValueFlags {
+		switch f {
+		case "seconds", "preview":
+			continue
+		}
+		out = append(out, f)
+	}
+	return out
+}
+
+// captionMaxChars is about two lines of a default-size caption.
+const captionMaxChars = 84
+
+var (
+	sentenceEnd = regexp.MustCompile(`([.!?…]+["')\]]*)\s+`)
+	clauseEnd   = regexp.MustCompile(`([,;:—–])\s+`)
+)
+
+// captionChunks splits text for captions: sentences first; a sentence longer
+// than max at clause marks; a clause still too long at word boundaries. Short
+// neighbours are joined back up to one line, so captions do not flash.
+func captionChunks(text string, max int) []string {
+	text = strings.Join(strings.Fields(text), " ")
+	if len([]rune(text)) <= max {
+		return []string{text}
+	}
+	var pieces []string
+	for _, sentence := range splitKeep(text, sentenceEnd) {
+		if len([]rune(sentence)) <= max {
+			pieces = append(pieces, sentence)
+			continue
+		}
+		for _, clause := range splitKeep(sentence, clauseEnd) {
+			if len([]rune(clause)) <= max {
+				pieces = append(pieces, clause)
+				continue
+			}
+			pieces = append(pieces, wrapWords(clause, max)...)
+		}
+	}
+	// Join neighbours that still fit on about one line, and fold a very short
+	// piece ("Done.") into the caption before it, so captions do not flash.
+	var out []string
+	for _, p := range pieces {
+		n := len(out)
+		if n == 0 {
+			out = append(out, p)
+			continue
+		}
+		joined := len([]rune(out[n-1])) + 1 + len([]rune(p))
+		if joined <= max/2 || (len([]rune(p)) < 16 && joined <= max) {
+			out[n-1] += " " + p
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// splitKeep splits after each match, keeping the punctuation with its piece.
+func splitKeep(s string, re *regexp.Regexp) []string {
+	var out []string
+	last := 0
+	for _, m := range re.FindAllStringSubmatchIndex(s, -1) {
+		out = append(out, strings.TrimSpace(s[last:m[3]]))
+		last = m[1]
+	}
+	if rest := strings.TrimSpace(s[last:]); rest != "" {
+		out = append(out, rest)
+	}
+	return out
+}
+
+func wrapWords(s string, max int) []string {
+	var out []string
+	var cur []string
+	n := 0
+	for _, w := range strings.Fields(s) {
+		if n > 0 && n+1+len([]rune(w)) > max {
+			out = append(out, strings.Join(cur, " "))
+			cur, n = nil, 0
+		}
+		if n > 0 {
+			n++
+		}
+		cur = append(cur, w)
+		n += len([]rune(w))
+	}
+	if len(cur) > 0 {
+		out = append(out, strings.Join(cur, " "))
+	}
+	return out
 }

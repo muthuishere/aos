@@ -2,38 +2,33 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
-## v0.11.0 — built-in narration, batch scripts, window-only recording
+## v0.11.0 — speech with subtitles, batch scripts
 
 ### New
 
 - **`aos say`** speaks text with the machine's own free voices: `say` on
   macOS, SAPI over COM on Windows (the OneCore voices first, then the desktop
   ones). `--voice`, `--rate` (words per minute), `--out=.mp3|.wav|.aiff|.m4a`
-  (mp3/m4a through ffmpeg), `--async`, `--json`. `say voices`, `say wait`,
-  `say stop`. Lines queue, so they never talk over each other.
+  (a file only; mp3/m4a through ffmpeg), `--async`, `--json`. `say voices`,
+  `say wait`, `say stop`. Lines queue, so they never talk over each other.
 - **Speech and subtitle go together:** `aos say` shows the same text as an
-  aos subtitle while it speaks, timed to the speech and cleared when it ends
-  (`--no-subtitle` for voice only). A recording gets voice and captions in
-  sync with no editing; in `aos batch`, `say:` shows the caption too.
+  aos subtitle while it speaks and clears it when it ends (`--no-subtitle`
+  for voice only). It takes every `subtitle show` style flag (`--position`,
+  `--size`, `--color`, `--app`/`--title`, ...). Long text is captioned a
+  sentence or clause at a time (about two lines), each chunk shown while its
+  own audio plays. `subtitle show` stays silent; `subtitle show --say` also
+  speaks it.
 - **Speak while acting:** `aos say "Now I type the note" -- aos key type
   --app=Notepad "hello"` speaks and runs the command together and waits for
   both; the exit code is the command's.
-- **Narrated recordings, no mic, no editing:** while `capture video` runs,
-  every `aos say` is time-stamped and `capture video stop` mixes it into
-  `<out>.final.mp4` at the moment it was spoken (`--narration=mix|replace|off`).
-  `say --narrate` adds a line without playing it aloud. `subtitle show` stays
-  a silent caption; `subtitle show --say` also speaks it.
 - **`aos batch`** runs many steps from YAML (a file, `-`, or the YAML inline).
   Steps run in order; `parallel:` runs its list together. Every aos command is
   a verb (`<group>-<command>`), plus `click`, `type`, `key`, `screenshot`,
-  `record`, `record-stop`, `say`, `wait` and `do:`. The whole script is
-  checked before step 1 (line:col, did-you-mean for verbs and flags);
-  `batch --check` validates only, `batch verbs` lists every verb. Spec:
-  `docs/batch-spec.md`; examples in `docs/examples/`.
-- **`capture video start windows --app=A[,B]`** (macOS) records only the named
-  windows' own pixels through ScreenCaptureKit: windows on top, notifications
-  and the desktop never reach the video. One mp4 per window, joined side by
-  side at stop. `--dry-run` resolves the windows and records nothing.
+  `say`, `wait` and `do:`. A top-level `subtitle:` map sets the caption style
+  for every `say:` step. The whole script is checked before step 1 (line:col,
+  did-you-mean for verbs and flags); `batch --check` validates only,
+  `batch verbs` lists every verb. Spec: `docs/batch-spec.md`; examples in
+  `docs/examples/`.
 
 ### Changed (Windows: no PowerShell)
 
@@ -58,5 +53,3 @@ process list, power, network and fonts.
 
 - The Windows changes above have passed `go vet` and cross-compile, but have
   not yet run on a Windows machine.
-- `capture video start windows` has been checked with `--dry-run` only; it has
-  not yet recorded a real video.

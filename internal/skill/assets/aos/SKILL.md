@@ -135,7 +135,7 @@ command with usage and examples. Load the guide that matches the intent:
 | find a control by its text; read all text of a window | `references/find.md` |
 | browser and terminal tabs: list, switch, open, type into, close; read, type into and click a page, wait for text | `references/tabs.md` |
 | point at / label things on screen | `references/draw.md` |
-| speak / narrate a recording | `references/speech.md` |
+| speak, with a subtitle in step | `references/speech.md` |
 | run many steps from YAML (batch) | `references/batch.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
 | `capture video` flags, camera modes, events format | `references/capture-video.md` |

@@ -7,15 +7,13 @@ Free, built-in voices only (macOS and Windows):
   voices first (e.g. Microsoft David, Zira, Mark), then the desktop SAPI ones
   ("... Desktop"). Native Windows only; not under WSL.
 
-Every line is rendered to an audio file, then played, so the same audio can
-be dropped into a recording.
-
 ## Commands
 
 ```bash
 aos say "build finished"                              # speak AND show it as a subtitle, return when done
 aos say "build finished" --no-subtitle                # speak only
 aos say "Hello" --voice=Samantha --rate=190           # voice name (or part), words per minute
+aos say "Saving now" --position=top-center --size=L --app=Notepad   # caption style: any subtitle show flag
 aos say "Welcome" --out=~/Desktop/welcome.mp3         # file only: .mp3 .wav .aiff .m4a (mp3/m4a via ffmpeg)
 aos say voices [--json]                               # Name, Language, Gender, Engine (say|onecore|sapi)
 aos say "Now I open Notepad" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
@@ -26,38 +24,30 @@ aos say stop                                          # silence now, drop the qu
 aos subtitle show "Saving the report" --say           # a caption that speaks (plain `subtitle show` stays silent)
 ```
 
-- **Speech and subtitle go together.** `say` shows the same text as an aos
-  subtitle for exactly as long as it is heard, and clears it when the line
-  ends (`--no-subtitle` turns that off; a file-only `--out` shows nothing). In
-  a recording the caption is on screen in sync with the voice, so the video
-  gets both with no editing. `subtitle show` stays a silent caption;
-  `subtitle show --say` also speaks it.
+## Speech and subtitle go together
+
+- `say` shows the same text as an aos subtitle while it is heard, and clears
+  it when the speech ends. `--no-subtitle` turns that off; a file-only
+  `--out` shows nothing.
+- **Style:** `say` takes every `subtitle show` style flag (`--position`,
+  `--size`, `--color`, `--bg`, `--font`, `--weight`, `--align`, `--max-width`,
+  `--margin`, `--offset`, `--app`/`--title` to caption over one window, ...),
+  passed through unchanged. The default look is the subtitle default: white
+  on a translucent dark pill, bottom-center.
+- **Long text** is captioned in chunks: a sentence at a time; a sentence
+  longer than about two lines at its clauses; a clause still too long at word
+  boundaries. Very short pieces join the caption before them. Each chunk is
+  rendered as its own clip, so its caption goes up as its audio starts and is
+  replaced when the next chunk starts.
+- `subtitle show` stays a silent caption; `subtitle show --say` also speaks it
+  (with no second caption).
+
+## Queueing and acting
+
 - Lines **queue**: a second `say` (async or not) waits for the one speaking,
-  so narration never talks over itself.
+  so lines never talk over each other.
 - With `-- <command>`, the exit code is the command's; a speech failure only
   warns on stderr. `aos ...` after `--` runs in the same process (no new
   startup, no shell quoting); anything else runs as a program.
-
-## Narrating a recording
-
-While `aos capture video start ...` runs, each `say` is time-stamped (event
-kind `say` in `<out>.events.json`) and kept. `aos capture video stop` mixes
-every line into `<out>.final.mp4` at the moment it was spoken:
-
-| stop flag | result |
-|---|---|
-| `--narration=mix` (default) | voice over the recorded system audio (if any) |
-| `--narration=replace` | voice only |
-| `--narration=off` | no voice track added |
-
-`say --narrate "..."` adds a line to the track **without** playing it aloud
-(useful on a muted machine); it still holds the queue for the line's length,
-so the next line does not start inside it.
-
-```bash
-aos capture video start app --app=TextEdit --out=~/Desktop/demo.mp4
-aos say "Here is TextEdit" --async
-aos say "I type a note while I talk" -- aos key type --app=TextEdit "Hello from aos"
-aos say wait
-aos capture video stop      # -> demo.final.mp4 with the voice in sync
-```
+- In `aos batch`, a `say:` step speaks and captions the same way; put it in
+  `parallel:` with an action to talk while acting (`references/batch.md`).

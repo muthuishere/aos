@@ -23,8 +23,7 @@ import (
 //
 // A step is one verb. Every aos command is a verb named <group>-<command>
 // ("window-snap", "capture-video-start"), with the CLI's own words and flags,
-// plus a few short names (click, type, key, screenshot, record, record-stop,
-// say, wait) and `do:` for any command as typed. `parallel:` runs its list
+// plus a few short names (click, type, key, screenshot, say, wait) and `do:` for any command as typed. `parallel:` runs its list
 // together. The verbs come from the live command registry, so the batch can
 // never disagree with the CLI. The whole script is checked before step 1.
 
@@ -37,22 +36,20 @@ var batchNoVerb = map[string]bool{"batch": true, "serve": true, "completion": tr
 
 // batchShortNames are the verbs that are not a <group>-<command>.
 var batchShortNames = map[string]string{
-	"click":       "mouse click --app=<app> --find=<target>  (or: click: <x> <y>)",
-	"type":        "key type <text> [--app=<app>]  (click: Notepad hello world)",
-	"key":         "key press <combo> [--app=<app>]",
-	"screenshot":  "capture screenshot window --app=<app>  (no app: the whole screen)",
-	"record":      "capture video start --out=<file.mp4> [mode] [flags]",
-	"record-stop": "capture video stop [flags]",
-	"say":         "speak the text (say: hello there [--voice=Zira])",
-	"wait":        "pause for a duration: 500 (ms), 2s, 1m",
-	"do":          "any aos command, as typed (do: window snap Notepad left)",
+	"click":      "mouse click --app=<app> --find=<target>  (or: click: <x> <y>)",
+	"type":       "key type <text> [--app=<app>]  (click: Notepad hello world)",
+	"key":        "key press <combo> [--app=<app>]",
+	"screenshot": "capture screenshot window --app=<app>  (no app: the whole screen)",
+	"say":        "speak the text and show it as a subtitle (say: hello there [--voice=Zira] [--size=L])",
+	"wait":       "pause for a duration: 500 (ms), 2s, 1m",
+	"do":         "any aos command, as typed (do: window snap Notepad left)",
 }
 
 // batchLongForm names the positional slots of the short names, for the map
 // form: click: {app: Calculator, target: Seven}.
 var batchLongForm = map[string][]string{
 	"click": {"app", "target"}, "type": {"app", "text"}, "key": {"app", "combo"},
-	"screenshot": {"app"}, "record": {"out"}, "say": {"text"}, "wait": {"time"}, "do": {"command"},
+	"screenshot": {"app"}, "say": {"text"}, "wait": {"time"}, "do": {"command"},
 }
 
 func init() {
@@ -115,15 +112,12 @@ func batchVerbs(r *cli.Registry) map[string]*batchVerb {
 	for name, usage := range batchShortNames {
 		out[name] = &batchVerb{Name: name, Usage: usage, Summary: usage}
 	}
-	if c := r.Lookup("capture", "video start"); c != nil {
-		out["record"].flags = flagSet(c.Args)
+	// say takes its own flags plus every subtitle style flag (one list).
+	sayFlags := map[string]bool{"json": true, "no-subtitle": true, "narrate": true}
+	for _, f := range append(append([]string{}, sayValueFlags...), sayCaptionFlags()...) {
+		sayFlags[f] = true
 	}
-	if c := r.Lookup("capture", "video stop"); c != nil {
-		out["record-stop"].flags = flagSet(c.Args)
-	}
-	if c := r.Lookup("say", ""); c != nil {
-		out["say"].flags = flagSet(c.Args)
-	}
+	out["say"].flags = sayFlags
 	out["click"].flags = map[string]bool{"double": true, "button": true, "role": true, "focus": true, "force": true}
 	out["type"].flags = map[string]bool{"verify": true, "focus": true}
 	out["key"].flags = map[string]bool{"focus": true, "force": true}
@@ -215,9 +209,10 @@ func (f batchFinding) String() string {
 }
 
 type batchChecker struct {
-	reg   *cli.Registry
-	verbs map[string]*batchVerb
-	fs    []batchFinding
+	reg     *cli.Registry
+	verbs   map[string]*batchVerb
+	fs      []batchFinding
+	caption []batchFlag // the top-level subtitle: block, defaults for say steps
 }
 
 func (b *batchChecker) errorf(at, hint, format string, a ...any) {
@@ -255,11 +250,15 @@ func checkBatch(reg *cli.Registry, src []byte) ([]*batchStep, []batchFinding) {
 		list = nil
 		for i := 0; i+1 < len(root.Content); i += 2 {
 			k := root.Content[i]
-			if k.Value == "steps" {
+			switch k.Value {
+			case "steps":
 				list = root.Content[i+1]
 				continue
+			case "subtitle":
+				b.captionDefaults(root.Content[i+1])
+				continue
 			}
-			b.errorf(pos(k), "a batch file has only `steps:`", "unknown top-level key %q", k.Value)
+			b.errorf(pos(k), "a batch file has `steps:` and an optional `subtitle:` style", "unknown top-level key %q", k.Value)
 		}
 		if list == nil {
 			b.errorf(pos(root), "", "the file needs a `steps:` list")
@@ -271,6 +270,32 @@ func checkBatch(reg *cli.Registry, src []byte) ([]*batchStep, []batchFinding) {
 		b.errorf(pos(root), "", "no steps")
 	}
 	return steps, b.fs
+}
+
+// captionDefaults reads `subtitle: {position: bottom-center, size: L}`: the
+// caption style every say step uses unless it sets its own.
+func (b *batchChecker) captionDefaults(n *yaml.Node) {
+	if n.Kind != yaml.MappingNode {
+		b.errorf(pos(n), "subtitle: {position: bottom-center, size: L}", "subtitle must be a map of caption style flags")
+		return
+	}
+	known := sayCaptionFlags()
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		k, v := n.Content[i], n.Content[i+1]
+		if !slices.Contains(known, k.Value) {
+			hint := "style flags: " + strings.Join(known, ", ")
+			if s := closest(k.Value, known); s != "" {
+				hint = "did you mean " + s + "?"
+			}
+			b.errorf(pos(k), hint, "subtitle has no %q", k.Value)
+			continue
+		}
+		if v.Kind != yaml.ScalarNode {
+			b.errorf(pos(v), "", "subtitle %s must be a plain value", k.Value)
+			continue
+		}
+		b.caption = append(b.caption, batchFlag{name: k.Value, value: v.Value, hasValue: true, at: pos(k)})
+	}
 }
 
 func (b *batchChecker) stepList(n *yaml.Node, inParallel bool) []*batchStep {
@@ -512,28 +537,18 @@ func (b *batchChecker) build(verb *batchVerb, k *yaml.Node, words []string, flag
 		} else {
 			st.Argv = append([]string{"capture", "screenshot"}, fl...)
 		}
-	case "record":
-		var out string
-		var rest []string
-		for _, w := range words {
-			if strings.HasSuffix(strings.ToLower(w), ".mp4") && out == "" {
-				out = w
-			} else {
-				rest = append(rest, w)
-			}
-		}
-		if out == "" {
-			b.errorf(at, "record: demo.mp4", "record needs an .mp4 file name")
-			return nil
-		}
-		st.Argv = append(append(append([]string{"capture", "video", "start"}, rest...), "--out="+out), fl...)
-	case "record-stop":
-		st.Argv = append([]string{"capture", "video", "stop"}, fl...)
 	case "say":
 		if !need(1, "text to say") {
 			return nil
 		}
-		st.Say = append([]string{strings.Join(words, " ")}, fl...)
+		// the file's subtitle: style first, then the step's own flags win
+		var style []batchFlag
+		for _, d := range b.caption {
+			if !slices.ContainsFunc(flags, func(f batchFlag) bool { return f.name == d.name }) {
+				style = append(style, d)
+			}
+		}
+		st.Say = append(append([]string{strings.Join(words, " ")}, flagArgs(style)...), fl...)
 	case "wait":
 		if len(words) != 1 {
 			b.errorf(at, "wait: 2s", "wait takes one duration")
@@ -783,8 +798,8 @@ func (r *batchRunner) leaf(id string, st *batchStep) bool {
 	case st.Verb == "wait":
 		time.Sleep(st.Wait)
 	case st.Verb == "say":
-		// A child process, like `say --async`: the speaker queue and the
-		// recording's narration track key on the process.
+		// A child process, like `say --async`: the speaker queue keys on
+		// the process, so parallel lines take turns.
 		cmd, err := startSpeech(st.Say, false)
 		if err == nil {
 			err = cmd.Wait()

@@ -25,11 +25,14 @@ func TestBatchGoodScripts(t *testing.T) {
 			[]string{"wait 2s", "key press ctrl+s --app=Notepad", "key press enter", "window list --app=Notepad"}},
 		{`[click: {app: Calculator, target: Seven}, click: 10 20, type: hello, display-list]`,
 			[]string{"mouse click --app=Calculator --find=Seven", "mouse click 10 20", "key type hello", "display list"}},
-		{`[record: demo.mp4 window --app=TextEdit, record-stop: --narration=replace]`,
-			[]string{"capture video start window --out=demo.mp4 --app=TextEdit", "capture video stop --narration=replace"}},
 		{"steps:\n  - screenshot: Calculator --out=c.png\n  - screenshot\n  - do: aos window focus Notepad\n  - type: Notepad \"a, b\" c\n",
 			[]string{"capture screenshot window --app=Calculator --out=c.png", "capture screenshot", "window focus Notepad", "key type a, b c --app=Notepad"}},
 	}
+	cases = append(cases, struct {
+		src  string
+		want []string
+	}{"subtitle: {position: top-center, size: L}\nsteps:\n  - say: hello\n  - say: big one --size=XL\n",
+		[]string{"say hello --position=top-center --size=L", "say big one --position=top-center --size=XL"}})
 	for _, c := range cases {
 		steps, fs := checkBatch(r, []byte(c.src))
 		for _, f := range fs {
@@ -61,10 +64,12 @@ func TestBatchBadScripts(t *testing.T) {
 		{`[parallel: [parallel: [wait: 1]]]`, `1:13: error: parallel inside parallel is not supported`},
 		{`[parallel: []]`, `1:2: error: parallel needs at least one step`},
 		{`[key: a b c]`, `1:2: error: key takes an app and one combination`},
-		{`[record: demo.mov]`, `1:2: error: record needs an .mp4 file name`},
+		{`[record: demo.mp4]`, `1:2: error: unknown verb "record"`},
 		{`[type: "unclosed]`, `1:1: error: found unexpected end of stream`},
 		{"steps: [wait: 1]\nrepeat: 3\n", `2:1: error: unknown top-level key "repeat"`},
 		{`[do: batch x.yaml]`, `1:2: error: a batch cannot run another batch`},
+		{"subtitle: {positon: top}\nsteps: [say: hi]\n", `1:12: error: subtitle has no "positon" (did you mean position?)`},
+		{`[say: hi --colour=red]`, `1:7: error: say has no --colour (did you mean --color?)`},
 	}
 	for _, c := range cases {
 		_, fs := checkBatch(r, []byte(c.src))

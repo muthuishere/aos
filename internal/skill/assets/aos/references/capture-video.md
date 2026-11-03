@@ -30,25 +30,8 @@ aos capture video stop
 | `monitor` (default) | `--monitor=<n>` (else the focused one) | wide; zooms to each aos action (find, draw, window, key, click, screenshot) |
 | `app --app=<name>` | the monitor the app is on | follows that window as it moves and resizes |
 | `mouse [--zoom=2]` | the monitor | follows the cursor at a fixed zoom, spring-smoothed with a dead zone; clicks pulse |
-| `window --app=<name>` | that window's area of the screen (fixed crop): **anything on top of it shows** | as `monitor`, inside the crop |
-| `windows --app=A[,B...]` (macOS) | only those windows' own pixels (ScreenCaptureKit): windows on top, notifications and the desktop never appear; one `<out>.<n>-<app>.mp4` per window, joined side by side into `<out>` | none (no camera moves); `aos say` narration is mixed into `.final.mp4` |
+| `window --app=<name>` | only that window (fixed crop) | as `monitor`, inside the crop |
 | `region --region=x,y,w,h` | only that rect (fixed crop) | as `monitor`, inside the crop |
-
-**Window-only capture (macOS): use `windows`, not `window`.** `window` crops
-the screen, so a window that covers the target (a terminal, a browser with
-mail open) is recorded. `windows` captures the window itself. Check before
-recording with `--dry-run`: it resolves each window through ScreenCaptureKit
-and prints its id, title, size and output file without capturing anything.
-`app` records the whole monitor the app is on.
-
-```bash
-aos capture video start windows --app="Ghostty,Google Chrome" --dry-run
-aos capture video start windows --app="Ghostty,Google Chrome" --out=~/Movies/lonnie.mp4
-aos capture video stop      # lonnie.1-ghostty.mp4, lonnie.2-google-chrome.mp4, lonnie.mp4 (side by side), lonnie.final.mp4
-```
-
-One window per `--app` (the one `window list --app` shows first); Screen
-Recording permission is needed by the terminal that runs aos.
 
 Camera priority, highest first: explicit `focus` > `draw`/`find` (in smart mode;
 every action in monitor mode) > cursor > aos's target window > wide. Windows

@@ -1,0 +1,16 @@
+# Talk while acting (macOS): every say line is spoken and shown as a subtitle,
+# in step with the clicks. Run: aos batch docs/examples/calculator-mac.yaml
+subtitle: {position: bottom-center, size: L}
+steps:
+  - launch: Calculator
+  - wait: 1s
+  - do: key press escape --app=Calculator
+  - parallel:
+      - say: Seven plus two.
+      - click: Calculator 7
+  - click: Calculator Add
+  - parallel:
+      - say: Two, then equals.
+      - click: Calculator 2
+  - click: Calculator Equals
+  - say: Nine. Speech, subtitle and clicks, from one batch file. --size=XL

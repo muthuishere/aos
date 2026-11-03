@@ -47,9 +47,7 @@ Short names:
 | `type: Notepad hello world` | `key type "hello world" --app=Notepad` (`type: hello` = focused window) |
 | `key: Notepad ctrl+s` | `key press ctrl+s --app=Notepad` (`key: enter`) |
 | `screenshot: Calculator --out=c.png` | `capture screenshot window --app=Calculator` (no app: the screen) |
-| `record: demo.mp4 window --app=TextEdit` | `capture video start window --app=TextEdit --out=demo.mp4` |
-| `record-stop` | `capture video stop` (+ its flags, e.g. `--narration=replace`) |
-| `say: Hello there --voice=Zira` | speaks and shows the text as a subtitle while it plays (`--no-subtitle` for voice only); while recording, voice and caption land in `.final.mp4` in sync |
+| `say: Hello there --voice=Zira` | speaks and shows the text as a subtitle while it plays (`--no-subtitle` for voice only; any `subtitle show` style flag, e.g. `--size=L`) |
 | `wait: 2s` | pause (`500` = ms, `2s`, `1m`) |
 | `do: window focus Notepad` | any aos command as typed (the escape hatch) |
 
@@ -59,22 +57,25 @@ flags as map keys (`window-list: {app: Notepad}`) and positionals as `args:`.
 System-level groups (`power`, `system`, `pkg`, `service`, `network`) are
 not verbs; reach them with `do:` and the check warns.
 
-## Narrated demo
+## Caption style and talking while acting
 
-Speech and action in one `parallel` keep the voice in step with the screen:
+A top-level `subtitle:` map is the caption style for every `say:` step; a
+step's own flags win. Put `say:` and an action in one `parallel` to talk
+while acting:
 
 ```yaml
+subtitle: {position: bottom-center, size: L}
 steps:
-  - record: ~/Desktop/demo.mp4 window --app=TextEdit --audio=none
-  - wait: 1s
+  - launch: Calculator
   - parallel:
-      - say: I type a note while I talk.
-      - type: TextEdit Hello from aos.
+      - say: Seven plus two.
+      - click: Calculator Seven
+  - click: Calculator Add
   - parallel:
-      - say: No microphone, no editing.
-      - type: TextEdit Done.
-  - wait: 1s
-  - record-stop
+      - say: Two, equals nine.
+      - click: Calculator Two
+  - click: Calculator Equals
+  - say: Done. --size=XL
 ```
 
 ## Quoting

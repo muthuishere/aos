@@ -185,9 +185,8 @@ func runSubtitleShow(c *cli.Ctx, args []string) error {
 		return showDraw(c, []string{"subtitle", "show"}, args, opts, set)
 	}
 
-	// --say reads the caption aloud too (queued like any `say --async`, and
-	// mixed into a running recording's narration track). This caption is the
-	// one on screen, so the speech shows none of its own.
+	// --say reads the caption aloud too (queued like any `say --async`). This
+	// caption is the one on screen, so the speech shows none of its own.
 	if set.Has("say") {
 		if err := spawnSay(&cli.Ctx{Stdout: io.Discard, Env: c.Env}, []string{opts.Text, "--no-subtitle"}); err != nil {
 			fmt.Fprintf(os.Stderr, "aos subtitle: could not speak: %v\n", err)

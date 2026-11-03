@@ -3,6 +3,7 @@
 YAML only. Steps run top to bottom. The only flow construct is `parallel`.
 
 ```yaml
+subtitle: {position: bottom-center, size: L}   # optional: caption style for every say step
 steps:
   - launch: calc
   - parallel:
@@ -25,8 +26,9 @@ aos batch '[launch: calc, parallel: [say: seven, click: Calculator Seven], type:
 
 ## Verbs
 Every aos command is a verb named `<group>-<command>`, with the same arguments and flags as the CLI.
-Short names: `click` (mouse-click --find), `type` (key-type), `key` (key-press), `screenshot`, `record` / `record-stop`, `say`, `wait` (a duration).
-`say:` speaks the text and shows it as a subtitle while it is spoken (cleared when it ends; `--no-subtitle` turns that off), so a recorded batch gets voice and captions in sync with no editing.
+Short names: `click` (mouse-click --find), `type` (key-type), `key` (key-press), `screenshot`, `say`, `wait` (a duration).
+`say:` speaks the text and shows it as a subtitle while it is spoken (cleared when it ends; `--no-subtitle` turns that off). It takes every `subtitle show` style flag (`--position`, `--size`, `--color`, ...); long text is captioned a sentence or clause at a time, in step with the voice.
+A top-level `subtitle:` map sets the default caption style for every `say:` step (`subtitle: {position: bottom-center, size: L}`); a step's own flags override it.
 Long form allowed: `click: { app: Calculator, target: Seven }`.
 `do: <any aos command>` is the escape hatch.
 System-level commands (power, system, pkg, service, network) are not verbs. Through `do:` the check warns.

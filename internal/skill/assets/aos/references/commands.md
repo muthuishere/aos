@@ -149,14 +149,12 @@ Start recording the screen with ffmpeg (detached; ask the person first)
 *display*
 
 ```bash
-aos capture video start [smart|monitor|window|region|app|mouse|windows] [--monitor=<n>] [--app=<name>[,<name>...]|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--dry-run] [--json]
+aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
 aos capture video start smart --audio=mic --out=~/Movies/demo.mp4
 aos capture video start monitor --monitor=2
 aos capture video start mouse --zoom=2
 aos capture video start app --app=Chrome
 aos capture video start window --app=Terminal
-aos capture video start windows --app=Ghostty,"Google Chrome"   # macOS: only those windows' own pixels, never what covers them
-aos capture video start windows --app=Ghostty --dry-run         # resolve the windows, record nothing
 aos capture video start region --region=0,0,1280,720 --max=2m
 # exit 2 when ffmpeg (or a loopback device for --audio=system) is missing
 ```
@@ -168,10 +166,9 @@ Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera
 *display · blocking*
 
 ```bash
-aos capture video stop [--raw] [--narration=mix|replace|off] [--json]
+aos capture video stop [--raw] [--json]
 aos capture video stop
 aos capture video stop --raw --json
-aos capture video stop --narration=replace   # the `aos say` voice instead of system audio
 ```
 
 ### `aos capture video status`
@@ -1027,7 +1024,7 @@ aos remote url
 
 ## say
 
-Speak text aloud with the machine's built-in voices; narrate recordings
+Speak text aloud with the machine's built-in voices, shown as a subtitle while it plays
 
 ### `aos say`
 
@@ -1036,16 +1033,16 @@ Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once
 *platforms: darwin, windows*
 
 ```bash
-aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--json] [-- <command...> [--then-wait=false]] [any `subtitle show` style flag: --position --size --color --bg --font --weight --align --max-width --margin --app/--title ...]
 aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
 aos say "build finished"
 aos say "Hello there" --voice=Samantha --rate=190
 aos say "welcome to the demo" --out=~/Desktop/welcome.mp3
 aos say "now I open the settings" --async   # keeps talking while the script goes on
 aos say wait
-# while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken
-# --narrate adds it to the recording's narration track without playing it aloud
 # the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off
+aos say "Saving the report now" --position=top-center --size=L --app=Notepad   # caption style: the subtitle show flags
+# long text is captioned a sentence (or clause, ~2 lines) at a time, each timed to its own audio
 ```
 
 ### `aos say voices`

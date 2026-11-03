@@ -1,0 +1,13 @@
+# Talk while acting (Windows): opens its own Notepad file, speaks and captions
+# each line while it types, then saves and closes the tab it opened.
+# Run from a folder that holds aos-batch-demo.txt: aos batch notepad-windows.yaml
+steps:
+  - launch: notepad aos-batch-demo.txt --wait=8000
+  - parallel:
+      - say: I type into Notepad while I talk.
+      - do: key type "Hello from aos batch. " --title=aos-batch-demo
+  - parallel:
+      - say: The voice is the built in Windows voice, with a subtitle in step.
+      - do: key type "Done." --title=aos-batch-demo
+  - do: key press ctrl+s --title=aos-batch-demo
+  - do: key press ctrl+w --title=aos-batch-demo
