@@ -70,6 +70,7 @@ func runDoctor(c *cli.Ctx, args []string) error {
 		checkPermissions(c),
 		checkWindowBackend(c),
 		checkScreenshot(c),
+		checkWindowText(c),
 		checkVideo(c),
 		checkClipboard(c),
 		checkPackageManager(c),
@@ -233,6 +234,37 @@ func checkWindowBackend(c *cli.Ctx) checkResult {
 			"check that a window manager is running"}
 	}
 	return checkResult{"windows", statusOK, fmt.Sprintf("%d windows visible", len(windows)), ""}
+}
+
+// checkWindowText reports what `window text` can read here. macOS and
+// Windows have accessibility and OCR built in; Linux needs the AT-SPI bus,
+// tesseract for OCR, and X11 for real element boxes.
+func checkWindowText(c *cli.Ctx) checkResult {
+	if c.GOOS != "linux" {
+		return checkResult{"window text", statusOK, "accessibility + OCR built in", ""}
+	}
+	var notes, fixes []string
+	status := statusOK
+	if err := engine.AccessibilityBusOK(); err != nil {
+		status = statusWarn
+		notes = append(notes, "no AT-SPI bus (OCR only)")
+		fixes = append(fixes, "install at-spi2-core and run inside a desktop session (GTK/Qt apps then publish their text)")
+	} else {
+		notes = append(notes, "AT-SPI ok")
+	}
+	if len(missingTools("tesseract")) > 0 {
+		status = statusWarn
+		notes = append(notes, "no tesseract (no OCR fallback)")
+		fixes = append(fixes, "`aos pkg install tesseract-ocr`")
+	} else {
+		notes = append(notes, "tesseract ok")
+	}
+	if c.Env("WAYLAND_DISPLAY") != "" || c.Env("XDG_SESSION_TYPE") == "wayland" {
+		status = statusWarn
+		notes = append(notes, "Wayland: no screen coordinates, reading order and OCR capture are best-effort")
+		fixes = append(fixes, "log in to an X11 session (or run the app under XWayland) for exact boxes")
+	}
+	return checkResult{"window text", status, strings.Join(notes, "; "), strings.Join(fixes, "; ")}
 }
 
 // checkScreenshot captures for real and inspects the file, because a capture

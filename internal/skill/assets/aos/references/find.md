@@ -1,8 +1,8 @@
 # aos find: locate a button, menu, link or phrase by its text
 
 Returns global coordinates (the same space as `capture`, `mouse` and `draw`), so
-the result can be clicked or pointed at directly. macOS and Windows; Linux not
-yet.
+the result can be clicked or pointed at directly. macOS and Windows; on Linux
+through AT-SPI and tesseract (see `window text` below).
 
 ```bash
 aos find --app=TextEdit --text=Format                       # best match, one line
@@ -48,3 +48,33 @@ checkbox, radio, textfield, text, image.
   find again.
 - Click it: `aos mouse click <Center.X> <Center.Y>`. Point at it:
   `aos draw --app=<App> --find="<text>" --text="..."`.
+
+## aos window text: read ALL the text of a window
+
+`find` locates one string; `window text` prints every piece of text in the
+window, in reading order (rows top to bottom, each row left to right), with the
+same sources: the accessibility tree first, OCR as the fallback.
+
+```bash
+aos window text TextEdit                         # plain text, one element per line
+aos window text --focused --max-chars=4000       # the frontmost window, capped
+aos window text --id=12345 --json                # {window, app, source, text, truncated, items[]}
+aos window text --title=Inbox --source=ocr       # pixels only (raises the window first)
+aos window text Ghostty --no-raise --timeout=1500
+```
+
+- Contents, not just names: text fields and editors give their value
+  (macOS `AXValue`, Windows UIA `TextPattern` / `ValuePattern`, Linux AT-SPI
+  `Text`), so editors, terminals and browser pages return their body. A
+  labelled field prints as `label: value`. Password fields are never read.
+- `--json` items: `{text, value, role, source, bounds}`; top-level `source` is
+  `ax` (macOS), `uia` (Windows), `atspi` (Linux) or `ocr`.
+- `--source=auto` (default) falls back to OCR when the tree holds almost no text
+  (canvas apps, games, remote desktops) and for a Chromium window whose page is
+  not exposed to accessibility. OCR raises the window unless `--no-raise`.
+- Duplicates (a link and the label inside it) are merged; the window's own
+  title-bar buttons and the menu bar are left out.
+- `--timeout` (ms, default 5000) bounds the whole read; exit 3 = no such window.
+- Linux: AT-SPI needs `at-spi2-core` (+ `libatk-adaptor` for GTK3); OCR needs
+  `tesseract`. On Wayland apps report no screen coordinates, so boxes and order
+  are best-effort; `aos doctor` reports all three.

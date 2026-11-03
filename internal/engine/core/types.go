@@ -69,7 +69,11 @@ type Target struct {
 // "accessibility", Role set) or an OCR line (Source "ocr", Words set
 // with each word's own box so a substring can be boxed exactly).
 type TextItem struct {
-	Text   string
+	Text string
+	// Value is the element's contents when it differs from Text: a
+	// titled text field's value, a labelled document's body. Empty
+	// when Text already is the contents.
+	Value  string
 	Role   string // normalized: button, menuitem, link, tab, checkbox, radio, textfield, text, image, other
 	Bounds Rect
 	Source string

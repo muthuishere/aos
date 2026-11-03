@@ -1502,3 +1502,19 @@ aos window save ~/.config/aos/layouts/work.json
 aos window save ~/work.json --app=Chrome
 aos window save ~/second-screen.json --monitor=2
 ```
+
+### `aos window text`
+
+Print all the text of a window, in reading order (accessibility, OCR fallback)
+
+*display*
+
+```bash
+aos window text (<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--no-raise]
+aos window text TextEdit
+aos window text --focused --max-chars=4000
+aos window text --app=Chrome --json
+aos window text --id=12345 --source=ocr --no-raise
+# auto reads the accessibility tree (AX / UI Automation / AT-SPI) and falls back to OCR when it has almost no text
+# exit 3 when no window matches
+```

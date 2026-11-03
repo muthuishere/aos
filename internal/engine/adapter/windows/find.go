@@ -179,14 +179,23 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 		if name != 0 {
 			procSysFreeString.Call(name)
 		}
+		var ct int32
+		vcall(el, elCurrentControlType, uintptr(unsafe.Pointer(&ct)))
+		value := ""
+		if off == 0 {
+			value = uiaContents(el, ct)
+		}
+		if text == "" {
+			text, value = value, ""
+		} else if value == text {
+			value = ""
+		}
 		if off == 0 && text != "" {
 			var r rect
-			var ct int32
 			vcall(el, elCurrentBoundingRect, uintptr(unsafe.Pointer(&r)))
-			vcall(el, elCurrentControlType, uintptr(unsafe.Pointer(&ct)))
 			if r.Right > r.Left && r.Bottom > r.Top {
 				out = append(out, core.TextItem{
-					Text: text, Role: uiaRole(ct), Source: "accessibility",
+					Text: text, Value: value, Role: uiaRole(ct), Source: "accessibility",
 					Bounds: core.Rect{X: int(r.Left), Y: int(r.Top), W: int(r.Right - r.Left), H: int(r.Bottom - r.Top)},
 				})
 			}
@@ -195,6 +204,55 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 	}
 	return out, nil
 }
+
+// uiaContents reads what an element holds, not what it is called: the
+// TextPattern document range of an editor or a document (Notepad, Word,
+// a browser page), else the ValuePattern value of a field. Only element
+// types that carry contents are asked, so a big tree stays cheap.
+func uiaContents(el uintptr, ct int32) string {
+	switch ct {
+	case 50004, 50030, 50003, 50020: // Edit, Document, ComboBox, Text
+	default:
+		return ""
+	}
+	if ct == 50004 || ct == 50030 {
+		var pat uintptr
+		if hr := vcall(el, elGetCurPattern, textPatternID, uintptr(unsafe.Pointer(&pat))); !failed(hr) && pat != 0 {
+			var rng uintptr
+			vcall(pat, textPatDocumentRange, uintptr(unsafe.Pointer(&rng)))
+			release(pat)
+			if rng != 0 {
+				var b uintptr
+				vcall(rng, textRangeGetText, uintptr(maxContentChars), uintptr(unsafe.Pointer(&b)))
+				release(rng)
+				s := strings.TrimSpace(bstrToString(b))
+				if b != 0 {
+					procSysFreeString.Call(b)
+				}
+				if s != "" {
+					return s
+				}
+			}
+		}
+	}
+	var v variant
+	vcall(el, elGetCurPropValue, propValueValue, uintptr(unsafe.Pointer(&v)))
+	if v.VT != 8 /* VT_BSTR */ {
+		procVariantClear.Call(uintptr(unsafe.Pointer(&v)))
+		return ""
+	}
+	s := strings.TrimSpace(bstrToString(v.Val))
+	procVariantClear.Call(uintptr(unsafe.Pointer(&v)))
+	return s
+}
+
+// IUIAutomationTextPattern / IUIAutomationTextRange slots.
+const (
+	textPatternID        = 10014
+	textPatDocumentRange = 7
+	textRangeGetText     = 12
+	maxContentChars      = 200000
+)
 
 // ---- Windows.Media.Ocr ----------------------------------------------
 

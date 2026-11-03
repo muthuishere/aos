@@ -17,6 +17,15 @@ func WindowTexts(windowID string) ([]TextItem, error) {
 	return defaultAdapter.AccessibleTexts(windowID)
 }
 
+// AccessibilityBusOK reports whether the platform's accessibility bus
+// answers. Only Linux has one to be missing (AT-SPI); elsewhere nil.
+func AccessibilityBusOK() error {
+	if b, ok := defaultAdapter.(interface{ AccessibleBusOK() error }); ok {
+		return b.AccessibleBusOK()
+	}
+	return nil
+}
+
 // FocusWindowID raises one window by its ID.
 func FocusWindowID(windowID string) error { return defaultAdapter.Focus(windowID) }
 

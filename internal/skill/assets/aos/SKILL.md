@@ -12,7 +12,7 @@ description: >
   run something as a service,
   show a caption on screen, share my screen on the LAN, what can this machine do,
   snap a window to a half / quarter / third, N-way split, put an app on monitor 2,
-  apply / save a window layout, which monitor is active, find a button / menu /
+  apply / save a window layout, which monitor is active, read all the text of a window, find a button / menu /
   text on screen, where is the Allow button, point at it, draw an arrow, show me
   where to click, highlight / circle / box this, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP,
@@ -76,6 +76,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | the page in a browser tab | `tab read --id=ID` (markdown, refs like `[e8] Send (button)`) · `tab type --id=ID --element=e7 --text=T --enter` · `tab click --id=ID --find=Send` · `watch tab --id=ID --match=T --timeout=5m` (no focus taken; `--url=web.whatsapp.com` or `--title=T` instead of `--id`) |
 | focus / wait | `window focus Chrome` · `launch Chrome --wait` · `window wait Chrome --timeout=5000` |
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
+| read all text of a window | `window text Chrome` · `window text --focused --max-chars=4000` · `--json` (role, value, bounds) · `--source=ocr` (AX/UIA/AT-SPI first, OCR fallback) |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
 | point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
 | click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=TextEdit --verify` (focus-free; `--focus` to force focus) · `key press enter --app=TextEdit` · `mouse click --app=Calculator --find=7` |
@@ -101,7 +102,7 @@ command with usage and examples. Load the guide that matches the intent:
 |---|---|
 | windows, monitors, zones, layouts | `references/windows-and-layout.md` |
 | visual loop, terminals, screen sharing rules | `references/automation.md` |
-| find a control by its text | `references/find.md` |
+| find a control by its text; read all text of a window | `references/find.md` |
 | browser and terminal tabs: list, switch, open, type into, close; read, type into and click a page, wait for text | `references/tabs.md` |
 | point at / label things on screen | `references/draw.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |

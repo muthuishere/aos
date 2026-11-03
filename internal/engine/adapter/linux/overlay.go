@@ -16,12 +16,3 @@ func (a *Adapter) OverlayScale(core.Rect) (float64, float64) { return 1, 1 }
 func (a *Adapter) ShowOverlay(core.Rect, *image.RGBA, func() bool) error {
 	return core.ErrNotImplemented
 }
-
-// AccessibleTexts / RecognizeText: not implemented on linux yet
-// (AT-SPI and tesseract are the candidates).
-func (a *Adapter) AccessibleTexts(string) ([]core.TextItem, error) {
-	return nil, core.ErrNotImplemented
-}
-func (a *Adapter) RecognizeText(core.Rect) ([]core.TextItem, error) {
-	return nil, core.ErrNotImplemented
-}
