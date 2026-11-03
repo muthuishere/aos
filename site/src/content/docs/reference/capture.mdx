@@ -187,17 +187,19 @@ aos capture video status
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos capture video stop [--raw] [--json]
+aos capture video stop [--raw] [--narration=mix|replace|off] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
 | `--raw` |  | Optional |
+| `--narration` | `mix`, `replace`, `off` | Optional |
 | `--json` |  | Optional |
 
 ```sh
 aos capture video stop
 aos capture video stop --raw --json
+aos capture video stop --narration=replace   # the `aos say` voice instead of system audio
 ```
 
 ### aos capture video unfocus

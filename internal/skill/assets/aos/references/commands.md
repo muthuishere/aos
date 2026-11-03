@@ -139,9 +139,10 @@ Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera
 *display · blocking*
 
 ```bash
-aos capture video stop [--raw] [--json]
+aos capture video stop [--raw] [--narration=mix|replace|off] [--json]
 aos capture video stop
 aos capture video stop --raw --json
+aos capture video stop --narration=replace   # the `aos say` voice instead of system audio
 ```
 
 ### `aos capture video status`
@@ -995,6 +996,63 @@ aos remote url
 ```
 
 
+## say
+
+Speak text aloud with the machine's built-in voices; narrate recordings
+
+### `aos say`
+
+Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once
+
+*platforms: darwin, windows*
+
+```bash
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
+aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
+aos say "build finished"
+aos say "Hello there" --voice=Samantha --rate=190
+aos say "welcome to the demo" --out=~/Desktop/welcome.mp3
+aos say "now I open the settings" --async   # keeps talking while the script goes on
+aos say wait
+# while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken
+# --narrate adds it to the recording's narration track without playing it aloud
+```
+
+### `aos say voices`
+
+List the installed voices
+
+*platforms: darwin, windows*
+
+```bash
+aos say voices [--json]
+aos say voices
+aos say voices --json
+```
+
+### `aos say wait`
+
+Block until every queued and playing `say --async` has finished
+
+*platforms: darwin, windows*
+
+```bash
+aos say wait [--timeout=<seconds>]
+aos say wait
+aos say wait --timeout=30
+```
+
+### `aos say stop`
+
+Stop speaking now and drop anything queued
+
+*platforms: darwin, windows*
+
+```bash
+aos say stop
+```
+
+
 ## serve
 
 Expose this machine's commands to other agents
@@ -1130,11 +1188,12 @@ Show a film-style caption over everything (or over one app's window) for a few s
 *display*
 
 ```bash
-aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>] [--json]
+aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--speak] [--detach] [--wait] [--preview=<out.png>] [--json]
 aos subtitle show "installing dependencies"
 aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom
 aos subtitle show "running the migration" --seconds=30 --position=top
 aos subtitle show "step 1 of 3" --seconds=4 --wait
+aos subtitle show "Saving the report" --speak   # show it and say it
 aos subtitle stop
 # white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last
 ```

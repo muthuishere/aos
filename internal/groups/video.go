@@ -99,9 +99,10 @@ func init() {
 			},
 			&cli.Command{
 				Group: "capture", Name: "video stop",
-				Summary:  "Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera",
-				Args:     "[--raw] [--json]",
-				Examples: []string{"aos capture video stop", "aos capture video stop --raw --json"},
+				Summary: "Stop recording, finalize the mp4 and render <out>.final.mp4 with the auto camera",
+				Args:    "[--raw] [--narration=mix|replace|off] [--json]",
+				Examples: []string{"aos capture video stop", "aos capture video stop --raw --json",
+					"aos capture video stop --narration=replace   # the `aos say` voice instead of system audio"},
 				Blocking: true,
 				Run:      runVideoStop,
 			},
@@ -1045,12 +1046,16 @@ func (s *videoSampler) sample(n int) {
 // ---- stop / status ----------------------------------------------------------
 
 func runVideoStop(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args)
+	set, err := parseArgs(args, "narration")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("raw", "json"); err != nil {
+	if err := set.Reject("raw", "json", "narration"); err != nil {
 		return err
+	}
+	narration := set.String("narration", "mix")
+	if narration != "mix" && narration != "replace" && narration != "off" {
+		return fmt.Errorf("--narration must be mix, replace or off")
 	}
 	dir := videoDir(c)
 	st, err := readVideoState(dir)
@@ -1087,6 +1092,16 @@ func runVideoStop(c *cli.Ctx, args []string) error {
 		final := finalPath(st.Out)
 		if renderErr = renderVideo(st.Out, doc, zoomOptions{}, final); renderErr == nil {
 			res["Final"] = final
+			// Spoken lines (`aos say` during the recording) go in at the
+			// moment they were said, over or instead of the system audio.
+			if narration != "off" {
+				if n, err := mixNarration(final, doc, narration == "mix"); err != nil {
+					res["NarrationError"] = err.Error()
+					fmt.Fprintf(c.Stderr, "aos: mixing the narration failed (final cut kept silent): %v\n", err)
+				} else if n > 0 {
+					res["Narration"] = n
+				}
+			}
 		} else {
 			res["RenderError"] = renderErr.Error()
 		}
@@ -1099,6 +1114,9 @@ func runVideoStop(c *cli.Ctx, args []string) error {
 		c.Printf("raw:    %s (%.1fs)\n", st.Out, doc.Duration)
 		if f, ok := res["Final"]; ok {
 			c.Printf("final:  %s\n", f)
+		}
+		if n, ok := res["Narration"]; ok {
+			c.Printf("voice:  %v spoken line(s) mixed in\n", n)
 		}
 		c.Printf("events: %s\n", eventsJSONPath(st.Out))
 	}

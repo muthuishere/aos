@@ -80,6 +80,14 @@ aos draw text "Account created ✓" --position=top-center --color=green --durati
   `capture video unfocus`. `capture video follow mouse|app|smart|off` switches
   mode mid-recording. `capture video status` checks it is still running.
 
+- **Voice-over, no mic, no editing:** every `aos say` while the recording runs
+  is time-stamped and mixed into `<out>.final.mp4` at the moment it was spoken.
+  `aos say "Now I type the note" -- aos key type --app=TextEdit "hello"` talks
+  while it acts; `subtitle show "..." --speak` captions and says it;
+  `say --narrate` adds a line to the track without playing it aloud.
+  `capture video stop --narration=replace` drops system audio for the voice;
+  `--narration=off` leaves it out. See `references/speech.md`.
+
 Pause between steps (a `subtitle ... --wait` does this naturally) so viewers
 can follow; a demo driven at machine speed is unwatchable.
 

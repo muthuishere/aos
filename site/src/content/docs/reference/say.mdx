@@ -1,0 +1,97 @@
+---
+title: aos say
+description: Speak text aloud with the machine's built-in voices; narrate recordings
+sidebar:
+  label: say
+  order: 1
+---
+
+<p class="cmd-lead">Speak text aloud with the machine's built-in voices; narrate recordings</p>
+
+4 commands. Run `aos say --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos say
+
+<p class="cmd-lead">Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--async] [--narrate] [--json] [-- <command...> [--then-wait=false]]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<text...>` | | Required positional argument |
+| `<command...>` | | Optional positional argument |
+| `--voice` | `<name>` | Optional |
+| `--rate` | `<words per minute>` | Optional |
+| `--out` | `file.mp3`, `.wav`, `.aiff` | Optional |
+| `--async` |  | Optional |
+| `--narrate` |  | Optional |
+| `--json` |  | Optional |
+| `--` |  | Optional |
+| `--then-wait` | `<false>` | Optional |
+
+```sh
+aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
+aos say "build finished"
+aos say "Hello there" --voice=Samantha --rate=190
+aos say "welcome to the demo" --out=~/Desktop/welcome.mp3
+aos say "now I open the settings" --async   # keeps talking while the script goes on
+aos say wait
+# while `aos capture video` runs, every say is added to <out>.final.mp4 at the moment it was spoken
+# --narrate adds it to the recording's narration track without playing it aloud
+```
+
+### aos say stop
+
+<p class="cmd-lead">Stop speaking now and drop anything queued</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos say stop
+```
+
+```sh
+aos say stop
+```
+
+### aos say voices
+
+<p class="cmd-lead">List the installed voices</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos say voices [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos say voices
+aos say voices --json
+```
+
+### aos say wait
+
+<p class="cmd-lead">Block until every queued and playing `say --async` has finished</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos say wait [--timeout=<seconds>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--timeout` | `<seconds>` | Optional |
+
+```sh
+aos say wait
+aos say wait --timeout=30
+```

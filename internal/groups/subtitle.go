@@ -3,6 +3,7 @@ package groups
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"runtime"
@@ -48,12 +49,13 @@ func init() {
 				Args: "<text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] " +
 					"[--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] " +
 					"[--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] " +
-					"[--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>] [--json]",
+					"[--max-width=<px|N%>] [--speak] [--detach] [--wait] [--preview=<out.png>] [--json]",
 				Examples: []string{
 					`aos subtitle show "installing dependencies"`,
 					`aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom`,
 					`aos subtitle show "running the migration" --seconds=30 --position=top`,
 					`aos subtitle show "step 1 of 3" --seconds=4 --wait`,
+					`aos subtitle show "Saving the report" --speak   # show it and say it`,
 					"aos subtitle stop",
 					"# white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last",
 				},
@@ -84,7 +86,7 @@ func subtitleOptions(args []string) (engine.DrawOptions, *argSet, float64, error
 	if err != nil {
 		return opts, nil, 0, err
 	}
-	if err := set.Reject(append([]string{"wait", "detach", "json", "no-config"}, subtitleValueFlags...)...); err != nil {
+	if err := set.Reject(append([]string{"wait", "detach", "json", "no-config", "speak"}, subtitleValueFlags...)...); err != nil {
 		return opts, nil, 0, err
 	}
 	opts.Text = strings.ReplaceAll(strings.Join(set.Rest, " "), `\n`, "\n")
@@ -181,6 +183,15 @@ func runSubtitleShow(c *cli.Ctx, args []string) error {
 	// The detached child: show it here until it times out or is stopped.
 	if engine.IsDrawChild() {
 		return showDraw(c, []string{"subtitle", "show"}, args, opts, set)
+	}
+
+	// --speak reads the caption aloud too (queued like any `say --async`, and
+	// mixed into a running recording's narration track).
+	if set.Has("speak") {
+		if err := spawnSay(&cli.Ctx{Stdout: io.Discard, Env: c.Env}, []string{opts.Text}); err != nil {
+			fmt.Fprintf(os.Stderr, "aos subtitle: could not speak: %v\n", err)
+		}
+		args = withoutFlag(args, "speak")
 	}
 
 	// One caption at a time, like film subtitles: the new one replaces the last.
