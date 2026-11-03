@@ -1,14 +1,12 @@
 package groups
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"unicode/utf16"
 
 	"github.com/muthuishere/aos/internal/sys"
 )
@@ -74,21 +72,25 @@ $sp.Dispose()
 Write-Output 'ENGINE sapi'
 `
 
-func encodePS(script string) string {
-	u := utf16.Encode([]rune(script))
-	b := make([]byte, len(u)*2)
-	for i, r := range u {
-		b[2*i], b[2*i+1] = byte(r), byte(r>>8)
-	}
-	return base64.StdEncoding.EncodeToString(b)
-}
-
 func runSayPS(env ...string) (string, error) {
 	exe := sys.FirstAvailable("powershell", "pwsh")
 	if exe == "" {
 		return "", errUnsupported
 	}
-	cmd := exec.Command(exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encodePS(sayPS))
+	// A plain .ps1 run with -File, never -EncodedCommand: a hidden PowerShell
+	// fed base64 is exactly what antivirus heuristics flag as malware.
+	script, err := os.CreateTemp("", "aos-say-*.ps1")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(script.Name())
+	// UTF-8 with a BOM, so Windows PowerShell 5.1 reads non-ASCII correctly.
+	if _, err := script.WriteString("\ufeff" + sayPS); err != nil {
+		script.Close()
+		return "", err
+	}
+	script.Close()
+	cmd := exec.Command(exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script.Name())
 	cmd.Env = append(os.Environ(), env...)
 	hideChild(cmd)
 	var stderr strings.Builder
