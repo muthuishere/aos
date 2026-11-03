@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
@@ -57,7 +58,7 @@ func init() {
 			&cli.Command{
 				Group: "key", Name: "type",
 				Summary: "Type text; with --app/--title it goes to that window without needing focus",
-				Args:    "<text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--force]",
+				Args:    "<text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--tab=<title|index|id>] [--force]",
 				Examples: []string{
 					`aos key type "hello world"`,
 					`aos key type "hello" --app=TextEdit --verify   # posted to the app, read back from its text field`,
@@ -261,16 +262,40 @@ func inputExit(err error) error {
 }
 
 func runKeyType(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "title")
+	set, err := parseArgs(args, "app", "title", "tab")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "title", "focus", "verify", "force", "json"); err != nil {
+	if err := set.Reject("app", "title", "tab", "focus", "verify", "force", "json"); err != nil {
 		return err
 	}
 	text := strings.Join(set.Rest, " ")
 	if text == "" {
 		return fmt.Errorf("`key type` needs some text")
+	}
+	if tab := set.String("tab", ""); tab != "" {
+		// A terminal tab by title, index or id: its shell's console input.
+		f := tabFilter{App: set.String("app", ""), Kind: "terminal"}
+		switch n, err := strconv.Atoi(tab); {
+		case err == nil:
+			f.Index, f.Title = n, set.String("title", "")
+		case strings.HasPrefix(tab, "uia:"):
+			f.ID = tab
+		default:
+			f.Title = tab
+		}
+		t, ok, err := terminalTab(f)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return &cli.ExitError{Code: exitNotFound, Message: "no terminal tab with a shell matched --tab=" + tab}
+		}
+		if err := engine.ConsoleType(t.PID, text); err != nil {
+			return err
+		}
+		c.Printf("console input  %s  %s (shell pid %d)\n", t.ID, t.Title, t.PID)
+		return nil
 	}
 	route, err := keyRoute(set)
 	if err != nil {

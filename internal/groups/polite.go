@@ -2,6 +2,7 @@ package groups
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,12 +44,13 @@ var politeNow = time.Now
 // names the action for the message.
 func politeCheck(c *cli.Ctx, set *argSet, what string) error {
 	idle, known := idleFn()
-	refused := false
+	refused, waited := false, time.Duration(0)
 	defer func() {
 		attrs := []obs.Attribute{
 			obs.StringAttr("agentic_os.focus.action", what),
 			obs.StringAttr("agentic_os.focus.caller", callerName(c)),
 			obs.BoolAttr("agentic_os.focus.refused", refused),
+			obs.IntAttr("agentic_os.focus.waited_ms", waited.Milliseconds()),
 		}
 		if known {
 			attrs = append(attrs, obs.IntAttr("agentic_os.focus.user_idle_ms", idle.Milliseconds()))
@@ -59,27 +61,66 @@ func politeCheck(c *cli.Ctx, set *argSet, what string) error {
 		os.Setenv("AOS_FOCUS", "allow") // also lets the hand-back get past the foreground lock
 		return nil
 	}
-	if c.Env("AOS_POLITE") == "0" || strings.EqualFold(c.Env("AOS_FOCUS"), "allow") {
-		return nil
+	var err error
+	waited, err = waitIdle(c.Env, c.Stderr, what)
+	refused = err != nil
+	return err
+}
+
+// politeMaxWait is how long a polite command waits for the person to stop
+// (AOS_POLITE_WAIT seconds overrides it); after that it gives up with exit 5.
+const politeMaxWait = 60 * time.Second
+
+var politeSleep = time.Sleep
+
+// waitIdle holds off while the person is typing or moving the mouse: it
+// returns once they have been idle politeIdle, or exit 5 after the max wait.
+func waitIdle(env func(string) string, stderr io.Writer, what string) (time.Duration, error) {
+	if env("AOS_POLITE") == "0" || strings.EqualFold(env("AOS_FOCUS"), "allow") {
+		return 0, nil
 	}
-	ok := known
-	if !ok || idle >= politeIdle {
-		return nil
+	max := politeMaxWait
+	if v, err := strconv.Atoi(env("AOS_POLITE_WAIT")); err == nil && v >= 0 {
+		max = time.Duration(v) * time.Second
 	}
-	// The last input may have been aos's own (the previous command of the
-	// same agent). Synthetic events reset the OS idle clock too.
-	if last, ok := lastOwnInput(); ok {
-		lastInput := politeNow().Add(-idle)
-		if !lastInput.After(last.Add(750 * time.Millisecond)) {
-			return nil
+	start := politeNow()
+	told := false
+	for {
+		idle, known := idleFn()
+		if !known || idle >= politeIdle || ownInput(idle) {
+			return politeNow().Sub(start), nil
 		}
+		waited := politeNow().Sub(start)
+		if waited >= max {
+			return waited, &cli.ExitError{Code: exitUserActive, Message: fmt.Sprintf(
+				"gave up after %s: %s would take focus or move the pointer, and someone kept using this machine. "+
+					"Target the window instead (--app/--title), raise AOS_POLITE_WAIT, or pass --force",
+				waited.Round(time.Second), what)}
+		}
+		if !told && stderr != nil {
+			fmt.Fprintf(stderr, "aos: waiting for you to stop typing before %s (up to %s)\n", what, (max - waited).Round(time.Second))
+			told = true
+		}
+		politeSleep(min(politeIdle-idle+50*time.Millisecond, time.Second))
 	}
-	refused = true
-	return &cli.ExitError{Code: exitUserActive, Message: fmt.Sprintf(
-		"refused: %s would take focus or move the pointer, and someone used this machine %.1fs ago. "+
-			"Target the window instead (--app/--title: key type --app=X, mouse click --app=X --find=T), "+
-			"or pass --force (AOS_FOCUS=allow, or AOS_POLITE=0 to turn this off)",
-		what, idle.Seconds())}
+}
+
+// ownInput: the last input was aos's own (its previous command), which also
+// resets the OS idle clock.
+func ownInput(idle time.Duration) bool {
+	last, ok := lastOwnInput()
+	if !ok {
+		return false
+	}
+	return !politeNow().Add(-idle).After(last.Add(750 * time.Millisecond))
+}
+
+func init() {
+	// The engine's own fallback to the foreground waits politely too.
+	engine.BeforeFocus = func() error {
+		_, err := waitIdle(os.Getenv, os.Stderr, "taking focus")
+		return err
+	}
 }
 
 func ownInputPath() string {

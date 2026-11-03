@@ -155,3 +155,73 @@ func PostKeyTo(w Window, combo string) error {
 	}
 	return t.PressChordTo(w, chord)
 }
+
+// ShellInfo re-exports core.ShellInfo.
+type ShellInfo = core.ShellInfo
+
+func consoleDriver() (core.ConsoleDriver, error) {
+	d, ok := defaultAdapter.(core.ConsoleDriver)
+	if !ok {
+		return nil, ErrNotImplemented
+	}
+	return d, nil
+}
+
+// TerminalShells lists the shells behind terminal window w (Windows).
+func TerminalShells(w Window) ([]ShellInfo, error) {
+	d, err := consoleDriver()
+	if err != nil {
+		return nil, err
+	}
+	return d.TerminalShells(w)
+}
+
+// ConsoleType types text into shell pid's console, focus-free (Windows).
+func ConsoleType(pid int, text string) error {
+	d, err := consoleDriver()
+	if err != nil {
+		return err
+	}
+	return d.ConsoleType(pid, text)
+}
+
+// ConsoleKey presses combo in shell pid's console (Windows).
+func ConsoleKey(pid int, combo string) error {
+	d, err := consoleDriver()
+	if err != nil {
+		return err
+	}
+	chord, err := ParseChord(combo)
+	if err != nil {
+		return err
+	}
+	return d.ConsoleKey(pid, chord)
+}
+
+// ConsoleRead returns the visible screen of shell pid's console (Windows).
+func ConsoleRead(pid int) (string, error) {
+	d, err := consoleDriver()
+	if err != nil {
+		return "", err
+	}
+	return d.ConsoleRead(pid)
+}
+
+// ConsoleClose ends shell pid with exit code 0 (Windows Terminal then
+// closes its tab).
+func ConsoleClose(pid int) error {
+	d, err := consoleDriver()
+	if err != nil {
+		return err
+	}
+	return d.ConsoleClose(pid)
+}
+
+// FocusWindowNoInput raises a window without injecting input to get past
+// the foreground lock (Windows); elsewhere it is FocusWindowID.
+func FocusWindowNoInput(id string) error {
+	if f, ok := defaultAdapter.(interface{ FocusNoInput(string) error }); ok {
+		return f.FocusNoInput(id)
+	}
+	return defaultAdapter.Focus(id)
+}

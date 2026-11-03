@@ -20,9 +20,9 @@ func withIdle(t *testing.T, idle time.Duration, known bool) {
 	t.Setenv("XDG_CACHE_HOME", t.TempDir())
 }
 
-func TestPoliteRefusesWhileUserIsActive(t *testing.T) {
+func TestPoliteGivesUpWhenUserStaysActive(t *testing.T) {
 	withIdle(t, 800*time.Millisecond, true)
-	err := politeCheck(politeCtx(nil), nil, "window focus")
+	err := politeCheck(politeCtx(map[string]string{"AOS_POLITE_WAIT": "0"}), nil, "window focus")
 	var ee *cli.ExitError
 	if !errors.As(err, &ee) || ee.Code != exitUserActive {
 		t.Fatalf("want exit 5, got %v", err)
@@ -61,6 +61,7 @@ func TestPoliteIgnoresItsOwnInput(t *testing.T) {
 func TestPoliteRecordsCallerOnSpan(t *testing.T) {
 	withIdle(t, time.Second, true)
 	c := politeCtx(map[string]string{"AOS_CALLER": "test-agent"})
+	c.Env = func(k string) string { return map[string]string{"AOS_CALLER": "test-agent", "AOS_POLITE_WAIT": "0"}[k] }
 	_ = politeCheck(c, nil, "window focus")
 	got := map[string]bool{}
 	for _, a := range c.Extra() {
@@ -70,5 +71,23 @@ func TestPoliteRecordsCallerOnSpan(t *testing.T) {
 		if !got[k] {
 			t.Fatalf("missing %s in %v", k, c.Extra())
 		}
+	}
+}
+
+func TestPoliteWaitsUntilUserStops(t *testing.T) {
+	withIdle(t, 0, true)
+	calls := 0
+	idleFn = func() (time.Duration, bool) {
+		calls++
+		if calls < 3 {
+			return time.Second, true // typing
+		}
+		return 6 * time.Second, true // stopped
+	}
+	oldSleep := politeSleep
+	politeSleep = func(time.Duration) {}
+	defer func() { politeSleep = oldSleep }()
+	if err := politeCheck(politeCtx(nil), nil, "key type"); err != nil || calls < 3 {
+		t.Fatalf("should wait, then go: err %v calls %d", err, calls)
 	}
 }

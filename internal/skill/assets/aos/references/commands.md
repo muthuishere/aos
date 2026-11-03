@@ -628,7 +628,7 @@ Type text; with --app/--title it goes to that window without needing focus
 *display*
 
 ```bash
-aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--force]
+aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--tab=<title|index|id>] [--force]
 aos key type "hello world"
 aos key type "hello" --app=TextEdit --verify   # posted to the app, read back from its text field
 aos key type "hello" --app=Chrome --focus      # real focus + verify, focus handed back after
@@ -1255,10 +1255,11 @@ Open a browser tab on a URL, or a terminal tab in a folder
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--background]
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]
 aos tab open https://example.com --app=Chrome
 aos tab open https://example.com --app=Safari --new-window
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
+aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window
 ```
 
 ### `aos tab send`

@@ -249,8 +249,21 @@ func (a *Adapter) SetTextTo(w core.Window, text string) (string, error) {
 	return "", fmt.Errorf("the editable element %q refused SetValue", name)
 }
 
-// activate runs the first activation pattern el supports.
-func activate(el uintptr) (string, bool) {
+// activate runs the first activation pattern el supports. legacyFirst
+// tries LegacyIAccessible.DoDefaultAction before Invoke: in a UWP frame
+// (Calculator) the first Invoke after launch brings the app to the front,
+// DoDefaultAction presses the same button without activating it (measured
+// on Windows 11 ARM64, 2026-11-03).
+func activate(el uintptr, legacyFirst bool) (string, bool) {
+	if legacyFirst {
+		if p := pattern(el, legacyPatternID); p != 0 {
+			hr := vcall(p, legacyDoDefault)
+			release(p)
+			if !failed(hr) {
+				return "LegacyIAccessible.DoDefaultAction", true
+			}
+		}
+	}
 	if p := pattern(el, invokePatternID); p != 0 {
 		hr := vcall(p, invokeInvoke)
 		release(p)
@@ -336,7 +349,7 @@ func pressInTree(top uintptr, x, y int) error {
 	defer release(walker)
 	el := hit
 	for depth := 0; el != 0 && depth < 6; depth++ {
-		if _, ok := activate(el); ok {
+		if _, ok := activate(el, strings.EqualFold(className(top), "ApplicationFrameWindow")); ok {
 			release(el)
 			return nil
 		}

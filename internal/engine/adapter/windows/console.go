@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -195,6 +196,15 @@ func ConsoleHelperMain(args []string, stdin io.Reader, stdout, stderr io.Writer)
 	}
 	data, _ := io.ReadAll(stdin)
 	procFreeConsole.Call()
+	if op == "titles" { // one line per pid: pid<TAB>console title
+		for _, pid := range pids {
+			if r, _, _ := procAttachConsole.Call(uintptr(pid)); r != 0 {
+				fmt.Fprintf(stdout, "%d\t%s\n", pid, consoleTitle())
+				procFreeConsole.Call()
+			}
+		}
+		return 0
+	}
 	attached := uint32(0)
 	for pass := 0; pass < 2 && attached == 0; pass++ {
 		for _, pid := range pids {
@@ -340,38 +350,9 @@ func consoleKeyTo(top uintptr, w core.Window, chord core.Chord) error {
 	if !isConsoleWindow(top) {
 		return errNotConsole
 	}
-	vk, err := vkForKey(chord.Key)
+	vk, state, ch, err := consoleChord(chord)
 	if err != nil {
 		return err
-	}
-	state := 0
-	if chord.Ctrl || chord.Cmd {
-		state |= leftCtrlPressed
-	}
-	if chord.Alt {
-		state |= leftAltPressed
-	}
-	if chord.Shift {
-		state |= shiftPressed
-	}
-	ch := 0
-	switch {
-	case vk == vkReturn:
-		ch = '\r'
-	case vk == 0x09:
-		ch = '\t'
-	case vk == 0x08:
-		ch = 8
-	case vk == 0x1B:
-		ch = 27
-	case len(chord.Key) == 1:
-		c := strings.ToLower(chord.Key)[0]
-		ch = int(c)
-		if chord.Ctrl && c >= 'a' && c <= 'z' {
-			ch = int(c-'a') + 1 // ctrl+c -> 0x03
-		} else if chord.Shift {
-			ch = int(strings.ToUpper(chord.Key)[0])
-		}
 	}
 	_, err = runConsoleHelper(helperRequest{op: "key", pids: consoleCandidates(top), title: w.Title,
 		data: fmt.Sprintf("%d|%d|%d", vk, state, ch)})
@@ -396,4 +377,205 @@ func windowTitle(h uintptr) string {
 	buf := make([]uint16, n+1)
 	procGetWindowTextW.Call(h, uintptr(unsafe.Pointer(&buf[0])), n+1)
 	return windows.UTF16ToString(buf)
+}
+
+// ---- terminal tabs: one shell per Windows Terminal tab (pane) ----------
+
+// TerminalShells lists the shells of terminal window w, oldest first: for
+// Windows Terminal, every non-host child of the WindowsTerminal process (it
+// starts one OpenConsole per pane and the pane's shell beside it, both as
+// its own children); for a classic console window, its client. Title is the shell's console title, CWD its current
+// directory. WT runs every window in one process, so the list covers all
+// of that process's windows; the caller assigns shells to tabs.
+func (a *Adapter) TerminalShells(w core.Window) ([]core.ShellInfo, error) {
+	top, err := parseHwnd(w.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !isConsoleWindow(top) {
+		return nil, errNotConsole
+	}
+	procs, err := processTable()
+	if err != nil {
+		return nil, err
+	}
+	kids := map[uint32][]procInfo{}
+	for _, p := range procs {
+		kids[p.parent] = append(kids[p.parent], p)
+	}
+	var pid uint32
+	procGetWindowThreadPID.Call(top, uintptr(unsafe.Pointer(&pid)))
+	// Windows Terminal starts each pane's shell as its own direct child,
+	// next to (not under) the pane's OpenConsole.
+	var shells []uint32
+	for _, c := range kids[pid] {
+		if !consoleHostImages[c.exe] {
+			shells = append(shells, c.pid)
+		}
+	}
+	if len(shells) == 0 { // a classic console window: its own client
+		shells = consoleCandidates(top)
+		if len(shells) > 1 {
+			shells = shells[:1]
+		}
+	}
+	titles := map[uint32]string{}
+	if len(shells) > 0 {
+		out, _ := runConsoleHelper(helperRequest{op: "titles", pids: shells})
+		for _, line := range strings.Split(out, "\n") {
+			if p, t, ok := strings.Cut(strings.TrimRight(line, "\r"), "\t"); ok {
+				if n, err := strconv.Atoi(p); err == nil {
+					titles[uint32(n)] = t
+				}
+			}
+		}
+	}
+	out := make([]core.ShellInfo, 0, len(shells))
+	for _, p := range shells {
+		exe := ""
+		for _, pr := range procs {
+			if pr.pid == p {
+				exe = pr.exe
+			}
+		}
+		out = append(out, core.ShellInfo{PID: int(p), Exe: exe, Title: titles[p], CWD: processCwd(p), Created: processCreated(p)})
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Created < out[j].Created })
+	return out, nil
+}
+
+// ConsoleType writes text into the console input buffer of shell pid.
+func (a *Adapter) ConsoleType(pid int, text string) error {
+	_, err := runConsoleHelper(helperRequest{op: "type", pids: []uint32{uint32(pid)}, data: text})
+	return err
+}
+
+// ConsoleKey presses one chord (modifiers included) in shell pid's console.
+func (a *Adapter) ConsoleKey(pid int, chord core.Chord) error {
+	vk, state, ch, err := consoleChord(chord)
+	if err != nil {
+		return err
+	}
+	_, err = runConsoleHelper(helperRequest{op: "key", pids: []uint32{uint32(pid)}, data: fmt.Sprintf("%d|%d|%d", vk, state, ch)})
+	return err
+}
+
+// ConsoleRead returns the visible screen of shell pid's console.
+func (a *Adapter) ConsoleRead(pid int) (string, error) {
+	return runConsoleHelper(helperRequest{op: "read", pids: []uint32{uint32(pid)}})
+}
+
+// ConsoleClose ends shell pid and its children with exit code 0, which
+// Windows Terminal's default closeOnExit ("automatic") treats as a clean
+// exit and closes the tab. No key reaches the shell.
+func (a *Adapter) ConsoleClose(pid int) error {
+	procs, err := processTable()
+	if err != nil {
+		return err
+	}
+	var kill func(p uint32)
+	kill = func(p uint32) {
+		for _, c := range procs {
+			if c.parent == p && c.pid != p {
+				kill(c.pid)
+			}
+		}
+		if h, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, p); err == nil {
+			_ = windows.TerminateProcess(h, 0)
+			windows.CloseHandle(h)
+		}
+	}
+	kill(uint32(pid))
+	return nil
+}
+
+func processCreated(pid uint32) int64 {
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return 0
+	}
+	defer windows.CloseHandle(h)
+	var c, e, k, u windows.Filetime
+	if err := windows.GetProcessTimes(h, &c, &e, &k, &u); err != nil {
+		return 0
+	}
+	return c.Nanoseconds()
+}
+
+// processCwd reads another process's current directory from its PEB:
+// PEB.ProcessParameters (+0x20) -> RTL_USER_PROCESS_PARAMETERS.CurrentDirectory
+// .DosPath (+0x38, a UNICODE_STRING). 64-bit layouts (amd64 and arm64).
+func processCwd(pid uint32) string {
+	if unsafe.Sizeof(uintptr(0)) != 8 {
+		return ""
+	}
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_INFORMATION|windows.PROCESS_VM_READ, false, pid)
+	if err != nil {
+		return ""
+	}
+	defer windows.CloseHandle(h)
+	var pbi windows.PROCESS_BASIC_INFORMATION
+	var n uint32
+	if err := windows.NtQueryInformationProcess(h, windows.ProcessBasicInformation, unsafe.Pointer(&pbi), uint32(unsafe.Sizeof(pbi)), &n); err != nil {
+		return ""
+	}
+	read := func(addr uintptr, buf unsafe.Pointer, size uintptr) bool {
+		var got uintptr
+		return windows.ReadProcessMemory(h, addr, (*byte)(buf), size, &got) == nil && got == size
+	}
+	var params uintptr
+	if !read(uintptr(unsafe.Pointer(pbi.PebBaseAddress))+0x20, unsafe.Pointer(&params), 8) {
+		return ""
+	}
+	var us struct {
+		Length, MaxLength uint16
+		_                 uint32
+		Buffer            uintptr
+	}
+	if !read(params+0x38, unsafe.Pointer(&us), unsafe.Sizeof(us)) || us.Length == 0 || us.Length > 4096 {
+		return ""
+	}
+	buf := make([]uint16, us.Length/2)
+	if !read(us.Buffer, unsafe.Pointer(&buf[0]), uintptr(us.Length)) {
+		return ""
+	}
+	return strings.TrimRight(string(utf16.Decode(buf)), `\`)
+}
+
+// consoleChord turns a chord into a console key record's vk, control
+// state and character.
+func consoleChord(chord core.Chord) (vk, state, ch int, err error) {
+	v, err := vkForKey(chord.Key)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	vk = int(v)
+	if chord.Ctrl || chord.Cmd {
+		state |= leftCtrlPressed
+	}
+	if chord.Alt {
+		state |= leftAltPressed
+	}
+	if chord.Shift {
+		state |= shiftPressed
+	}
+	switch {
+	case vk == vkReturn:
+		ch = '\r'
+	case vk == 0x09:
+		ch = '\t'
+	case vk == 0x08:
+		ch = 8
+	case vk == 0x1B:
+		ch = 27
+	case len(chord.Key) == 1:
+		c := strings.ToLower(chord.Key)[0]
+		ch = int(c)
+		if (chord.Ctrl || chord.Cmd) && c >= 'a' && c <= 'z' {
+			ch = int(c-'a') + 1 // ctrl+c -> 0x03
+		} else if chord.Shift {
+			ch = int(strings.ToUpper(chord.Key)[0])
+		}
+	}
+	return vk, state, ch, nil
 }

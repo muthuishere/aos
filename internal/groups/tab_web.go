@@ -187,15 +187,18 @@ type pageRead struct {
 }
 
 func runTabRead(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "url", "title", "app")
+	set, err := parseArgs(args, "id", "url", "title", "app", "index", "window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "md", "json"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "index", "window", "md", "json"); err != nil {
 		return err
 	}
 	if set.Has("md") && set.Has("json") {
 		return fmt.Errorf("--md and --json are exclusive")
+	}
+	if done, err := terminalRead(c, set); done {
+		return err
 	}
 	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
@@ -395,11 +398,14 @@ func stillFocused(w engine.Window, target engine.WebTarget, e pageElement, allow
 }
 
 func runTabType(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "url", "title", "app", "element", "into", "text", "nth")
+	set, err := parseArgs(args, "id", "url", "title", "app", "element", "into", "text", "nth", "index", "window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "index", "window", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
+		return err
+	}
+	if done, err := terminalType(c, set); done {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "into")

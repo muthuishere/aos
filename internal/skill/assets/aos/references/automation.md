@@ -84,8 +84,9 @@ the public internet and get an explicit "yes" first, every time.
 | UIA apps (WinUI, WPF, Settings, Calculator, Explorer) | UIA ValuePattern / LegacyIAccessible SetValue on an editable element (appends to the value); no editable element = refused | Invoke, Toggle, SelectionItem, ExpandCollapse, DoDefaultAction, found in the window's own tree (works when covered) | UIA |
 | Chrome, Edge, VS Code (Chromium/Electron) | browser UI (address bar) via UIA SetValue; page inputs only when renderer accessibility is on (`--force-renderer-accessibility`); the page itself: `tab type` | UIA, same limits | UIA; `tab read` for the page |
 
-Never used without `--focus` / `--force`: SendInput, keybd_event, SetCursorPos,
-SetForegroundWindow, AttachThreadInput. aos never calls UIA SetFocus. Known
-gap: a just-launched UWP app (Calculator) brings itself to the front on its
-first Invoke. aos hands focus back only under `--force`, because getting past
-the Windows foreground lock takes one injected key.
+| Calculator and other UWP apps | refused (no editable field), then the foreground fallback | LegacyIAccessible.DoDefaultAction first: Invoke brings a UWP app to the front on its first press, DoDefaultAction does not | UIA |
+| Paint | n/a | ignores posted mouse messages (WinUI input): uses the foreground fallback | UIA |
+
+When no focus-free route works, aos takes the foreground (SetForegroundWindow +
+SendInput) for the moment it needs, after the polite wait, and hands the front
+window and the pointer back. It never calls UIA SetFocus.

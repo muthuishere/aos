@@ -31,6 +31,9 @@ type InputOptions struct {
 	// Verify reads the target's focused text element after typing and
 	// fails unless the text arrived (macOS AX value, Windows WM_GETTEXT).
 	Verify bool
+	// NoFallback refuses (ErrNeedsFocus) instead of taking the foreground
+	// when there is no focus-free route.
+	NoFallback bool
 
 	canSetText bool // the adapter can set a field's text without focus
 }
@@ -74,9 +77,21 @@ var terminalApps = map[string]bool{"windowsterminal": true, "openconsole": true,
 	"cmd": true, "powershell": true, "pwsh": true}
 
 // ErrNeedsFocus is returned (wrapped) when input cannot reach the window
-// without taking the foreground and --focus was not given. aos never
-// takes focus on its own: the person beside the agent may be typing.
+// without taking the foreground and NoFallback was set.
+
+// BeforeFocus runs before aos takes the foreground on its own (the
+// fallback when no focus-free route works). The CLI sets it to the polite
+// wait: hold off while the person is typing. nil = go ahead.
 var ErrNeedsFocus = errors.New("focus-free input is not possible here")
+
+var BeforeFocus func() error
+
+func beforeFocus() error {
+	if BeforeFocus == nil {
+		return nil
+	}
+	return BeforeFocus()
+}
 
 // chooseRoute decides how input reaches w. It is pure so the routing rules
 // are unit-tested without a screen. chord is nil for typed text.
@@ -166,10 +181,10 @@ func deliver(a Adapter, goos string, match Match, chord *Chord, opts InputOption
 	ti, hasTargeted := a.(core.TargetedInput)
 	route, reason := chooseRoute(goos, hasTargeted, w, chord, opts)
 	res := InputResult{Route: route, Reason: reason, Window: w}
-	if route == RouteFocus && !opts.Focus {
-		return res, fmt.Errorf("%w for %s: %s. aos does not take the foreground on its own; rerun with --focus to type through real focus (the previous window and pointer are handed back afterwards)", ErrNeedsFocus, w.App, reason)
-	}
 
+	if route == RouteFocus && !opts.Focus && opts.NoFallback {
+		return res, fmt.Errorf("%w for %s: %s", ErrNeedsFocus, w.App, reason)
+	}
 	reader, canRead := a.(core.FocusedTextReader)
 	verify := opts.Verify && text != ""
 	var before string
@@ -187,18 +202,27 @@ func deliver(a Adapter, goos string, match Match, chord *Chord, opts InputOption
 		before = b
 	}
 
-	switch route {
-	case RoutePost:
+	if route == RoutePost {
 		guard := guardForeground(a, w)
 		how, err := post(ti, w)
 		guard()
-		if err != nil {
-			return res, fmt.Errorf("focus-free input to %s failed: %w (retry with --focus to type through real focus)", w.App, err)
+		switch {
+		case err == nil:
+			if how != "" {
+				res.Reason = how
+			}
+		case opts.NoFallback:
+			return res, fmt.Errorf("%w for %s: %v", ErrNeedsFocus, w.App, err)
+		default:
+			// No focus-free way in: take focus for the moment it takes,
+			// then hand it and the pointer back.
+			route, res.Route, res.Reason = RouteFocus, RouteFocus, "focus-free input failed ("+err.Error()+"); used the foreground and handed it back"
 		}
-		if how != "" {
-			res.Reason = how
+	}
+	if route == RouteFocus {
+		if err := beforeFocus(); err != nil {
+			return res, err
 		}
-	default:
 		back := takeFocus(a, w.ID)
 		if err := ensureFocused(a, Match{App: w.App, Title: w.Title}); err != nil {
 			back()
@@ -397,12 +421,12 @@ func clickFoundWith(a Adapter, find FindOptions, focus bool) (ClickResult, error
 		if err == nil {
 			res.Route = "press"
 			return res, nil
-		} else {
-			return res, fmt.Errorf("could not press %q in %s through accessibility: %v (retry with --focus to click it with the pointer)", hit.Label, w.App, err)
 		}
+		// No accessibility action: click it with the pointer, then hand
+		// focus and the pointer back.
 	}
-	if !focus {
-		return res, errors.New("this platform has no accessibility press; retry with --focus to click with the pointer")
+	if err := beforeFocus(); err != nil {
+		return res, err
 	}
 	back := takeFocus(a, w.ID)
 	defer back()

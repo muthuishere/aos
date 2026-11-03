@@ -139,3 +139,26 @@ between can still receive the key.
   Settings > Privacy & Security > Automation, or `tccutil reset AppleEvents`.
 - `<App> tabs cannot receive input`: browsers have no input channel. Focus the
   tab and use `aos key type` / `aos key press`.
+
+## Windows Terminal tabs (Windows)
+
+`aos tab list --app=WindowsTerminal` lists every WT window and tab with its
+title, index, active flag, **pid** (the tab's shell) and **cwd**. WT runs all
+its windows in one process and starts each tab's shell as its own child, so a
+tab is matched to a shell by its console title (`match: "title"`), else by
+creation order (`match: "order"`, a best guess). Tabs that aos opens with
+`--title` always match by title.
+
+```bash
+aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\src
+aos tab type --title=build --text="npm test" --enter     # into that tab's shell, window in the background
+aos key type --tab=build "dir\n"                         # same, by tab title / index / id
+aos tab send --id=uia:2885760:2 --key=ctrl+c             # chords with modifiers work
+aos tab read --title=build                               # its screen (console buffer), selected or not
+aos tab focus --title=build                              # select in place; --raise brings the window forward
+aos tab close --title=build                              # ends the shell (exit 0); WT closes the tab
+```
+
+Input goes into the tab's console input buffer (AttachConsole +
+WriteConsoleInputW) and reading comes from its screen buffer, so neither needs
+the tab to be selected or the window to be in front.

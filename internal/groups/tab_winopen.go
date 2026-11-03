@@ -89,17 +89,34 @@ func windowsOpenCommand(req tabOpenRequest, browserPath func(exe string) (string
 			}
 		}
 		args := []string{"-w", "0"}
-		if req.NewWindow {
+		switch {
+		case req.WTWindow != "":
+			// A named window: wt creates it on first use, then reuses it.
+			args = []string{"-w", wtEscape(req.WTWindow)}
+		case req.NewWindow:
 			args = []string{"-w", "new"}
 		}
 		args = append(args, "new-tab")
 		if req.CWD != "" {
 			args = append(args, "-d", wtEscape(req.CWD))
 		}
-		if req.Command != "" {
+		if req.Title != "" {
+			if strings.ContainsAny(req.Title, "&|<>^\"\r\n") {
+				return "", nil, fmt.Errorf("--title must not contain & | < > ^ or quotes")
+			}
+			args = append(args, "--title", wtEscape(req.Title))
+		}
+		switch {
+		case req.Command != "" && req.Title != "":
+			// The shell sets its console title too, so aos can tell which
+			// shell is behind the tab (see tab_wt.go).
+			args = append(args, "cmd", "/k", wtEscape("title "+req.Title+" & "+req.Command))
+		case req.Command != "":
 			// --command is a shell command by design: cmd /k runs it and
 			// keeps the tab open.
 			args = append(args, "cmd", "/k", wtEscape(req.Command))
+		case req.Title != "":
+			args = append(args, "cmd", "/k", wtEscape("title "+req.Title))
 		}
 		return "wt.exe", args, nil
 	}

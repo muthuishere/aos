@@ -215,21 +215,28 @@ func TestFindIgnoresBidiMarks(t *testing.T) {
 	}
 }
 
-// aos never falls back to taking focus on its own: an app that needs real
-// focus is refused with ErrNeedsFocus and nothing is typed or focused.
-func TestTypeToNeverTakesFocusUnasked(t *testing.T) {
+// With no focus-free route, input takes the foreground for the moment it
+// needs and hands it back; NoFallback refuses instead.
+func TestTypeToFallsBackToFocusAndHandsBack(t *testing.T) {
 	a := newTargeted()
+	a.monitors = []Monitor{{ID: 1, X: 0, Y: 0, Width: 4000, Height: 1080, Focused: true}}
 	a.windows = append(a.windows, Window{ID: "gc", Title: "Inbox", App: "Google Chrome", Bounds: Rect{X: 0, Y: 0, W: 900, H: 700}})
 	a.focused = "mine"
-	_, err := typeToWith(a, "darwin", Match{App: "Google Chrome"}, "hello", InputOptions{})
-	if !errors.Is(err, ErrNeedsFocus) || !strings.Contains(err.Error(), "--focus") {
-		t.Fatalf("want ErrNeedsFocus with a --focus hint, got %v", err)
+	f := &focusTracker{targetedMock: a}
+	waited := false
+	old := BeforeFocus
+	BeforeFocus = func() error { waited = true; return nil }
+	defer func() { BeforeFocus = old }()
+	res, err := typeToWith(f, "darwin", Match{App: "Google Chrome"}, "hello", InputOptions{})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if a.typedText != "" || a.postedText != "" || a.focused != "mine" {
-		t.Fatalf("input sent or focus moved: typed %q posted %q focused %q", a.typedText, a.postedText, a.focused)
+	if res.Route != RouteFocus || a.typedText != "hello" || a.focused != "mine" || !waited {
+		t.Fatalf("route %s typed %q focused %q waited %v", res.Route, a.typedText, a.focused, waited)
 	}
-	_, err = pressToWith(a, "windows", Match{App: "TextEdit"}, Chord{Ctrl: true, Key: "s"}, InputOptions{})
-	if !errors.Is(err, ErrNeedsFocus) {
-		t.Fatalf("modifier chord on windows: want ErrNeedsFocus, got %v", err)
+	a.typedText = ""
+	_, err = pressToWith(f, "windows", Match{App: "TextEdit"}, Chord{Ctrl: true, Key: "s"}, InputOptions{NoFallback: true})
+	if err == nil || a.typedText != "" {
+		t.Fatalf("NoFallback must refuse without input: %v", err)
 	}
 }

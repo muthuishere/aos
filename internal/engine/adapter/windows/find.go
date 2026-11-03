@@ -134,8 +134,10 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if isConsoleWindow(hwnd) {
-		// A terminal: its screen, read from the shell's console buffer.
+	if strings.EqualFold(className(hwnd), "ConsoleWindowClass") {
+		// A classic console window: its screen, read from the console
+		// buffer. (Windows Terminal is read through UI Automation, which
+		// also carries its tab strip.)
 		var r rect
 		procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&r)))
 		if s, err := consoleRead(hwnd, core.Window{ID: id, Title: windowTitle(hwnd)}); err == nil && strings.TrimSpace(s) != "" {

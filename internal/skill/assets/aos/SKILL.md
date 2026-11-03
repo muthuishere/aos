@@ -64,14 +64,14 @@ coordinates, unless the owner asked for exactly that.**
   covered). Never use `mouse click X Y`.
 - Read: `window text --app=X`, `find --app=X --text=T`. Neither raises the
   window; `--raise` (needed only to OCR a covered window) opts in.
-- `window focus`, bare key / mouse input, `--focus` and `--raise` are polite. If
-  the person touched the keyboard or mouse in the last 5 s they **exit 5**:
-  wait and retry, or switch to the targeted form. `--force` (or `AOS_FOCUS=allow`)
-  only when the owner asked for it. Whatever takes focus hands the previous
-  front window and the pointer back afterwards.
-- Some things cannot be done focus-free (a WinUI app with no editable field,
-  modifier chords on Windows, Chrome keystrokes on macOS). aos then fails and
-  says `--focus` would do it. Ask the owner rather than adding `--focus`.
+- Focus-free first, then the foreground: when a window has no focus-free
+  route (Paint, a WinUI app with no editable field, Chrome keystrokes on macOS),
+  `key type --app` / `mouse click --find` take the foreground for the moment
+  they need it and hand the front window and the pointer back afterwards.
+- Polite: anything that takes focus or moves the pointer first **waits** while
+  the person is typing or moving the mouse (idle 5 s), up to 60 s
+  (`AOS_POLITE_WAIT`), and only then gives up with **exit 5**. `--force` /
+  `AOS_FOCUS=allow` skip the wait; use them only when the owner asked.
 - `aos obs focus` lists every focus-taking call and the agent behind it.
 
 ## Read the exit code
@@ -84,8 +84,9 @@ coordinates, unless the owner asked for exactly that.**
 - **3** — not found: `find` / `draw --find` could not find the window or the text;
   `tab focus` / `tab close` found no matching tab.
   The message lists the closest labels it did see; retry with one of them.
-- **5** — refused politely: the command would take focus or move the pointer and
-  the person used the machine in the last 5 s. Use the targeted form, or wait.
+- **5** — gave up politely: the command needed focus or the pointer and the
+  person kept using the machine for the whole wait (60 s). Use the targeted form,
+  or retry later.
 
 Exit 2 on Linux is fixable: `aos headless start --wm` provides a virtual
 display, and later commands adopt it automatically. On macOS and Windows it means
