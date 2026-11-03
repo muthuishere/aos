@@ -225,3 +225,15 @@ func FocusWindowNoInput(id string) error {
 	}
 	return defaultAdapter.Focus(id)
 }
+
+// WebSetValue sets a web field's value without focus or keys (Windows UIA
+// ValuePattern). ErrNotImplemented where the platform has no such route.
+func WebSetValue(w Window, maxNodes, maxDepth, index int, role, label, value string) error {
+	s, ok := defaultAdapter.(interface {
+		WebSetValue(core.Window, int, int, int, string, string, string) error
+	})
+	if !ok {
+		return ErrNotImplemented
+	}
+	return s.WebSetValue(w, maxNodes, maxDepth, index, role, label, value)
+}
