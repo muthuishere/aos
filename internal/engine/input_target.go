@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -30,6 +31,11 @@ type InputOptions struct {
 	// Verify reads the target's focused text element after typing and
 	// fails unless the text arrived (macOS AX value, Windows WM_GETTEXT).
 	Verify bool
+	// NoFallback refuses (ErrNeedsFocus) instead of taking the foreground
+	// when there is no focus-free route.
+	NoFallback bool
+
+	canSetText bool // the adapter can set a field's text without focus
 }
 
 // Input routes.
@@ -65,6 +71,28 @@ var focusOnlyApps = map[string][]string{
 	"windows": {"ApplicationFrameHost", "CalculatorApp"},
 }
 
+// terminalApps take modifier chords focus-free on Windows: keys go into
+// the shell's console input buffer with their modifier state.
+var terminalApps = map[string]bool{"windowsterminal": true, "openconsole": true, "conhost": true,
+	"cmd": true, "powershell": true, "pwsh": true}
+
+// ErrNeedsFocus is returned (wrapped) when input cannot reach the window
+// without taking the foreground and NoFallback was set.
+
+// BeforeFocus runs before aos takes the foreground on its own (the
+// fallback when no focus-free route works). The CLI sets it to the polite
+// wait: hold off while the person is typing. nil = go ahead.
+var ErrNeedsFocus = errors.New("focus-free input is not possible here")
+
+var BeforeFocus func() error
+
+func beforeFocus() error {
+	if BeforeFocus == nil {
+		return nil
+	}
+	return BeforeFocus()
+}
+
 // chooseRoute decides how input reaches w. It is pure so the routing rules
 // are unit-tested without a screen. chord is nil for typed text.
 func chooseRoute(goos string, hasTargeted bool, w Window, chord *Chord, opts InputOptions) (route, reason string) {
@@ -74,12 +102,17 @@ func chooseRoute(goos string, hasTargeted bool, w Window, chord *Chord, opts Inp
 	if !hasTargeted {
 		return RouteFocus, "this platform has no focus-free input"
 	}
+	if chord == nil && opts.canSetText {
+		// Text set through accessibility (Windows UIA / EM_REPLACESEL)
+		// reaches UWP, WinUI and Chromium apps without focus.
+		return RoutePost, ""
+	}
 	for _, app := range focusOnlyApps[goos] {
 		if strings.EqualFold(w.App, app) {
 			return RouteFocus, fmt.Sprintf("%s ignores posted keyboard events", w.App)
 		}
 	}
-	if goos == "windows" && chord != nil && (chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift) {
+	if goos == "windows" && chord != nil && (chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift) && !terminalApps[strings.ToLower(w.App)] {
 		// Posted messages carry no modifier state: the target reads Ctrl/Alt
 		// from the real keyboard, so a posted ctrl+s arrives as plain s.
 		return RouteFocus, "modifier chords need real keyboard state on Windows"
@@ -107,14 +140,29 @@ func typeToWith(a Adapter, goos string, match Match, text string, opts InputOpti
 	if text == "" {
 		return InputResult{}, errors.New("type: text cannot be empty")
 	}
-	return deliver(a, goos, match, nil, opts, func(ti core.TargetedInput, w Window) error {
-		return ti.TypeTextTo(w, text)
+	setter, canSet := a.(core.ElementTextSetter)
+	opts.canSetText = canSet
+	return deliver(a, goos, match, nil, opts, func(ti core.TargetedInput, w Window) (string, error) {
+		if canSet {
+			how, err := setter.SetTextTo(w, text)
+			if err == nil {
+				return how, nil
+			}
+			if ti == nil {
+				return "", err
+			}
+			if perr := ti.TypeTextTo(w, text); perr != nil {
+				return "", fmt.Errorf("%v; posting keys: %v", err, perr)
+			}
+			return "posted WM_CHAR", nil
+		}
+		return "", ti.TypeTextTo(w, text)
 	}, func() error { return a.TypeText(text) }, text)
 }
 
 func pressToWith(a Adapter, goos string, match Match, chord Chord, opts InputOptions) (InputResult, error) {
-	return deliver(a, goos, match, &chord, opts, func(ti core.TargetedInput, w Window) error {
-		return ti.PressChordTo(w, chord)
+	return deliver(a, goos, match, &chord, opts, func(ti core.TargetedInput, w Window) (string, error) {
+		return "", ti.PressChordTo(w, chord)
 	}, func() error { return a.PressChord(chord) }, "")
 }
 
@@ -122,7 +170,7 @@ func pressToWith(a Adapter, goos string, match Match, chord Chord, opts InputOpt
 const verifyTimeout = 2 * time.Second
 
 func deliver(a Adapter, goos string, match Match, chord *Chord, opts InputOptions,
-	post func(core.TargetedInput, Window) error, real func() error, text string) (InputResult, error) {
+	post func(core.TargetedInput, Window) (string, error), real func() error, text string) (InputResult, error) {
 	if match.App == "" && match.Title == "" {
 		return InputResult{}, errors.New("input: name the target window with --app or --title")
 	}
@@ -134,6 +182,9 @@ func deliver(a Adapter, goos string, match Match, chord *Chord, opts InputOption
 	route, reason := chooseRoute(goos, hasTargeted, w, chord, opts)
 	res := InputResult{Route: route, Reason: reason, Window: w}
 
+	if route == RouteFocus && !opts.Focus && opts.NoFallback {
+		return res, fmt.Errorf("%w for %s: %s", ErrNeedsFocus, w.App, reason)
+	}
 	reader, canRead := a.(core.FocusedTextReader)
 	verify := opts.Verify && text != ""
 	var before string
@@ -151,22 +202,36 @@ func deliver(a Adapter, goos string, match Match, chord *Chord, opts InputOption
 		before = b
 	}
 
-	switch route {
-	case RoutePost:
-		if err := post(ti, w); err != nil {
-			return res, fmt.Errorf("focus-free input to %s failed: %w (retry with --focus to type through real focus)", w.App, err)
+	if route == RoutePost {
+		guard := guardForeground(a, w)
+		how, err := post(ti, w)
+		guard()
+		switch {
+		case err == nil:
+			if how != "" {
+				res.Reason = how
+			}
+		case opts.NoFallback:
+			return res, fmt.Errorf("%w for %s: %v", ErrNeedsFocus, w.App, err)
+		default:
+			// No focus-free way in: take focus for the moment it takes,
+			// then hand it and the pointer back.
+			route, res.Route, res.Reason = RouteFocus, RouteFocus, "focus-free input failed ("+err.Error()+"); used the foreground and handed it back"
 		}
-	default:
-		prev, hadPrev := focusedWindow(a)
+	}
+	if route == RouteFocus {
+		if err := beforeFocus(); err != nil {
+			return res, err
+		}
+		back := takeFocus(a, w.ID)
 		if err := ensureFocused(a, Match{App: w.App, Title: w.Title}); err != nil {
+			back()
 			return res, err
 		}
 		err := real()
 		// Hand focus back to whoever had it — usually the person working
 		// beside the agent — so the fallback is a blip, not a takeover.
-		if hadPrev && prev.ID != w.ID {
-			_ = a.Focus(prev.ID)
-		}
+		back()
 		if err != nil {
 			return res, err
 		}
@@ -234,6 +299,64 @@ func pickInputWindow(ws []Window) Window {
 	return ws[0]
 }
 
+// guardForeground is for the focus-free routes: some apps activate
+// themselves when acted on (a just-launched UWP app on its first Invoke, a
+// Win32 edit through its UIA proxy). If the target became the focused
+// window during the action, focus goes back to the window that had it.
+func guardForeground(a Adapter, target Window) func() {
+	prev, ok := focusedWindow(a)
+	if !ok || prev.ID == target.ID {
+		return func() {}
+	}
+	mine := func(w Window) bool { return w.ID == target.ID || (target.PID > 0 && w.PID == target.PID) }
+	return func() {
+		// The activation can land a moment after the call returns (a
+		// just-launched UWP app activates on its first Invoke, ~0.5 s).
+		checks := guardChecks
+		if checks > 1 && strings.EqualFold(target.App, "ApplicationFrameHost") {
+			checks = 20 // UWP: measured ~1 s from Invoke to activation
+		}
+		for i := 0; i < checks; i++ {
+			if now, ok := focusedWindow(a); ok && mine(now) {
+				// Getting past the foreground lock needs one injected key;
+				// only when focus was explicitly allowed (--force sets it).
+				if q, ok := a.(interface{ FocusNoInput(string) error }); ok && !strings.EqualFold(os.Getenv("AOS_FOCUS"), "allow") {
+					_ = q.FocusNoInput(prev.ID) // no injected input for an automatic hand-back
+				} else {
+					_ = a.Focus(prev.ID)
+				}
+				return
+			}
+			sleepFn(guardSettle)
+		}
+	}
+}
+
+// guardSettle is how long guardForeground waits between its checks, and
+// guardChecks how many it makes: only Windows apps were seen activating
+// late, so elsewhere it checks once and adds no delay.
+var (
+	guardSettle = 100 * time.Millisecond
+	guardChecks = map[bool]int{true: 8, false: 1}[runtime.GOOS == "windows"]
+)
+
+// takeFocus remembers the focused window and the pointer, and returns the
+// handback that restores both (the window only when it is not target).
+func takeFocus(a Adapter, target string) func() {
+	prev, hadPrev := focusedWindow(a)
+	px, py, perr := a.CursorPosition()
+	return func() {
+		if hadPrev && prev.ID != target {
+			_ = a.Focus(prev.ID)
+		}
+		if perr == nil {
+			if x, y, err := a.CursorPosition(); err == nil && (x != px || y != py) {
+				_ = a.MouseMove(px, py)
+			}
+		}
+	}
+}
+
 func focusedWindow(a Adapter) (Window, bool) {
 	ws, err := listWindowsWith(a, Filter{})
 	if err != nil {
@@ -292,16 +415,21 @@ func clickFoundWith(a Adapter, find FindOptions, focus bool) (ClickResult, error
 	hit := hits[0]
 	res := ClickResult{Window: w, Found: hit}
 	if p, ok := a.(core.ElementPresser); ok && !focus {
-		if err := p.PressElementAt(w, hit.Center.X, hit.Center.Y); err == nil {
+		guard := guardForeground(a, w)
+		err := p.PressElementAt(w, hit.Center.X, hit.Center.Y)
+		guard()
+		if err == nil {
 			res.Route = "press"
 			return res, nil
-		} else {
-			return res, fmt.Errorf("could not press %q in %s through accessibility: %v (retry with --focus to click it with the pointer)", hit.Label, w.App, err)
 		}
+		// No accessibility action: click it with the pointer, then hand
+		// focus and the pointer back.
 	}
-	if !focus {
-		return res, errors.New("this platform has no accessibility press; retry with --focus to click with the pointer")
+	if err := beforeFocus(); err != nil {
+		return res, err
 	}
+	back := takeFocus(a, w.ID)
+	defer back()
 	if err := ensureFocused(a, find.Match); err != nil {
 		return res, err
 	}

@@ -1,8 +1,8 @@
 # aos find: locate a button, menu, link or phrase by its text
 
 Returns global coordinates (the same space as `capture`, `mouse` and `draw`), so
-the result can be clicked or pointed at directly. macOS and Windows; Linux not
-yet.
+the result can be clicked or pointed at directly. macOS and Windows; on Linux
+through AT-SPI and tesseract (see `window text` below).
 
 ```bash
 aos find --app=TextEdit --text=Format                       # best match, one line
@@ -21,7 +21,7 @@ Text output: `centerX centerY  WxH+X+Y  source role "label"`.
    Automation): exact bounds from the app, even when partly covered.
 2. **OCR** (macOS Vision, Windows.Media.Ocr, on-device) when the tree has no
    match: canvas apps, games, remote desktops, images, poor Electron apps. The
-   window is raised first so it is visible; `--no-raise` skips that.
+   window must be visible: nothing is raised unless `--raise` (polite; focus and pointer are handed back).
 3. A partial hit in a big element (text area, web view) is narrowed with OCR of
    just that element (`Source: accessibility+ocr`).
 
@@ -48,3 +48,35 @@ checkbox, radio, textfield, text, image.
   find again.
 - Click it: `aos mouse click <Center.X> <Center.Y>`. Point at it:
   `aos draw --app=<App> --find="<text>" --text="..."`.
+
+## aos window text: read ALL the text of a window
+
+`find` locates one string; `window text` prints every piece of text in the
+window, in reading order (rows top to bottom, each row left to right), with the
+same sources: the accessibility tree first, OCR as the fallback.
+
+```bash
+aos window text TextEdit                         # plain text, one element per line
+aos window text --focused --max-chars=4000       # the frontmost window, capped
+aos window text --id=12345 --json                # {window, app, source, text, truncated, items[]}
+aos window text --title=Inbox --source=ocr       # pixels only: what is visible on screen
+aos window text --title=Inbox --source=ocr --raise   # OCR a covered window (polite: exit 5 if you are typing)
+aos window text Ghostty --timeout=1500
+```
+
+- Contents, not just names: text fields and editors give their value
+  (macOS `AXValue`, Windows UIA `TextPattern` / `ValuePattern`, Linux AT-SPI
+  `Text`), so editors, terminals and browser pages return their body. A
+  labelled field prints as `label: value`. Password fields are never read.
+- `--json` items: `{text, value, role, source, bounds}`; top-level `source` is
+  `ax` (macOS), `uia` (Windows), `atspi` (Linux) or `ocr`.
+- `--source=auto` (default) falls back to OCR when the tree holds almost no text
+  (canvas apps, games, remote desktops) and for a Chromium window whose page is
+  not exposed to accessibility. Nothing is raised unless `--raise`; then
+  focus and the pointer are handed back after the capture.
+- Duplicates (a link and the label inside it) are merged; the window's own
+  title-bar buttons and the menu bar are left out.
+- `--timeout` (ms, default 5000) bounds the whole read; exit 3 = no such window.
+- Linux: AT-SPI needs `at-spi2-core` (+ `libatk-adaptor` for GTK3); OCR needs
+  `tesseract`. On Wayland apps report no screen coordinates, so boxes and order
+  are best-effort; `aos doctor` reports all three.

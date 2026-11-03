@@ -33,7 +33,13 @@ type Ctx struct {
 	// ScreenOnly refuses every command that does not follow the host. It is
 	// set for calls arriving over the SSH socket.
 	ScreenOnly bool
+
+	extra []obs.Attribute // added by the command, recorded on its span
 }
+
+// Annotate adds attributes to this invocation's span (who caused a focus
+// change, what was refused).
+func (c *Ctx) Annotate(attrs ...obs.Attribute) { c.extra = append(c.extra, attrs...) }
 
 // NewCtx builds a context bound to the real process.
 func NewCtx(reg *Registry, version string) *Ctx {
@@ -67,3 +73,6 @@ func (e *ErrUnsupported) Error() string {
 	}
 	return fmt.Sprintf("%q is not supported on %s (available on: %v)", e.Route, e.GOOS, e.On)
 }
+
+// Extra returns the attributes Annotate added (for tests and the recorder).
+func (c *Ctx) Extra() []obs.Attribute { return c.extra }

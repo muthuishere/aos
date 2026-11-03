@@ -21,6 +21,13 @@ import (
 func init() {
 	tabProviders = func() []tabProvider {
 		ax := newAXTabs("uia", windowsCloseChord, nil)
+		ax.annotate = func(tabs []Tab) []Tab {
+			ws, err := ax.windows()
+			if err != nil {
+				return tabs
+			}
+			return annotateTerminalTabs(tabs, ws)
+		}
 		ax.opener = func(ctx context.Context, req tabOpenRequest) (string, error) {
 			return openWindowsTab(ctx, ax, req)
 		}

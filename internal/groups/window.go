@@ -31,8 +31,8 @@ func init() {
 			&cli.Command{
 				Group: "window", Name: "focus",
 				Summary:  "Bring a window to the front",
-				Args:     "<app> | --app=<name> | --title=<substring>",
-				Examples: []string{"aos window focus Chrome"},
+				Args:     "<app> | --app=<name> | --title=<substring> [--force]",
+				Examples: []string{"aos window focus Chrome", "# polite: exit 5 when someone used the machine in the last 5s; --force overrides"},
 				Run:      runWindowFocus,
 			},
 			&cli.Command{
@@ -286,7 +286,10 @@ func runWindowFocus(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "title"); err != nil {
+	if err := set.Reject("app", "title", "force"); err != nil {
+		return err
+	}
+	if err := politeCheck(c, set, "window focus"); err != nil {
 		return err
 	}
 	match, err := matchFrom(set)

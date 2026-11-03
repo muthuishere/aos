@@ -42,14 +42,14 @@ func (c *Ctx) record(args []string, exit int, started time.Time) {
 		StartNanos: started.UnixNano(),
 		EndNanos:   ended.UnixNano(),
 		Status:     status,
-		Attributes: []obs.Attribute{
+		Attributes: append([]obs.Attribute{
 			obs.StringAttr("agentic_os.route", route),
 			obs.StringAttr("agentic_os.source", source),
 			obs.IntAttr("agentic_os.arg_count", int64(extra)),
 			obs.IntAttr("agentic_os.exit_code", int64(exit)),
 			obs.IntAttr("agentic_os.duration_ms", ended.Sub(started).Milliseconds()),
 			obs.BoolAttr("agentic_os.ok", exit == 0),
-		},
+		}, c.extra...),
 	})
 }
 

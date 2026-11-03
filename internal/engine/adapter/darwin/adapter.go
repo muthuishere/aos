@@ -671,6 +671,7 @@ static int wctl_ax_focus(long id) {
 typedef struct {
     char* text;
     char* role;
+    char* value; // AXValue when it differs from text (a titled field's contents)
     double x, y, w, h;
 } wctl_text_t;
 
@@ -715,7 +716,9 @@ static void wctl_ax_walk(AXUIElementRef el, int depth, wctl_text_acc* acc) {
     if (depth > 64 || acc->visited++ > 8000) return;
     char* label = wctl_ax_str(el, kAXTitleAttribute);
     if (!label) label = wctl_ax_str(el, kAXDescriptionAttribute);
-    if (!label) label = wctl_ax_str(el, kAXValueAttribute);
+    char* value = wctl_ax_str(el, kAXValueAttribute);
+    if (!label && value) { label = value; value = NULL; }
+    if (value && label && strcmp(value, label) == 0) { free(value); value = NULL; }
     if (!label) label = wctl_ax_str(el, CFSTR("AXPlaceholderValue"));
     if (!label) {
         // Untitled buttons (window close/minimize/zoom, icon buttons) still
@@ -734,10 +737,12 @@ static void wctl_ax_walk(AXUIElementRef el, int depth, wctl_text_acc* acc) {
             wctl_text_t* t = &acc->items[acc->n++];
             t->text = label; label = NULL;
             t->role = wctl_ax_str(el, kAXRoleAttribute);
+            t->value = value; value = NULL;
             t->x = x; t->y = y; t->w = w; t->h = h;
         }
         if (label) free(label);
     }
+    if (value) free(value);
     CFArrayRef kids = NULL;
     if (AXUIElementCopyAttributeValue(el, kAXChildrenAttribute, (CFTypeRef*)&kids) == kAXErrorSuccess && kids) {
         CFIndex n = CFArrayGetCount(kids);
@@ -779,7 +784,7 @@ static int wctl_ax_texts(long id, wctl_text_t** out) {
 }
 
 static void wctl_free_texts(wctl_text_t* t, int n) {
-    for (int i = 0; i < n; i++) { free(t[i].text); free(t[i].role); }
+    for (int i = 0; i < n; i++) { free(t[i].text); free(t[i].role); free(t[i].value); }
     free(t);
 }
 */
@@ -1156,6 +1161,7 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 		out = append(out, core.TextItem{
 			Text:   C.GoString(t.text),
 			Role:   normalizeAXRole(cStringOrEmpty(t.role)),
+			Value:  cStringOrEmpty(t.value),
 			Bounds: core.Rect{X: int(t.x), Y: int(t.y), W: int(t.w + 0.5), H: int(t.h + 0.5)},
 			Source: "accessibility",
 		})

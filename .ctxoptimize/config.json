@@ -1,0 +1,12 @@
+{
+  "name": "os-cli",
+  "modules": [
+    {
+      "path": "npm"
+    },
+    {
+      "path": "site"
+    }
+  ],
+  "wiki": false
+}

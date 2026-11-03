@@ -3,6 +3,7 @@ module github.com/muthuishere/aos
 go 1.26
 
 require (
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/mark3labs/mcp-go v0.48.0
 	github.com/muthuishere/toolnexus/golang v0.16.0
 	golang.org/x/image v0.24.0

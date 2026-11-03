@@ -163,6 +163,7 @@ type webWalk struct {
 	role, label        string
 	rc                 int     // 1 not reached, 0 done, -1 failed, 2 stale, 3 focus did not land
 	held               uintptr // the focused target (AddRef'd), for WebFocus
+	value              string  // for WebSetValue
 }
 
 func (u *uiaWeb) walk(el uintptr, depth int, w *webWalk) {
@@ -207,6 +208,21 @@ func (u *uiaWeb) perform(el uintptr, n core.WebNode, w *webWalk) int {
 			time.Sleep(30 * time.Millisecond)
 		}
 		return 3
+	}
+	if w.action == webSetValue {
+		// The field's value through UIA ValuePattern: no focus, no keys.
+		vp := pattern(el, valuePatternID)
+		if vp == 0 {
+			return -1
+		}
+		b := bstr(w.value)
+		hr := vcall(vp, valueSetValue, b)
+		freeBSTR(b)
+		release(vp)
+		if failed(hr) {
+			return -1
+		}
+		return 0
 	}
 	var pat uintptr
 	if hr := vcall(el, elGetCurPattern, invokePatternID, uintptr(unsafe.Pointer(&pat))); !failed(hr) && pat != 0 {
@@ -300,6 +316,27 @@ func (a *Adapter) WebAct(w core.Window, maxNodes, maxDepth, index, action int, r
 		return core.ErrWebFocus
 	}
 	return errors.New("the element has no Invoke pattern")
+}
+
+// webSetValue is a Windows-only web action: set a field's value.
+const webSetValue = 100
+
+// WebSetValue sets the value of the field at preorder index (if it still
+// has role and label) through UIA ValuePattern.SetValue. The browser's
+// window is not activated and no key is sent; Chromium updates the DOM
+// value and fires the input event.
+func (a *Adapter) WebSetValue(w core.Window, maxNodes, maxDepth, index int, role, label, value string) error {
+	ww := &webWalk{maxNodes: maxNodes, maxDepth: maxDepth, act: index, action: webSetValue, role: role, label: label, value: value, rc: 1}
+	if err := a.webWalk(w, ww); err != nil {
+		return err
+	}
+	switch ww.rc {
+	case 0:
+		return nil
+	case 1, 2:
+		return core.ErrWebStale
+	}
+	return errors.New("the field takes no value through UI Automation (no ValuePattern)")
 }
 
 // FrontmostPID is the process that owns the foreground window.

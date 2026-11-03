@@ -119,6 +119,8 @@ func findTextWith(a Adapter, o FindOptions) ([]FoundText, error) {
 		}
 	}
 	if !o.NoRaise {
+		back := takeFocus(a, w.ID)
+		defer back() // the raise is only for the capture
 		if err := a.Focus(w.ID); err == nil {
 			sleepFn(250 * time.Millisecond) // let it come to the front before capturing
 		}
@@ -150,6 +152,8 @@ func refineWithOCR(a Adapter, w Window, hit FoundText, q string, o FindOptions) 
 		return hit
 	}
 	if !o.NoRaise {
+		back := takeFocus(a, w.ID)
+		defer back()
 		if err := a.Focus(w.ID); err == nil {
 			sleepFn(250 * time.Millisecond)
 		}
@@ -270,6 +274,12 @@ func rankMatches(items []TextItem, q string, o FindOptions) []FoundText {
 			continue
 		}
 		tier, at := matchTier(it.Text, q)
+		if tier < 0 && it.Value != "" {
+			// An editor's body is its value, not its name.
+			if vt, vat := matchTier(it.Value, q); vt >= 0 {
+				it.Text, tier, at = it.Value, vt, vat
+			}
+		}
 		if tier < 0 || (o.Exact && tier != 0) {
 			continue
 		}

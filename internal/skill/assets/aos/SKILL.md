@@ -12,7 +12,7 @@ description: >
   run something as a service,
   show a caption on screen, share my screen on the LAN, what can this machine do,
   snap a window to a half / quarter / third, N-way split, put an app on monitor 2,
-  apply / save a window layout, which monitor is active, find a button / menu /
+  apply / save a window layout, which monitor is active, read all the text of a window, find a button / menu /
   text on screen, where is the Allow button, point at it, draw an arrow, show me
   where to click, highlight / circle / box this, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP,
@@ -49,6 +49,31 @@ aos <group> <cmd> --help
 If a command is not in `commands`, it does not exist here. Do not invent flags —
 `--help` lists the real ones, and an unknown flag is rejected rather than ignored.
 
+## Never take the person's focus
+
+Someone is usually working at this machine while you drive it. **Always target
+a window by name and act through accessibility; never through focus or bare
+coordinates, unless the owner asked for exactly that.**
+
+- Type: `key type --app=Notepad "text"` / `key press enter --title=T`. That puts
+  the text into that window without focusing it (macOS posts to the process;
+  Windows uses EM_REPLACESEL or UIA SetValue). Never use a bare `key type`, which
+  types into whatever has focus (it warns on stderr).
+- Click: `mouse click --app=X --find=Save` (AXPress / UIA Invoke, Toggle,
+  Select, ExpandCollapse; no pointer move, and it works when the window is
+  covered). Never use `mouse click X Y`.
+- Read: `window text --app=X`, `find --app=X --text=T`. Neither raises the
+  window; `--raise` (needed only to OCR a covered window) opts in.
+- Focus-free first, then the foreground: when a window has no focus-free
+  route (Paint, a WinUI app with no editable field, Chrome keystrokes on macOS),
+  `key type --app` / `mouse click --find` take the foreground for the moment
+  they need it and hand the front window and the pointer back afterwards.
+- Polite: anything that takes focus or moves the pointer first **waits** while
+  the person is typing or moving the mouse (idle 5 s), up to 60 s
+  (`AOS_POLITE_WAIT`), and only then gives up with **exit 5**. `--force` /
+  `AOS_FOCUS=allow` skip the wait; use them only when the owner asked.
+- `aos obs focus` lists every focus-taking call and the agent behind it.
+
 ## Read the exit code
 
 - **0** — worked.
@@ -59,6 +84,9 @@ If a command is not in `commands`, it does not exist here. Do not invent flags �
 - **3** — not found: `find` / `draw --find` could not find the window or the text;
   `tab focus` / `tab close` found no matching tab.
   The message lists the closest labels it did see; retry with one of them.
+- **5** — gave up politely: the command needed focus or the pointer and the
+  person kept using the machine for the whole wait (60 s). Use the targeted form,
+  or retry later.
 
 Exit 2 on Linux is fixable: `aos headless start --wm` provides a virtual
 display, and later commands adopt it automatically. On macOS and Windows it means
@@ -76,6 +104,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | the page in a browser tab | `tab read --id=ID` (markdown, refs like `[e8] Send (button)`) · `tab type --id=ID --element=e7 --text=T --enter` · `tab click --id=ID --find=Send` · `watch tab --id=ID --match=T --timeout=5m` (no focus taken; `--url=web.whatsapp.com` or `--title=T` instead of `--id`) |
 | focus / wait | `window focus Chrome` · `launch Chrome --wait` · `window wait Chrome --timeout=5000` |
 | capture | `capture screenshot` · `--monitor=2` · `--app=Chrome` · `--region=x,y,w,h` · `--out=path` |
+| read all text of a window | `window text Chrome` · `window text --focused --max-chars=4000` · `--json` (role, value, bounds) · `--source=ocr` (AX/UIA/AT-SPI first, OCR fallback) |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
 | point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
 | click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=TextEdit --verify` (focus-free; `--focus` to force focus) · `key press enter --app=TextEdit` · `mouse click --app=Calculator --find=7` |
@@ -101,7 +130,7 @@ command with usage and examples. Load the guide that matches the intent:
 |---|---|
 | windows, monitors, zones, layouts | `references/windows-and-layout.md` |
 | visual loop, terminals, screen sharing rules | `references/automation.md` |
-| find a control by its text | `references/find.md` |
+| find a control by its text; read all text of a window | `references/find.md` |
 | browser and terminal tabs: list, switch, open, type into, close; read, type into and click a page, wait for text | `references/tabs.md` |
 | point at / label things on screen | `references/draw.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
@@ -215,6 +244,7 @@ Neither can shadow a built-in command.
 
 ```bash
 aos obs audit --since=24h   # what was run, oldest first — the audit trail
+aos obs focus               # who took (or was refused) focus / the pointer, and which agent
 aos obs audit --source=mcp  # only what agents asked for
 aos obs summary             # is this being used, and by what
 aos obs stats               # p50/p95 and failure rate per route

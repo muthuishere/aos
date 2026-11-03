@@ -266,6 +266,8 @@ static int wctl_web_prepare(int pid, long wid, const char* title, int* enabled) 
         int on = AXUIElementCopyAttributeValue(app, CFSTR("AXEnhancedUserInterface"), &prev) == kAXErrorSuccess &&
                  prev && CFGetTypeID(prev) == CFBooleanGetTypeID() && CFBooleanGetValue((CFBooleanRef)prev);
         if (prev) CFRelease(prev);
+        // Chromium's own switch (no window-animation cost); ignored elsewhere.
+        AXUIElementSetAttributeValue(app, CFSTR("AXManualAccessibility"), kCFBooleanTrue);
         if (!on) {
             AXUIElementSetAttributeValue(app, CFSTR("AXEnhancedUserInterface"), kCFBooleanTrue); // error ignored, see above
             *enabled = 1;

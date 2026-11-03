@@ -16,7 +16,6 @@ package windows
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -83,7 +82,10 @@ func isTextControl(h uintptr) bool {
 			return true
 		}
 	}
-	return false
+	// WinForms / framework-wrapped edits: WindowsForms10.EDIT.app.0.xxx,
+	// WindowsForms10.RichEdit20W..., ATL:Edit.
+	l := strings.ToLower(c)
+	return strings.Contains(l, ".edit.") || strings.Contains(l, "richedit") || strings.HasSuffix(l, ":edit")
 }
 
 // inputControl finds the control inside top that keyboard input should go
@@ -166,12 +168,15 @@ var extendedKeys = map[string]bool{
 // PressChordTo posts WM_KEYDOWN / WM_KEYUP for an unmodified key; the
 // target's message loop translates it (enter becomes WM_CHAR '\r').
 func (a *Adapter) PressChordTo(w core.Window, chord core.Chord) error {
-	if chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift {
-		return errors.New("modifier chords cannot be posted (the target reads modifiers from the real keyboard)")
-	}
 	top, err := parseHwnd(w.ID)
 	if err != nil {
 		return err
+	}
+	if isConsoleWindow(top) {
+		return consoleKeyTo(top, w, chord) // modifiers travel in the key record
+	}
+	if chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift {
+		return errors.New("modifier chords cannot be posted (the target reads modifiers from the real keyboard)")
 	}
 	vk, err := vkForKey(chord.Key)
 	if err != nil {
@@ -199,6 +204,10 @@ func (a *Adapter) FocusedText(w core.Window) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
+	if isConsoleWindow(top) {
+		s, err := consoleRead(top, w)
+		return s, err == nil, err
+	}
 	ctl, err := inputControl(top, true)
 	if err != nil {
 		return "", false, nil
@@ -215,56 +224,15 @@ func (a *Adapter) FocusedText(w core.Window) (string, bool, error) {
 	return windows.UTF16ToString(buf), true, nil
 }
 
-// PressElementAt invokes the UI Automation element under (x, y) — or its
-// nearest invokable ancestor — when that point is on window w.
+// PressElementAt activates the UI Automation element of window w at
+// (x, y) — or its nearest activatable ancestor — through the window's own
+// tree (Invoke, Toggle, SelectionItem, ExpandCollapse, DoDefaultAction).
+// No pointer, no foreground change, and it works when another window
+// covers the point.
 func (a *Adapter) PressElementAt(w core.Window, x, y int) error {
 	top, err := parseHwnd(w.ID)
 	if err != nil {
 		return err
 	}
-	pt := uintptr(uint32(int32(x))) | uintptr(uint32(int32(y)))<<32
-	hit, _, _ := procWindowFromPoint.Call(pt)
-	root, _, _ := procGetAncestor.Call(hit, gaRoot)
-	if hit == 0 || root != top {
-		return fmt.Errorf("%d,%d is not on window %s (something covers it)", x, y, w.ID)
-	}
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	if hr, _, _ := procCoInitializeEx.Call(0, 2); hr == 0 || hr == 1 {
-		defer procCoUninitialize.Call()
-	}
-	var uia uintptr
-	if hr, _, _ := procCoCreateInstance.Call(uintptr(unsafe.Pointer(&clsidCUIAutomation)), 0, 1|4,
-		uintptr(unsafe.Pointer(&iidIUIAutomation)), uintptr(unsafe.Pointer(&uia))); failed(hr) || uia == 0 {
-		return hrErr("CoCreateInstance(CUIAutomation)", hr)
-	}
-	defer release(uia)
-	var el uintptr
-	if hr := vcall(uia, uiaElementFromPt, pt, uintptr(unsafe.Pointer(&el))); failed(hr) || el == 0 {
-		return hrErr("ElementFromPoint", hr)
-	}
-	var walker uintptr
-	if hr := vcall(uia, uiaRawViewWalker, uintptr(unsafe.Pointer(&walker))); failed(hr) || walker == 0 {
-		release(el)
-		return hrErr("RawViewWalker", hr)
-	}
-	defer release(walker)
-	for depth := 0; el != 0 && depth < 6; depth++ {
-		var pat uintptr
-		if hr := vcall(el, elGetCurPattern, invokePatternID, uintptr(unsafe.Pointer(&pat))); !failed(hr) && pat != 0 {
-			hr := vcall(pat, invokeInvoke)
-			release(pat)
-			release(el)
-			if failed(hr) {
-				return hrErr("Invoke", hr)
-			}
-			return nil
-		}
-		var parent uintptr
-		vcall(walker, walkerGetParent, el, uintptr(unsafe.Pointer(&parent)))
-		release(el)
-		el = parent
-	}
-	release(el)
-	return fmt.Errorf("the element at %d,%d has no Invoke pattern", x, y)
+	return pressInTree(top, x, y)
 }

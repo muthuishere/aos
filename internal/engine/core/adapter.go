@@ -211,6 +211,32 @@ type WebTarget interface {
 	Release()
 }
 
+// ShellInfo is one shell process behind a terminal tab or pane.
+type ShellInfo struct {
+	PID     int    `json:"pid"`
+	Exe     string `json:"exe"`
+	Title   string `json:"title"` // the console title
+	CWD     string `json:"cwd,omitempty"`
+	Created int64  `json:"-"` // creation time, ns, for ordering
+}
+
+// ConsoleDriver reaches the shells of terminal windows through their
+// consoles (Windows: AttachConsole + WriteConsoleInputW / ReadConsoleOutput).
+type ConsoleDriver interface {
+	TerminalShells(w Window) ([]ShellInfo, error)
+	ConsoleType(pid int, text string) error
+	ConsoleKey(pid int, chord Chord) error
+	ConsoleRead(pid int) (string, error)
+	ConsoleClose(pid int) error
+}
+
+// ElementTextSetter puts text into a window's editable element without
+// focusing it (Windows: EM_REPLACESEL, UIA ValuePattern / LegacyIAccessible
+// SetValue) and says which way it went.
+type ElementTextSetter interface {
+	SetTextTo(w Window, text string) (how string, err error)
+}
+
 // ElementPresser activates the accessibility element of window w at the
 // global point (x, y) without moving the pointer or focusing the window
 // (macOS AXPress, Windows UIA Invoke).

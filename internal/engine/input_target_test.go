@@ -214,3 +214,29 @@ func TestFindIgnoresBidiMarks(t *testing.T) {
 		t.Fatalf("tier %d", tier)
 	}
 }
+
+// With no focus-free route, input takes the foreground for the moment it
+// needs and hands it back; NoFallback refuses instead.
+func TestTypeToFallsBackToFocusAndHandsBack(t *testing.T) {
+	a := newTargeted()
+	a.monitors = []Monitor{{ID: 1, X: 0, Y: 0, Width: 4000, Height: 1080, Focused: true}}
+	a.windows = append(a.windows, Window{ID: "gc", Title: "Inbox", App: "Google Chrome", Bounds: Rect{X: 0, Y: 0, W: 900, H: 700}})
+	a.focused = "mine"
+	f := &focusTracker{targetedMock: a}
+	waited := false
+	old := BeforeFocus
+	BeforeFocus = func() error { waited = true; return nil }
+	defer func() { BeforeFocus = old }()
+	res, err := typeToWith(f, "darwin", Match{App: "Google Chrome"}, "hello", InputOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Route != RouteFocus || a.typedText != "hello" || a.focused != "mine" || !waited {
+		t.Fatalf("route %s typed %q focused %q waited %v", res.Route, a.typedText, a.focused, waited)
+	}
+	a.typedText = ""
+	_, err = pressToWith(f, "windows", Match{App: "TextEdit"}, Chord{Ctrl: true, Key: "s"}, InputOptions{NoFallback: true})
+	if err == nil || a.typedText != "" {
+		t.Fatalf("NoFallback must refuse without input: %v", err)
+	}
+}

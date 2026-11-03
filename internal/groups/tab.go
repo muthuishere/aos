@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,11 +53,12 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "open",
 				Summary: "Open a browser tab on a URL, or a terminal tab in a folder",
-				Args:    "[<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--background]",
+				Args:    "[<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]",
 				Examples: []string{
 					"aos tab open https://example.com --app=Chrome",
 					"aos tab open https://example.com --app=Safari --new-window",
 					`aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"`,
+					`aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window`,
 				},
 				Platforms: platforms,
 				Run:       runTabOpen,
@@ -104,6 +106,10 @@ type Tab struct {
 	Active       bool   `json:"active"` // the selected tab of its window
 	Source       string `json:"source"` // applescript, ax, uia, cli
 	Panes        []Pane `json:"panes,omitempty"`
+	// Windows Terminal: the shell behind the tab, and how it was matched
+	// ("title": its console title is the tab's; "order": by creation order).
+	PID   int    `json:"pid,omitempty"`
+	Match string `json:"match,omitempty"`
 
 	// For matching the app's window onto an aos window; not printed.
 	windowTitle  string
@@ -144,6 +150,8 @@ type tabOpenRequest struct {
 	NewWindow  bool
 	CWD        string
 	Command    string
+	Title      string // terminal tab title (Windows Terminal)
+	WTWindow   string // Windows Terminal window name or id for wt -w
 	Background bool
 }
 
@@ -217,6 +225,7 @@ type tabFilter struct {
 	App, Kind, Window string
 	Title, URL, CWD   string
 	ID                string
+	Index             int // 1-based position in its window; 0 = any
 	Exact             bool
 }
 
@@ -228,6 +237,9 @@ func (f tabFilter) selects(t Tab) bool {
 		return false
 	}
 	if f.ID != "" && t.ID != f.ID && !paneOf(t, f.ID) {
+		return false
+	}
+	if f.Index > 0 && t.Index != f.Index {
 		return false
 	}
 	if f.Title != "" && !textMatches(t.Title, f.Title, f.Exact) {
@@ -461,6 +473,13 @@ func tabFilterFrom(set *argSet) (tabFilter, error) {
 		ID:     set.String("id", ""),
 		Exact:  set.Has("exact"),
 	}
+	if v := set.String("index", ""); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return f, fmt.Errorf("--index wants a tab position from 1, got %q", v)
+		}
+		f.Index = n
+	}
 	if f.App == "" && len(set.Rest) > 0 {
 		f.App = strings.Join(set.Rest, " ")
 	}
@@ -560,8 +579,8 @@ const exitAmbiguous = 4
 // Several matches: focus (strict false) takes the active one, else the
 // first; close and send (strict true) refuse with exit 4 and the candidates.
 func pickTab(f tabFilter, strict bool) (Tab, error) {
-	if f.Title == "" && f.URL == "" && f.CWD == "" && f.ID == "" {
-		return Tab{}, fmt.Errorf("name a tab: --id, --title, --url or --cwd")
+	if f.Title == "" && f.URL == "" && f.CWD == "" && f.ID == "" && f.Index == 0 {
+		return Tab{}, fmt.Errorf("name a tab: --id, --title, --url, --cwd or --index")
 	}
 	if f.ID != "" {
 		if _, _, err := splitTabID(f.ID); err != nil {
@@ -633,13 +652,14 @@ func tabCtx() (context.Context, context.CancelFunc) {
 }
 
 func runTabFocus(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "kind", "title", "url", "cwd", "id")
+	set, err := parseArgs(args, "app", "kind", "title", "url", "cwd", "id", "index", "window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "kind", "title", "url", "cwd", "id", "exact", "json"); err != nil {
+	if err := set.Reject("app", "kind", "title", "url", "cwd", "id", "index", "window", "exact", "json", "raise"); err != nil {
 		return err
 	}
+	tabRaise = set.Has("raise")
 	f, err := tabFilterFrom(set)
 	if err != nil {
 		return err
@@ -682,11 +702,11 @@ func printOneTab(c *cli.Ctx, set *argSet, t Tab) error {
 }
 
 func runTabOpen(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "window", "cwd", "command")
+	set, err := parseArgs(args, "app", "window", "cwd", "command", "title", "wt-window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "window", "new-window", "cwd", "command", "background"); err != nil {
+	if err := set.Reject("app", "window", "new-window", "cwd", "command", "background", "title", "wt-window"); err != nil {
 		return err
 	}
 	req := tabOpenRequest{
@@ -694,6 +714,8 @@ func runTabOpen(c *cli.Ctx, args []string) error {
 		NewWindow:  set.Has("new-window"),
 		CWD:        expandHome(set.String("cwd", "")),
 		Command:    set.String("command", ""),
+		Title:      set.String("title", ""),
+		WTWindow:   set.String("wt-window", ""),
 		Background: set.Has("background"),
 	}
 	if len(set.Rest) > 1 {
@@ -805,11 +827,11 @@ func runTabSend(c *cli.Ctx, args []string) error {
 }
 
 func runTabClose(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "app", "kind", "title", "url", "id", "expect-title")
+	set, err := parseArgs(args, "app", "kind", "title", "url", "id", "index", "window", "expect-title")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "kind", "title", "url", "id", "exact", "expect-title"); err != nil {
+	if err := set.Reject("app", "kind", "title", "url", "id", "index", "window", "exact", "expect-title"); err != nil {
 		return err
 	}
 	f, err := tabFilterFrom(set)
@@ -879,3 +901,8 @@ func expectTitle(t Tab, want string) error {
 	return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
 		"%s now shows %q, not %q; the tabs changed since you listed them (list again)", t.ID, t.Title, want)}
 }
+
+// tabRaise: `tab focus --raise` also brings the window forward. Without it,
+// a terminal tab is selected in place (Windows Terminal: UIA select, the
+// window stays where it is).
+var tabRaise bool

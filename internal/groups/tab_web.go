@@ -99,6 +99,7 @@ var (
 	pressInto   = engine.PostKeyTo
 	webPrepare  = engine.WebPrepare
 	webFocus    = engine.FocusWebElement
+	webSetValue = engine.WebSetValue
 	frontWindow = focusedWindow
 	frontPID    = engine.FrontmostPID
 	tabNow      = func(id string) (Tab, error) { return pickTab(tabFilter{ID: id}, true) }
@@ -187,15 +188,18 @@ type pageRead struct {
 }
 
 func runTabRead(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "url", "title", "app")
+	set, err := parseArgs(args, "id", "url", "title", "app", "index", "window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "md", "json"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "index", "window", "md", "json"); err != nil {
 		return err
 	}
 	if set.Has("md") && set.Has("json") {
 		return fmt.Errorf("--md and --json are exclusive")
+	}
+	if done, err := terminalRead(c, set); done {
+		return err
 	}
 	t, w, err := pageTab(pageFilter(set))
 	if err != nil {
@@ -395,11 +399,14 @@ func stillFocused(w engine.Window, target engine.WebTarget, e pageElement, allow
 }
 
 func runTabType(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "url", "title", "app", "element", "into", "text", "nth")
+	set, err := parseArgs(args, "id", "url", "title", "app", "element", "into", "text", "nth", "index", "window")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "enter", "exact", "allow-focus", "allow-newline"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "index", "window", "enter", "exact", "allow-focus", "allow-newline", "force"); err != nil {
+		return err
+	}
+	if done, err := terminalType(c, set); done {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "into")
@@ -424,6 +431,11 @@ func runTabType(c *cli.Ctx, args []string) error {
 		return err
 	}
 	allow := set.Has("allow-focus")
+	if runtime.GOOS == "windows" {
+		if done, err := typeBySetValue(c, set, t, w, ref, query, nth, text); done {
+			return err
+		}
+	}
 	if err := focusGuard(w, allow); err != nil {
 		return err
 	}
@@ -504,7 +516,17 @@ func runTabClick(c *cli.Ctx, args []string) error {
 		elems, _ := pageRefs(t, nodes)
 		return pickElement(elems, ref, fp, query, set.Has("exact"), nth, keep, what)
 	}, func(e pageElement) error {
-		return webAct(w, pageMaxNodes, pageMaxDepth, e.index, engine.WebPress, e.axRole, e.fp)
+		prev := ""
+		if runtime.GOOS == "windows" {
+			prev = frontWindowID()
+		}
+		err := webAct(w, pageMaxNodes, pageMaxDepth, e.index, engine.WebPress, e.axRole, e.fp)
+		// Chromium on Windows activates its window on an accessibility
+		// press; the window that was in front gets focus back.
+		if prev != "" && frontWindowID() != prev {
+			_ = engine.FocusWindowNoInput(prev)
+		}
+		return err
 	})
 	if err != nil {
 		var exit *cli.ExitError
@@ -924,4 +946,73 @@ func byFingerprint(elems []pageElement, ref string, fp refFP) (pageElement, erro
 		}
 	}
 	return pageElement{}, &cli.ExitError{Code: exitAmbiguous, Message: msg}
+}
+
+// typeBySetValue is Windows' focus-free `tab type`: the field's value is set
+// through UI Automation (Chromium updates the DOM and fires input), so the
+// browser stays behind whatever the person is using. Chromium ignores keys
+// posted to it, so --enter alone takes the foreground for one key press
+// (after the polite wait) and hands it and the pointer back. done=false:
+// the field has no value pattern; the caller falls back to the key route.
+func typeBySetValue(c *cli.Ctx, set *argSet, t Tab, w engine.Window, ref, query string, nth int, text string) (bool, error) {
+	fp := loadRef(t, ref)
+	var picked pageElement
+	e, _, err := resolveAndAct(&w, func(nodes []engine.WebNode) (pageElement, error) {
+		elems, _ := pageRefs(t, nodes)
+		return pickElement(elems, ref, fp, query, set.Has("exact"), nth, func(e pageElement) bool { return pageEditable[e.Role] }, "field")
+	}, func(e pageElement) error {
+		picked = e
+		// Chromium focuses the field to set its value, which activates the
+		// browser window; the window that was in front gets focus back
+		// right away (no injected input).
+		prev := frontWindowID()
+		err := webSetValue(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp, text)
+		if now := frontWindowID(); prev != "" && now != prev {
+			_ = engine.FocusWindowNoInput(prev)
+		}
+		return err
+	})
+	switch {
+	case err == nil:
+	case errors.Is(err, engine.ErrNotImplemented):
+		return false, nil
+	case picked.Ref == "":
+		return true, err // no such field: the same answer the key route would give
+	default:
+		return false, nil // the field takes no value through UIA: the key route
+	}
+	if set.Has("enter") {
+		if err := politeCheck(c, set, "tab type --enter"); err != nil {
+			return true, err
+		}
+		back := handBack()
+		_ = engine.FocusWindowID(w.ID) // the field can take focus only in the front window
+		time.Sleep(150 * time.Millisecond)
+		target, ferr := webFocus(w, pageMaxNodes, pageMaxDepth, e.index, e.axRole, e.fp)
+		if ferr == nil {
+			ferr = engine.PressKey("enter")
+			target.Release()
+		}
+		back()
+		noteOwnInput()
+		if ferr != nil {
+			return true, fmt.Errorf("value set, but Enter failed: %w", ferr)
+		}
+	}
+	c.Printf("typed into %s  %s (UIA SetValue, no focus)\n", e.Ref, e.annotation(false))
+	return true, nil
+}
+
+// frontWindowID is the focused window's aos id, "" when unknown.
+func frontWindowID() string {
+	ws, err := engine.ListWindows(engine.Filter{})
+	if err != nil {
+		return ""
+	}
+	for _, w := range ws {
+		if w.Focused {
+			return w.ID
+		}
+	}
+	return ""
 }

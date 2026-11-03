@@ -74,3 +74,20 @@ on the **LAN** only and needs no confirmation. aos has no public tunnel. If the
 human wants a public link (`windowctl remote --tunnel`, a `*.trycloudflare.com`
 URL anyone with the link can drive), say plainly that it puts desktop control on
 the public internet and get an explicit "yes" first, every time.
+
+## Windows: how each kind of app is reached without focus
+
+| app | type (`key type --app/--title`) | click (`mouse click --find`) | read (`window text`) |
+|---|---|---|---|
+| Windows Terminal, conhost (cmd, PowerShell) | the shell's console input buffer (AttachConsole + WriteConsoleInputW, in a helper process); `key press` sends chords **with** modifiers (ctrl+c) | n/a | console screen buffer (ReadConsoleOutputCharacterW) |
+| Classic Win32 / WinForms, Notepad (RichEditD2DPT) | EM_REPLACESEL into the edit control (inserts at the caret, replaces a selection, like typing) | UIA Invoke (Win32 buttons) | UIA TextPattern, then ValuePattern, then the name |
+| UIA apps (WinUI, WPF, Settings, Calculator, Explorer) | UIA ValuePattern / LegacyIAccessible SetValue on an editable element (appends to the value); no editable element = refused | Invoke, Toggle, SelectionItem, ExpandCollapse, DoDefaultAction, found in the window's own tree (works when covered) | UIA |
+| Edge / Chrome page fields (`tab type`) | UIA ValuePattern.SetValue on the field: lands while Notepad or a terminal is in front; Chromium activates its window to do it, and aos hands the front window straight back. `--enter` takes the foreground for one key press, then hands it back | `tab click` (UIA press, same hand-back) | `tab read`; a fully covered Chromium window does not refresh its tree until it is visible again |
+| Chrome, Edge, VS Code (Chromium/Electron) | browser UI (address bar) via UIA SetValue; page inputs only when renderer accessibility is on (`--force-renderer-accessibility`); the page itself: `tab type` | UIA, same limits | UIA; `tab read` for the page |
+
+| Calculator and other UWP apps | refused (no editable field), then the foreground fallback | LegacyIAccessible.DoDefaultAction first: Invoke brings a UWP app to the front on its first press, DoDefaultAction does not | UIA |
+| Paint | n/a | ignores posted mouse messages (WinUI input): uses the foreground fallback | UIA |
+
+When no focus-free route works, aos takes the foreground (SetForegroundWindow +
+SendInput) for the moment it needs, after the polite wait, and hands the front
+window and the pointer back. It never calls UIA SetFocus.

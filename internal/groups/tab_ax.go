@@ -3,6 +3,7 @@ package groups
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,8 +22,11 @@ type axTabs struct {
 	skip       func(app string) bool   // apps another provider owns
 	closeChord func(app string) string // the app's close-tab shortcut, "" when unknown
 	opener     func(context.Context, tabOpenRequest) (string, error)
-	texts      func(string) ([]engine.TextItem, error)
-	windows    func() ([]engine.Window, error)
+	// Windows Terminal: fill in each tab's shell, and drive it through the
+	// shell's console instead of keystrokes.
+	annotate func([]Tab) []Tab
+	texts    func(string) ([]engine.TextItem, error)
+	windows  func() ([]engine.Window, error)
 	// Seams for tests: the real ones press keys and raise windows.
 	pressKey  func(combo string) error
 	sleep     func(time.Duration)
@@ -69,33 +73,56 @@ func (a *axTabs) list(ctx context.Context, _ tabFilter, apps []string) ([]Tab, e
 		wg   sync.WaitGroup
 		tabs []Tab
 	)
+	// Windows of one process are read one after another: Windows Terminal
+	// serves all its windows from one process, and its UI Automation
+	// provider answers only one ElementFromHandle at a time (the others
+	// fail with "not in the tree"). Different apps still run in parallel.
+	byPID := map[int][]engine.Window{}
+	var pids []int
 	for _, w := range ws {
 		if !want[w.App] {
 			continue
 		}
-		wg.Add(1)
-		go func(w engine.Window) {
-			defer wg.Done()
-			done := make(chan []engine.TextItem, 1)
-			go func() {
-				items, err := a.texts(w.ID)
-				if err != nil {
-					items = nil
-				}
-				done <- items
-			}()
-			select {
-			case items := <-done:
-				got := axTabsOf(a.source, w, items)
-				mu.Lock()
-				tabs = append(tabs, got...)
-				mu.Unlock()
-			case <-ctx.Done():
-				// An app with a huge tree is left out rather than stalling the list.
+		if _, ok := byPID[w.PID]; !ok {
+			pids = append(pids, w.PID)
+		}
+		byPID[w.PID] = append(byPID[w.PID], w)
+	}
+	read := func(w engine.Window) []engine.TextItem {
+		for try := 0; try < 2; try++ {
+			items, err := a.texts(w.ID)
+			if err == nil {
+				return items
 			}
-		}(w)
+			if os.Getenv("AOS_DEBUG_TABS") != "" {
+				fmt.Fprintf(os.Stderr, "tabs: %s %q: %v\n", w.ID, w.Title, err)
+			}
+		}
+		return nil
+	}
+	for _, pid := range pids {
+		wg.Add(1)
+		go func(group []engine.Window) {
+			defer wg.Done()
+			for _, w := range group {
+				done := make(chan []engine.TextItem, 1)
+				go func() { done <- read(w) }()
+				select {
+				case items := <-done:
+					got := axTabsOf(a.source, w, items)
+					mu.Lock()
+					tabs = append(tabs, got...)
+					mu.Unlock()
+				case <-ctx.Done():
+					return // an app with a huge tree is left out rather than stalling the list
+				}
+			}
+		}(byPID[pid])
 	}
 	wg.Wait()
+	if a.annotate != nil {
+		tabs = a.annotate(tabs)
+	}
 	return tabs, nil
 }
 
@@ -161,7 +188,18 @@ func (a *axTabs) windowOf(t Tab) (engine.Window, error) {
 	return engine.Window{}, fmt.Errorf("%s: window %s is gone (list again with `aos tab list`)", t.App, t.Window)
 }
 
-func (a *axTabs) focus(_ context.Context, t Tab) error {
+func (a *axTabs) focus(ctx context.Context, t Tab) error {
+	if t.PID > 0 && !tabRaise {
+		// Select in place. Windows Terminal activates its window when a
+		// tab is selected through UI Automation, so the previous front
+		// window is handed back (without injected input).
+		prev, _ := a.frontmost()
+		err := a.selectQuiet(ctx, t)
+		if now, _ := a.frontmost(); prev != "" && now != prev {
+			_ = engine.FocusWindowNoInput(prev)
+		}
+		return err
+	}
 	if t.center == nil {
 		return fmt.Errorf("%s: no position for tab %s", t.App, t.ID)
 	}
@@ -201,6 +239,9 @@ func (a *axTabs) selectQuiet(_ context.Context, t Tab) error {
 //     key is not sent unless it is the tab's window;
 //   - success is reported only when the window's tab count dropped.
 func (a *axTabs) close(ctx context.Context, t Tab) error {
+	if t.PID > 0 {
+		return a.closeShell(t)
+	}
 	chord := a.closeChord(t.App)
 	if chord == "" {
 		return errTabUnsupported{fmt.Sprintf("aos does not know %s's close-tab shortcut; focus the tab (`aos tab focus --id=%s`) and close it yourself", t.App, t.ID)}
@@ -258,7 +299,13 @@ func (a *axTabs) frontmost() (string, error) {
 	return "", nil
 }
 
-func (a *axTabs) send(_ context.Context, t Tab, _, _ string) error {
+func (a *axTabs) send(_ context.Context, t Tab, text, key string) error {
+	if t.PID > 0 { // the tab's shell, through its console: no focus, any tab
+		if text != "" {
+			return engine.ConsoleType(t.PID, text)
+		}
+		return engine.ConsoleKey(t.PID, key)
+	}
 	return errTabUnsupported{fmt.Sprintf("%s tabs are read through accessibility, which has no input channel; focus the tab (`aos tab focus --id=%s`) and use `aos type` / `aos key`", t.App, t.ID)}
 }
 
@@ -267,4 +314,33 @@ func (a *axTabs) open(ctx context.Context, req tabOpenRequest) (string, error) {
 		return "", errTabUnsupported{fmt.Sprintf("aos cannot open tabs in %s; it knows %s", req.App, knownTabApps())}
 	}
 	return a.opener(ctx, req)
+}
+
+// closeShell closes a terminal tab by ending its shell with exit code 0
+// (Windows Terminal closes a tab whose process exits cleanly); no key is sent.
+func (a *axTabs) closeShell(t Tab) error {
+	if err := engine.ConsoleClose(t.PID); err != nil {
+		return err
+	}
+	for i := 0; i < 20; i++ {
+		a.sleep(150 * time.Millisecond)
+		w, err := a.windowOf(t)
+		if err != nil {
+			return nil // the window closed with its last tab
+		}
+		items, err := a.texts(w.ID)
+		if err != nil {
+			continue
+		}
+		still := false
+		for _, x := range axTabsOf(a.source, w, items) {
+			if x.Title == t.Title && x.Index == t.Index {
+				still = true
+			}
+		}
+		if !still {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s: ended the shell (pid %d) but tab %q is still listed; the terminal may keep closed tabs open (closeOnExit)", t.App, t.PID, t.Title)
 }
