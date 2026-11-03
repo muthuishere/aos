@@ -134,6 +134,15 @@ func (a *Adapter) AccessibleTexts(id string) ([]core.TextItem, error) {
 	if err != nil {
 		return nil, err
 	}
+	if isConsoleWindow(hwnd) {
+		// A terminal: its screen, read from the shell's console buffer.
+		var r rect
+		procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&r)))
+		if s, err := consoleRead(hwnd, core.Window{ID: id, Title: windowTitle(hwnd)}); err == nil && strings.TrimSpace(s) != "" {
+			return []core.TextItem{{Text: "terminal", Value: s, Role: "textfield", Source: "accessibility",
+				Bounds: core.Rect{X: int(r.Left), Y: int(r.Top), W: int(r.Right - r.Left), H: int(r.Bottom - r.Top)}}}, nil
+		}
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	if hr, _, _ := procCoInitializeEx.Call(0, 2 /* COINIT_APARTMENTTHREADED */); hr == 0 || hr == 1 {

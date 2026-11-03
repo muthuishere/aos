@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/muthuishere/aos/internal/cli"
@@ -145,6 +146,9 @@ func runMouseClick(c *cli.Ctx, args []string) error {
 	route, err := clickRoute(set)
 	if err != nil {
 		return err
+	}
+	if set.Has("force") {
+		os.Setenv("AOS_FOCUS", "allow")
 	}
 	if route == "pointer" || set.Has("focus") {
 		if err := politeCheck(c, set, "mouse click with the real pointer"); err != nil {

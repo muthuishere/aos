@@ -274,6 +274,12 @@ func rankMatches(items []TextItem, q string, o FindOptions) []FoundText {
 			continue
 		}
 		tier, at := matchTier(it.Text, q)
+		if tier < 0 && it.Value != "" {
+			// An editor's body is its value, not its name.
+			if vt, vat := matchTier(it.Value, q); vt >= 0 {
+				it.Text, tier, at = it.Value, vt, vat
+			}
+		}
 		if tier < 0 || (o.Exact && tier != 0) {
 			continue
 		}

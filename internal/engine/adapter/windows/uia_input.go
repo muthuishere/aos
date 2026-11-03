@@ -146,6 +146,9 @@ func (a *Adapter) SetTextTo(w core.Window, text string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if isConsoleWindow(top) {
+		return consoleTypeTo(top, w, text)
+	}
 	text = strings.ReplaceAll(text, "\n", "\r\n")
 	if ctl, err := inputControl(top, true); err == nil {
 		p, _ := windows.UTF16PtrFromString(text)

@@ -244,7 +244,20 @@ func positionFrame(hwnd uintptr, want core.Rect) error {
 // foreground, and it reports that refusal as a plain failure. Attaching to the
 // current foreground thread's input queue makes this process eligible, which is
 // the difference between `focus` working sometimes and working always.
-func foreground(hwnd uintptr) error {
+func foreground(hwnd uintptr) error { return foregroundWith(hwnd, true) }
+
+// FocusNoInput raises a window like Focus but never injects input to get
+// past the foreground lock: the automatic hand-back after an app activated
+// itself uses it, so aos sends no keystroke the person did not ask for.
+func (a *Adapter) FocusNoInput(id string) error {
+	hwnd, err := parseHwnd(id)
+	if err != nil {
+		return err
+	}
+	return foregroundWith(hwnd, false)
+}
+
+func foregroundWith(hwnd uintptr, unlock bool) error {
 	if isMinimised(hwnd) {
 		procShowWindow.Call(hwnd, swRestore)
 	}
@@ -283,6 +296,9 @@ func foreground(hwnd uintptr) error {
 	ret, _, err := procSetForegroundWnd.Call(hwnd)
 	if ret != 0 {
 		return nil
+	}
+	if !unlock {
+		return fmt.Errorf("SetForegroundWindow refused by the foreground lock (%v)", err)
 	}
 	// The foreground lock refused it: this process does not own the
 	// foreground (e.g. handing focus back after an app activated itself).

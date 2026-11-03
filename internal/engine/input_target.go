@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -67,6 +68,11 @@ var focusOnlyApps = map[string][]string{
 	"windows": {"ApplicationFrameHost", "CalculatorApp"},
 }
 
+// terminalApps take modifier chords focus-free on Windows: keys go into
+// the shell's console input buffer with their modifier state.
+var terminalApps = map[string]bool{"windowsterminal": true, "openconsole": true, "conhost": true,
+	"cmd": true, "powershell": true, "pwsh": true}
+
 // ErrNeedsFocus is returned (wrapped) when input cannot reach the window
 // without taking the foreground and --focus was not given. aos never
 // takes focus on its own: the person beside the agent may be typing.
@@ -91,7 +97,7 @@ func chooseRoute(goos string, hasTargeted bool, w Window, chord *Chord, opts Inp
 			return RouteFocus, fmt.Sprintf("%s ignores posted keyboard events", w.App)
 		}
 	}
-	if goos == "windows" && chord != nil && (chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift) {
+	if goos == "windows" && chord != nil && (chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift) && !terminalApps[strings.ToLower(w.App)] {
 		// Posted messages carry no modifier state: the target reads Ctrl/Alt
 		// from the real keyboard, so a posted ctrl+s arrives as plain s.
 		return RouteFocus, "modifier chords need real keyboard state on Windows"
@@ -288,7 +294,13 @@ func guardForeground(a Adapter, target Window) func() {
 		}
 		for i := 0; i < checks; i++ {
 			if now, ok := focusedWindow(a); ok && mine(now) {
-				_ = a.Focus(prev.ID)
+				// Getting past the foreground lock needs one injected key;
+				// only when focus was explicitly allowed (--force sets it).
+				if q, ok := a.(interface{ FocusNoInput(string) error }); ok && !strings.EqualFold(os.Getenv("AOS_FOCUS"), "allow") {
+					_ = q.FocusNoInput(prev.ID) // no injected input for an automatic hand-back
+				} else {
+					_ = a.Focus(prev.ID)
+				}
 				return
 			}
 			sleepFn(guardSettle)

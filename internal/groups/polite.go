@@ -56,6 +56,7 @@ func politeCheck(c *cli.Ctx, set *argSet, what string) error {
 		c.Annotate(attrs...)
 	}()
 	if set != nil && set.Has("force") {
+		os.Setenv("AOS_FOCUS", "allow") // also lets the hand-back get past the foreground lock
 		return nil
 	}
 	if c.Env("AOS_POLITE") == "0" || strings.EqualFold(c.Env("AOS_FOCUS"), "allow") {

@@ -168,12 +168,15 @@ var extendedKeys = map[string]bool{
 // PressChordTo posts WM_KEYDOWN / WM_KEYUP for an unmodified key; the
 // target's message loop translates it (enter becomes WM_CHAR '\r').
 func (a *Adapter) PressChordTo(w core.Window, chord core.Chord) error {
-	if chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift {
-		return errors.New("modifier chords cannot be posted (the target reads modifiers from the real keyboard)")
-	}
 	top, err := parseHwnd(w.ID)
 	if err != nil {
 		return err
+	}
+	if isConsoleWindow(top) {
+		return consoleKeyTo(top, w, chord) // modifiers travel in the key record
+	}
+	if chord.Cmd || chord.Ctrl || chord.Alt || chord.Shift {
+		return errors.New("modifier chords cannot be posted (the target reads modifiers from the real keyboard)")
 	}
 	vk, err := vkForKey(chord.Key)
 	if err != nil {
@@ -200,6 +203,10 @@ func (a *Adapter) FocusedText(w core.Window) (string, bool, error) {
 	top, err := parseHwnd(w.ID)
 	if err != nil {
 		return "", false, err
+	}
+	if isConsoleWindow(top) {
+		s, err := consoleRead(top, w)
+		return s, err == nil, err
 	}
 	ctl, err := inputControl(top, true)
 	if err != nil {

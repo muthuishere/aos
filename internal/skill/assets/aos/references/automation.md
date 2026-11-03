@@ -74,3 +74,18 @@ on the **LAN** only and needs no confirmation. aos has no public tunnel. If the
 human wants a public link (`windowctl remote --tunnel`, a `*.trycloudflare.com`
 URL anyone with the link can drive), say plainly that it puts desktop control on
 the public internet and get an explicit "yes" first, every time.
+
+## Windows: how each kind of app is reached without focus
+
+| app | type (`key type --app/--title`) | click (`mouse click --find`) | read (`window text`) |
+|---|---|---|---|
+| Windows Terminal, conhost (cmd, PowerShell) | the shell's console input buffer (AttachConsole + WriteConsoleInputW, in a helper process); `key press` sends chords **with** modifiers (ctrl+c) | n/a | console screen buffer (ReadConsoleOutputCharacterW) |
+| Classic Win32 / WinForms, Notepad (RichEditD2DPT) | EM_REPLACESEL into the edit control (inserts at the caret, replaces a selection, like typing) | UIA Invoke (Win32 buttons) | UIA TextPattern, then ValuePattern, then the name |
+| UIA apps (WinUI, WPF, Settings, Calculator, Explorer) | UIA ValuePattern / LegacyIAccessible SetValue on an editable element (appends to the value); no editable element = refused | Invoke, Toggle, SelectionItem, ExpandCollapse, DoDefaultAction, found in the window's own tree (works when covered) | UIA |
+| Chrome, Edge, VS Code (Chromium/Electron) | browser UI (address bar) via UIA SetValue; page inputs only when renderer accessibility is on (`--force-renderer-accessibility`); the page itself: `tab type` | UIA, same limits | UIA; `tab read` for the page |
+
+Never used without `--focus` / `--force`: SendInput, keybd_event, SetCursorPos,
+SetForegroundWindow, AttachThreadInput. aos never calls UIA SetFocus. Known
+gap: a just-launched UWP app (Calculator) brings itself to the front on its
+first Invoke. aos hands focus back only under `--force`, because getting past
+the Windows foreground lock takes one injected key.
