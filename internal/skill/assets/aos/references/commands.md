@@ -65,6 +65,33 @@ aos audio mute toggle
 ```
 
 
+## batch
+
+Run many aos steps from YAML: in order, or together with parallel
+
+### `aos batch`
+
+Run a YAML list of steps (a file, - for stdin, or the YAML inline); everything is checked first
+
+```bash
+aos batch <file.yaml | - | inline yaml> [--check] [--json]
+aos batch demo.yaml
+aos batch --check demo.yaml
+aos batch '[launch: calc, parallel: [say: seven, click: Calculator Seven], type: Notepad done]'
+aos batch verbs   # every verb, generated from the commands
+```
+
+### `aos batch verbs`
+
+List every verb a batch step can use
+
+```bash
+aos batch verbs [--json]
+aos batch verbs
+aos batch verbs --json
+```
+
+
 ## battery
 
 Battery presence and charge

@@ -1,0 +1,49 @@
+---
+title: aos batch
+description: Run many aos steps from YAML - in order, or together with parallel
+sidebar:
+  label: batch
+  order: 1
+---
+
+<p class="cmd-lead">Run many aos steps from YAML: in order, or together with parallel</p>
+
+2 commands. Run `aos batch --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos batch
+
+<p class="cmd-lead">Run a YAML list of steps (a file, - for stdin, or the YAML inline); everything is checked first</p>
+
+```sh
+aos batch <file.yaml | - | inline yaml> [--check] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<file.yaml \| - \| inline yaml>` | | Required positional argument |
+| `--check` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos batch demo.yaml
+aos batch --check demo.yaml
+aos batch '[launch: calc, parallel: [say: seven, click: Calculator Seven], type: Notepad done]'
+aos batch verbs   # every verb, generated from the commands
+```
+
+### aos batch verbs
+
+<p class="cmd-lead">List every verb a batch step can use</p>
+
+```sh
+aos batch verbs [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos batch verbs
+aos batch verbs --json
+```
