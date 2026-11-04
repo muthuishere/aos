@@ -211,10 +211,16 @@ func runSay(c *cli.Ctx, args []string) error {
 			return e
 		}
 	}
+	durs := make([]float64, len(clips))
+	total := 0.0
+	for i, clip := range clips {
+		durs[i] = audioDuration(clip)
+		total += durs[i]
+	}
 	dur := 0.0
 	captioned := false
 	for i, clip := range clips {
-		d := audioDuration(clip)
+		d := durs[i]
 		dur += d
 		// The caption goes up while the audio starts, so the speech never
 		// waits on the overlay (which takes a moment to appear). +1 s keeps it
@@ -226,7 +232,7 @@ func runSay(c *cli.Ctx, args []string) error {
 			go func(text string, secs float64) { shown <- showSayCaption(c, text, secs+1, o.style) }(chunks[i], d)
 		}
 		if i == 0 {
-			signalSpeechStarted()
+			signalSpeechStarted(total)
 		}
 		err := playClip(dir, clip)
 		if shown != nil && <-shown {
@@ -578,8 +584,13 @@ func runSayWhile(c *cli.Ctx, sayArgs, cmdArgs []string) error {
 		fmt.Fprintf(c.Stderr, "aos say: could not start speaking: %v\n", err)
 		speech = nil
 	}
-	started() // act when the voice is heard, not while it is still rendering
-	code := runAosOrExternal(c, cmdArgs)
+	spoken := started() // act when the voice is heard, not while it is still rendering
+	code := 0
+	if words, rest, ok := pacedTypeArgs(cmdArgs); ok && spoken > 0 {
+		code = typePaced(c, words, rest, spoken)
+	} else {
+		code = runAosOrExternal(c, cmdArgs)
+	}
 	if speech != nil && thenWait {
 		if err := speech.Wait(); err != nil {
 			fmt.Fprintf(c.Stderr, "aos say: speech failed: %v\n", err)
@@ -609,10 +620,11 @@ const sayStartedEnv = "AOS_SAY_STARTED"
 
 // startSpeechSignalled starts `aos say <args>` and returns a function that
 // blocks until its voice is heard (or it exits, or 20 s pass).
-func startSpeechSignalled(args []string, detached bool) (*exec.Cmd, func(), error) {
+func startSpeechSignalled(args []string, detached bool) (*exec.Cmd, func() float64, error) {
+	none := func() float64 { return 0 }
 	self, err := os.Executable()
 	if err != nil {
-		return nil, func() {}, err
+		return nil, none, err
 	}
 	marker := filepath.Join(os.TempDir(), fmt.Sprintf("aos-say-started-%d-%d", os.Getpid(), clipSeq.Add(1)))
 	_ = os.Remove(marker)
@@ -625,29 +637,33 @@ func startSpeechSignalled(args []string, detached bool) (*exec.Cmd, func(), erro
 		hideChild(cmd)
 	}
 	if err := cmd.Start(); err != nil {
-		return nil, func() {}, err
+		return nil, none, err
 	}
 	pid := cmd.Process.Pid
-	started := func() {
+	// started blocks until the voice is heard and returns how long it speaks.
+	started := func() float64 {
 		deadline := time.Now().Add(20 * time.Second)
 		for time.Now().Before(deadline) {
-			if fileExists(marker) {
+			if data, err := os.ReadFile(marker); err == nil {
 				_ = os.Remove(marker)
-				return
+				secs, _ := strconv.ParseFloat(strings.TrimSpace(string(data)), 64)
+				return secs
 			}
 			if !videoProcAlive(pid) {
-				return
+				return 0
 			}
 			time.Sleep(20 * time.Millisecond)
 		}
+		return 0
 	}
 	return cmd, started, nil
 }
 
-// signalSpeechStarted tells a waiting caller the voice is now playing.
-func signalSpeechStarted() {
+// signalSpeechStarted tells a waiting caller the voice is now playing, and
+// for how many seconds it will speak.
+func signalSpeechStarted(seconds float64) {
 	if marker := os.Getenv(sayStartedEnv); marker != "" {
-		_ = os.WriteFile(marker, nil, 0o644)
+		_ = os.WriteFile(marker, []byte(strconv.FormatFloat(seconds, 'f', 3, 64)), 0o644)
 	}
 }
 
@@ -797,4 +813,67 @@ func wrapWords(s string, max int) []string {
 		out = append(out, strings.Join(cur, " "))
 	}
 	return out
+}
+
+// ---- typing in step with the voice ----------------------------------------
+
+// pacedTypeArgs recognises `[aos] key type <text> [flags]` and splits it into
+// the words to type and the remaining flags.
+func pacedTypeArgs(argv []string) ([]string, []string, bool) {
+	if len(argv) > 0 && isAosWord(argv[0]) {
+		argv = argv[1:]
+	}
+	if len(argv) < 3 || argv[0] != "key" || argv[1] != "type" {
+		return nil, nil, false
+	}
+	var text []string
+	var flags []string
+	for _, a := range argv[2:] {
+		if strings.HasPrefix(a, "--") {
+			flags = append(flags, a)
+		} else {
+			text = append(text, a)
+		}
+	}
+	joined := strings.Join(text, " ")
+	if joined == "" {
+		return nil, nil, false
+	}
+	return typingPieces(joined), flags, true
+}
+
+// typingPieces splits text into words, each keeping the space after it, so
+// typing them one after another reproduces the text exactly.
+func typingPieces(text string) []string {
+	var out []string
+	start := 0
+	for i := 1; i < len(text); i++ {
+		if text[i-1] == ' ' && text[i] != ' ' {
+			out = append(out, text[start:i])
+			start = i
+		}
+	}
+	return append(out, text[start:])
+}
+
+// typePaced types the words spread over most of the spoken time, so the text
+// appears as the sentence is said and is complete just before it ends.
+func typePaced(c *cli.Ctx, words, flags []string, spokenSecs float64) int {
+	span := time.Duration(spokenSecs * 0.85 * float64(time.Second))
+	step := time.Duration(0)
+	if len(words) > 1 {
+		step = span / time.Duration(len(words)-1)
+	}
+	start := time.Now()
+	for i, w := range words {
+		if wait := time.Until(start.Add(time.Duration(i) * step)); wait > 0 {
+			time.Sleep(wait)
+		}
+		res := cli.Invoke(c, append([]string{"key", "type", w}, flags...), "")
+		if res.Exit != 0 {
+			fmt.Fprint(c.Stderr, res.Stderr)
+			return res.Exit
+		}
+	}
+	return 0
 }

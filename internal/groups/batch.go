@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"regexp"
 	"slices"
@@ -788,21 +789,22 @@ func (r *batchRunner) run(id string, st *batchStep) bool {
 	// of it while the speech is still rendering.
 	var wg sync.WaitGroup
 	oks := make([]bool, len(st.Parallel))
-	var heard []chan struct{}
+	var heard []chan float64
 	for i, p := range st.Parallel {
 		if p.Verb != "say" {
 			continue
 		}
-		ch := make(chan struct{})
+		ch := make(chan float64, 1)
 		heard = append(heard, ch)
 		wg.Add(1)
-		go func(i int, p *batchStep, ch chan struct{}) {
+		go func(i int, p *batchStep, ch chan float64) {
 			defer wg.Done()
 			oks[i] = r.sayLeaf(fmt.Sprintf("%s.%d", id, i+1), p, ch)
 		}(i, p, ch)
 	}
+	spoken := 0.0
 	for _, ch := range heard {
-		<-ch
+		spoken = math.Max(spoken, <-ch)
 	}
 	for i, p := range st.Parallel {
 		if p.Verb == "say" {
@@ -811,7 +813,8 @@ func (r *batchRunner) run(id string, st *batchStep) bool {
 		wg.Add(1)
 		go func(i int, p *batchStep) {
 			defer wg.Done()
-			oks[i] = r.leaf(fmt.Sprintf("%s.%d", id, i+1), p)
+			// typing next to a voice is spread over it, word by word
+			oks[i] = r.leafPaced(fmt.Sprintf("%s.%d", id, i+1), p, spoken)
 		}(i, p)
 	}
 	wg.Wait()
@@ -844,23 +847,44 @@ func (r *batchRunner) leaf(id string, st *batchStep) bool {
 // sayLeaf speaks one line in a child process (the speaker queue keys on the
 // process, so parallel lines take turns) and closes heard, when given, as
 // soon as the voice starts.
-func (r *batchRunner) sayLeaf(id string, st *batchStep, heard chan struct{}) bool {
+func (r *batchRunner) sayLeaf(id string, st *batchStep, heard chan float64) bool {
 	start := time.Now()
 	res := batchResult{Step: id, Run: st.String(), OK: true}
 	cmd, started, err := startSpeechSignalled(st.Say, false)
+	spoken := 0.0
 	if err == nil {
-		started()
+		spoken = started()
 	}
 	// a say "starts" when it is heard
 	res.At = time.Since(r.t0).Milliseconds()
 	if heard != nil {
-		close(heard)
+		heard <- spoken
 	}
 	if err == nil {
 		err = cmd.Wait()
 	}
 	if err != nil {
 		res.OK, res.Exit, res.Output = false, 1, err.Error()
+	}
+	res.MS = time.Since(start).Milliseconds()
+	r.report(res)
+	return res.OK
+}
+
+// leafPaced runs a step beside a voice: a `key type` is spread over the
+// spoken seconds; anything else runs as usual.
+func (r *batchRunner) leafPaced(id string, st *batchStep, spoken float64) bool {
+	words, flags, ok := pacedTypeArgs(st.Argv)
+	if !ok || spoken <= 0 || st.Verb == "wait" || st.Verb == "say" {
+		return r.leaf(id, st)
+	}
+	start := time.Now()
+	res := batchResult{Step: id, Run: st.String() + "  (paced to the voice)", OK: true, At: start.Sub(r.t0).Milliseconds()}
+	var out strings.Builder
+	sub := *r.c
+	sub.Stderr = &out
+	if code := typePaced(&sub, words, flags, spoken); code != 0 {
+		res.OK, res.Exit, res.Output = false, code, strings.TrimSpace(out.String())
 	}
 	res.MS = time.Since(start).Milliseconds()
 	r.report(res)

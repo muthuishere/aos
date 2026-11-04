@@ -43,3 +43,18 @@ func TestConvertArgs(t *testing.T) {
 		t.Error(a)
 	}
 }
+
+func TestPacedTyping(t *testing.T) {
+	for _, text := range []string{"Hello from aos batch. ", "Done.", "two  spaces here", "x"} {
+		if got := strings.Join(typingPieces(text), ""); got != text {
+			t.Errorf("%q rebuilt as %q", text, got)
+		}
+	}
+	words, flags, ok := pacedTypeArgs([]string{"aos", "key", "type", "Hello world", "--title=demo"})
+	if !ok || strings.Join(words, "|") != "Hello |world" || strings.Join(flags, " ") != "--title=demo" {
+		t.Errorf("got %q %q %v", words, flags, ok)
+	}
+	if _, _, ok := pacedTypeArgs([]string{"mouse", "click", "1", "2"}); ok {
+		t.Error("only key type is paced")
+	}
+}
