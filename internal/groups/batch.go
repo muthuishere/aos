@@ -684,6 +684,7 @@ type batchResult struct {
 	OK     bool   `json:"ok"`
 	Exit   int    `json:"exit"`
 	MS     int64  `json:"ms"`
+	At     int64  `json:"at_ms"` // when the step started, ms since the batch began
 	Output string `json:"output,omitempty"`
 }
 
@@ -750,7 +751,7 @@ func runBatch(c *cli.Ctx, args []string) error {
 		return &cli.ExitError{Code: 2, Message: fmt.Sprintf("%d error(s); nothing was run", errs)}
 	}
 
-	r := &batchRunner{c: c, json: set.Has("json")}
+	r := &batchRunner{c: c, json: set.Has("json"), t0: time.Now()}
 	start := time.Now()
 	ok := true
 	for i, st := range steps {
@@ -771,6 +772,7 @@ func runBatch(c *cli.Ctx, args []string) error {
 }
 
 type batchRunner struct {
+	t0   time.Time
 	c    *cli.Ctx
 	json bool
 	mu   sync.Mutex
@@ -781,9 +783,31 @@ func (r *batchRunner) run(id string, st *batchStep) bool {
 	if st.Parallel == nil {
 		return r.leaf(id, st)
 	}
+	// Speech first: the other steps start when every say in the group is
+	// actually heard, so the action lands with the voice instead of ahead
+	// of it while the speech is still rendering.
 	var wg sync.WaitGroup
 	oks := make([]bool, len(st.Parallel))
+	var heard []chan struct{}
 	for i, p := range st.Parallel {
+		if p.Verb != "say" {
+			continue
+		}
+		ch := make(chan struct{})
+		heard = append(heard, ch)
+		wg.Add(1)
+		go func(i int, p *batchStep, ch chan struct{}) {
+			defer wg.Done()
+			oks[i] = r.sayLeaf(fmt.Sprintf("%s.%d", id, i+1), p, ch)
+		}(i, p, ch)
+	}
+	for _, ch := range heard {
+		<-ch
+	}
+	for i, p := range st.Parallel {
+		if p.Verb == "say" {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, p *batchStep) {
 			defer wg.Done()
@@ -801,24 +825,42 @@ func (r *batchRunner) run(id string, st *batchStep) bool {
 
 func (r *batchRunner) leaf(id string, st *batchStep) bool {
 	start := time.Now()
-	res := batchResult{Step: id, Run: st.String(), OK: true}
+	res := batchResult{Step: id, Run: st.String(), OK: true, At: start.Sub(r.t0).Milliseconds()}
 	switch {
 	case st.Verb == "wait":
 		time.Sleep(st.Wait)
 	case st.Verb == "say":
-		// A child process, like `say --async`: the speaker queue keys on
-		// the process, so parallel lines take turns.
-		cmd, err := startSpeech(st.Say, false)
-		if err == nil {
-			err = cmd.Wait()
-		}
-		if err != nil {
-			res.OK, res.Exit, res.Output = false, 1, err.Error()
-		}
+		return r.sayLeaf(id, st, nil)
 	default:
 		out := cli.Invoke(r.c, st.Argv, "")
 		res.Exit, res.OK = out.Exit, out.Exit == 0
 		res.Output = strings.TrimSpace(out.Stdout + out.Stderr)
+	}
+	res.MS = time.Since(start).Milliseconds()
+	r.report(res)
+	return res.OK
+}
+
+// sayLeaf speaks one line in a child process (the speaker queue keys on the
+// process, so parallel lines take turns) and closes heard, when given, as
+// soon as the voice starts.
+func (r *batchRunner) sayLeaf(id string, st *batchStep, heard chan struct{}) bool {
+	start := time.Now()
+	res := batchResult{Step: id, Run: st.String(), OK: true}
+	cmd, started, err := startSpeechSignalled(st.Say, false)
+	if err == nil {
+		started()
+	}
+	// a say "starts" when it is heard
+	res.At = time.Since(r.t0).Milliseconds()
+	if heard != nil {
+		close(heard)
+	}
+	if err == nil {
+		err = cmd.Wait()
+	}
+	if err != nil {
+		res.OK, res.Exit, res.Output = false, 1, err.Error()
 	}
 	res.MS = time.Since(start).Milliseconds()
 	r.report(res)

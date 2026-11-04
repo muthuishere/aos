@@ -225,6 +225,9 @@ func runSay(c *cli.Ctx, args []string) error {
 			shown = make(chan bool, 1)
 			go func(text string, secs float64) { shown <- showSayCaption(c, text, secs+1, o.style) }(chunks[i], d)
 		}
+		if i == 0 {
+			signalSpeechStarted()
+		}
 		err := playClip(dir, clip)
 		if shown != nil && <-shown {
 			captioned = true
@@ -570,10 +573,12 @@ func runSayWhile(c *cli.Ctx, sayArgs, cmdArgs []string) error {
 	if len(cmdArgs) == 0 {
 		return fmt.Errorf("nothing after `--`: say \"text\" -- aos <command>")
 	}
-	speech, err := startSpeech(withoutFlag(rest, "async"), !thenWait)
+	speech, started, err := startSpeechSignalled(withoutFlag(rest, "async"), !thenWait)
 	if err != nil {
 		fmt.Fprintf(c.Stderr, "aos say: could not start speaking: %v\n", err)
+		speech = nil
 	}
+	started() // act when the voice is heard, not while it is still rendering
 	code := runAosOrExternal(c, cmdArgs)
 	if speech != nil && thenWait {
 		if err := speech.Wait(); err != nil {
@@ -592,18 +597,58 @@ func runSayWhile(c *cli.Ctx, sayArgs, cmdArgs []string) error {
 // goroutine) keeps the speaker queue keyed by process, so parallel lines from
 // one batch still take turns.
 func startSpeech(args []string, detached bool) (*exec.Cmd, error) {
+	cmd, _, err := startSpeechSignalled(args, detached)
+	return cmd, err
+}
+
+// sayStartedEnv names the file a `say` child creates the moment its audio
+// starts playing. Rendering speech takes a while (about 2 s on Windows), so an
+// action started together with the `say` would otherwise run ahead of the
+// voice; callers wait for this signal first.
+const sayStartedEnv = "AOS_SAY_STARTED"
+
+// startSpeechSignalled starts `aos say <args>` and returns a function that
+// blocks until its voice is heard (or it exits, or 20 s pass).
+func startSpeechSignalled(args []string, detached bool) (*exec.Cmd, func(), error) {
 	self, err := os.Executable()
 	if err != nil {
-		return nil, err
+		return nil, func() {}, err
 	}
+	marker := filepath.Join(os.TempDir(), fmt.Sprintf("aos-say-started-%d-%d", os.Getpid(), clipSeq.Add(1)))
+	_ = os.Remove(marker)
 	cmd := exec.Command(self, append([]string{"say"}, args...)...)
+	cmd.Env = append(os.Environ(), sayStartedEnv+"="+marker)
 	cmd.Stderr = os.Stderr
 	if detached {
 		detach(cmd)
 	} else {
 		hideChild(cmd)
 	}
-	return cmd, cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return nil, func() {}, err
+	}
+	pid := cmd.Process.Pid
+	started := func() {
+		deadline := time.Now().Add(20 * time.Second)
+		for time.Now().Before(deadline) {
+			if fileExists(marker) {
+				_ = os.Remove(marker)
+				return
+			}
+			if !videoProcAlive(pid) {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	return cmd, started, nil
+}
+
+// signalSpeechStarted tells a waiting caller the voice is now playing.
+func signalSpeechStarted() {
+	if marker := os.Getenv(sayStartedEnv); marker != "" {
+		_ = os.WriteFile(marker, nil, 0o644)
+	}
 }
 
 // runAosOrExternal runs `aos ...` in this process (no startup, no quoting),
