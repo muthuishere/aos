@@ -162,6 +162,11 @@ func runSay(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
+	// An unknown voice is an error here, before anything is queued: macOS
+	// `say` would silently fall back to the default voice.
+	if err := checkVoice(o.req.Voice); err != nil {
+		return err
+	}
 	if o.async {
 		return spawnSay(c, withoutFlag(args, "async"))
 	}
@@ -623,6 +628,30 @@ func runAosOrExternal(c *cli.Ctx, argv []string) int {
 func isAosWord(w string) bool {
 	base := strings.ToLower(filepath.Base(w))
 	return base == "aos" || base == "aos.exe"
+}
+
+// checkVoice fails when a voice is named that is not installed. It matches
+// like the engines do: the exact name, or part of it ("Zira").
+func checkVoice(name string) error {
+	if name == "" {
+		return nil
+	}
+	voices, err := sayVoices()
+	if err != nil {
+		return nil // cannot list: let the engine decide
+	}
+	var names []string
+	for _, v := range voices {
+		names = append(names, v.Name)
+		if strings.Contains(strings.ToLower(v.Name), strings.ToLower(name)) {
+			return nil
+		}
+	}
+	msg := fmt.Sprintf("no voice named %q", name)
+	if s := closest(name, names); s != "" {
+		msg += fmt.Sprintf(" (did you mean %s?)", s)
+	}
+	return &cli.ExitError{Code: 2, Message: msg + "; list them with `aos say voices`"}
 }
 
 // ---- captions -----------------------------------------------------------------

@@ -549,6 +549,14 @@ func (b *batchChecker) build(verb *batchVerb, k *yaml.Node, words []string, flag
 			}
 		}
 		st.Say = append(append([]string{strings.Join(words, " ")}, flagArgs(style)...), fl...)
+		for _, f := range flags {
+			if f.name == "voice" {
+				if err := checkVoice(f.value); err != nil {
+					b.errorf(f.at, "see `aos say voices`", "%s", strings.TrimSuffix(err.Error(), "; list them with `aos say voices`"))
+					return nil
+				}
+			}
+		}
 	case "wait":
 		if len(words) != 1 {
 			b.errorf(at, "wait: 2s", "wait takes one duration")
