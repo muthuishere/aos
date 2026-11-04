@@ -20,15 +20,27 @@ Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`)
   speaks it.
 - **Speak while acting:** `aos say "Now I type the note" -- aos key type
   --app=Notepad "hello"` speaks and runs the command together and waits for
-  both; the exit code is the command's.
+  both; the exit code is the command's. The action starts when the voice is
+  heard (not while the speech is still rendering), and `key type` next to a
+  voice types word by word over the spoken line.
+- An unknown `--voice` is an error (exit 2, with did-you-mean) instead of a
+  silent fall back to the default voice.
 - **`aos batch`** runs many steps from YAML (a file, `-`, or the YAML inline).
-  Steps run in order; `parallel:` runs its list together. Every aos command is
+  Steps run in order; `parallel:` runs its list together: say steps first,
+  the others once the voice is heard, with typing paced to it. Every aos command is
   a verb (`<group>-<command>`), plus `click`, `type`, `key`, `screenshot`,
   `say`, `wait` and `do:`. A top-level `subtitle:` map sets the caption style
   for every `say:` step. The whole script is checked before step 1 (line:col,
   did-you-mean for verbs and flags); `batch --check` validates only,
-  `batch verbs` lists every verb. Spec: `docs/batch-spec.md`; examples in
+  `batch verbs` lists every verb; `--json` gives one result per step with
+  its start time (`at_ms`). Spec: `docs/batch-spec.md`; examples in
   `docs/examples/`.
+
+### Fixed
+
+- `launch --wait` waits for the window it launched, not any window of the
+  app: with another Notepad already open it used to return at once. A file
+  opened as a tab of an existing window (Windows 11 Notepad) counts by title.
 
 ### Changed (Windows: no PowerShell)
 
@@ -49,7 +61,16 @@ process list, power, network and fonts.
 - Windows live checks (`test/windows/`, `scripts/live-test.cmd`) are Go
   programs with `.cmd` runners.
 
+### Verified on Windows 11 (x64)
+
+Voices (OneCore and SAPI), `say --out` wav/mp3, `say` with subtitle,
+`--voice`/`--rate`, an unknown voice failing, `batch` with `parallel`
+say + type (words typed through each spoken line, checked on a recording of
+the test's own Notepad window), `system info`, `power status`,
+`audio volume`/`mute` (read), `process find`, `font list`, `network status`.
+
 ### Known gaps
 
-- The Windows changes above have passed `go vet` and cross-compile, but have
-  not yet run on a Windows machine.
+- Not yet run on Windows: clipboard read, full-screen screenshot,
+  `audio volume` set on arm64, the rewritten `install.cmd`, and
+  `scripts/live-test.cmd`.
