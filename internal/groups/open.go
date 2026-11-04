@@ -3,7 +3,9 @@ package groups
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/muthuishere/aos/internal/cli"
 	"github.com/muthuishere/aos/internal/engine"
@@ -60,6 +62,10 @@ func runLaunch(c *cli.Ctx, args []string) error {
 	}
 
 	app := rest[0]
+	var before map[string]bool
+	if wait {
+		before = appWindowIDs(app)
+	}
 	if err := launchApp(app, rest[1:]); err != nil {
 		return err
 	}
@@ -69,7 +75,9 @@ func runLaunch(c *cli.Ctx, args []string) error {
 
 	// Launching is asynchronous everywhere, so --wait is what makes `launch`
 	// composable: the next command can assume the window is really there.
-	window, err := waitForMatch(engine.Match{App: app}, timeout)
+	// It waits for a NEW window: with other windows of the app already open
+	// (a second Notepad), any match would return before this one exists.
+	window, err := waitForNewWindow(app, before, rest[1:], timeout)
 	if err != nil {
 		return err
 	}
@@ -118,4 +126,66 @@ func runWebapp(c *cli.Ctx, args []string) error {
 		return fmt.Errorf("not a usable URL: %q", args[0])
 	}
 	return openWebapp(target)
+}
+
+// appWindowIDs are the ids of the app's windows open right now.
+func appWindowIDs(app string) map[string]bool {
+	ids := map[string]bool{}
+	match, err := resolveMatch(engine.Match{App: app})
+	if err != nil {
+		return ids
+	}
+	windows, _ := engine.ListWindows(engine.Filter(match))
+	for _, w := range windows {
+		ids[w.ID] = true
+	}
+	return ids
+}
+
+// waitForNewWindow returns the first window of app that was not open before
+// the launch. An app that only brings its existing window forward opens none,
+// so after a short grace (or, when files were passed, the full timeout) an
+// existing window is accepted, as before.
+//
+// A file passed to the app also counts by name: Windows 11 Notepad may open it
+// as a tab of a window that was already there, which changes that window's
+// title but not its id.
+func waitForNewWindow(app string, before map[string]bool, args []string, timeoutMS int) (engine.Window, error) {
+	withArgs := len(args) > 0
+	var names []string
+	for _, a := range args {
+		if !strings.HasPrefix(a, "-") {
+			if base := filepath.Base(a); base != "" && base != "." {
+				names = append(names, strings.ToLower(base))
+			}
+		}
+	}
+	start := time.Now()
+	deadline := start.Add(time.Duration(timeoutMS) * time.Millisecond)
+	grace := start.Add(1500 * time.Millisecond)
+	for {
+		if match, err := resolveMatch(engine.Match{App: app}); err == nil {
+			windows, _ := engine.ListWindows(engine.Filter(match))
+			for _, w := range windows {
+				if !before[w.ID] {
+					return w, nil
+				}
+			}
+			for _, w := range windows {
+				for _, n := range names {
+					if strings.Contains(strings.ToLower(w.Title), n) {
+						return w, nil
+					}
+				}
+			}
+			now := time.Now()
+			if len(windows) > 0 && (now.After(deadline) || (!withArgs && now.After(grace))) {
+				return windows[0], nil
+			}
+		}
+		if time.Now().After(deadline) {
+			return engine.Window{}, fmt.Errorf("no window of %s appeared within %dms", app, timeoutMS)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }

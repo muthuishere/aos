@@ -21,7 +21,7 @@ A film-style caption over the screen, bottom-center by default, for narrating wh
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>] [--json]
+aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--say] [--detach] [--wait] [--preview=<out.png>] [--json]
 ```
 
 | flag | values | meaning |
@@ -42,6 +42,7 @@ aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --moni
 | `--weight` | `regular`, `bold` | Optional |
 | `--align` | `left`, `center`, `right` | Optional |
 | `--max-width` | `px`, `N%` | Optional |
+| `--say` |  | Optional |
 | `--detach` |  | Optional |
 | `--wait` |  | Optional |
 | `--preview` | `<out.png>` | Optional |
@@ -52,6 +53,7 @@ aos subtitle show "installing dependencies"
 aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom
 aos subtitle show "running the migration" --seconds=30 --position=top
 aos subtitle show "step 1 of 3" --seconds=4 --wait
+aos subtitle show "Saving the report" --say   # show it and say it
 aos subtitle stop
 # white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last
 ```

@@ -114,6 +114,8 @@ there is no logged-in session and the desktop commands cannot work at all.
 | packages | `pkg install X` · `search` · `list` · `upgrade` — one verb set over brew, winget, scoop, choco, apt, pacman, yay, dnf |
 | keep it running | `service create NAME --autostart --now -- <cmd>` · `start` · `status` · `stop` · `remove` · `list` |
 | tell the human | `subtitle show "what I am doing" --seconds=10 [--app=Safari]` — a film-style caption that never steals focus; `draw text "..." --position=top` for a label |
+| speak | `say "build finished"` speaks AND shows it as a subtitle while it plays (`--no-subtitle` for voice only; macOS `say`, Windows SAPI/OneCore voices over COM) · `say "text" -- key type --app=Notepad "hi"` speaks AND acts, waits for both (exit = the command's) · `say "..." --async` then `say wait` / `say stop` · `say voices` · `say "..." --out=x.mp3` · `subtitle show "..." --say` (caption that speaks) |
+| many steps at once | `batch demo.yaml` (or inline: `batch '[launch: calc, parallel: [say: seven, click: Calculator Seven]]'`) — YAML steps in order, `parallel:` runs together; the whole file is checked first (`batch --check`); verbs: `batch verbs` |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
 | record a demo | ASK FIRST (monitor, audio), then `capture video start smart --monitor=N --audio=mic` … `capture video stop` → `<out>.final.mp4`; follow `references/recording-a-demo.md` |
 | react to changes | `watch clipboard --max=1` · `watch window --max=1` · `watch file P --recursive --max=1` — one JSON line per event |
@@ -133,6 +135,8 @@ command with usage and examples. Load the guide that matches the intent:
 | find a control by its text; read all text of a window | `references/find.md` |
 | browser and terminal tabs: list, switch, open, type into, close; read, type into and click a page, wait for text | `references/tabs.md` |
 | point at / label things on screen | `references/draw.md` |
+| speak, with a subtitle in step | `references/speech.md` |
+| run many steps from YAML (batch) | `references/batch.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
 | `capture video` flags, camera modes, events format | `references/capture-video.md` |
 | files, clipboard, exec, processes, services, packages, audio, battery, network, system power (which need a yes) | `references/system-and-files.md` |

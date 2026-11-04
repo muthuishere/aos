@@ -25,7 +25,7 @@ const (
 var hostTable = map[string]bool{
 	// Screen, input and the person sitting at it.
 	"window": true, "display": true, "mouse": true, "key": true, "find": true,
-	"draw": true, "subtitle": true, "capture": true, "tab": true,
+	"draw": true, "subtitle": true, "say": true, "capture": true, "tab": true,
 	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
 	"launch": true, "open": true, "webapp": true,
 	"remote": true, "audio": true, "permission": true, "font": true,
@@ -34,7 +34,7 @@ var hostTable = map[string]bool{
 	"system lock": true, "system sleep": true,
 
 	// The agent's own machine.
-	"exec": false, "process": false, "file": false, "pkg": false, "service": false,
+	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,
 	"watch file": false, "network": false, "battery": false, "power": false,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,

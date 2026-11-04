@@ -97,18 +97,6 @@ func Osascript(script string) (string, error) {
 	return Output("osascript", "-e", script)
 }
 
-// PowerShell runs a PowerShell expression with no profile loaded (Windows).
-func PowerShell(script string) (string, error) {
-	return Output(powershellExe(), "-NoProfile", "-NonInteractive", "-Command", script)
-}
-
-func powershellExe() string {
-	if exe := FirstAvailable("pwsh", "powershell"); exe != "" {
-		return exe
-	}
-	return "powershell"
-}
-
 // Shell returns the argv prefix that runs a command string through the
 // platform's shell.
 func Shell() []string {

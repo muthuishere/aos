@@ -348,7 +348,7 @@ flags each command documents. Hidden commands are left out.
 |---|---|---|
 | Registry | `internal/cli` | Command tree, longest-prefix route resolution, help, `commands --json`, `Invoke` |
 | Plugins | `internal/cli/plugins.go` | Discovers external `aos-<route>` executables |
-| Platform helpers | `internal/sys` | Bounded shell-outs, `osascript`, PowerShell |
+| Platform helpers | `internal/sys` | Bounded shell-outs, `osascript` (Windows: native Win32/COM, never PowerShell) |
 | Groups | `internal/groups` | One file per group, plus `_darwin.go` / `_windows.go` / `_linux.go` backends |
 
 A group declares its commands once, cross-platform; each backend file supplies

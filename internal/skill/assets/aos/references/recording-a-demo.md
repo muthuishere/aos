@@ -80,6 +80,7 @@ aos draw text "Account created ✓" --position=top-center --color=green --durati
   `capture video unfocus`. `capture video follow mouse|app|smart|off` switches
   mode mid-recording. `capture video status` checks it is still running.
 
+
 Pause between steps (a `subtitle ... --wait` does this naturally) so viewers
 can follow; a demo driven at machine speed is unwatchable.
 

@@ -65,6 +65,33 @@ aos audio mute toggle
 ```
 
 
+## batch
+
+Run many aos steps from YAML: in order, or together with parallel
+
+### `aos batch`
+
+Run a YAML list of steps (a file, - for stdin, or the YAML inline); everything is checked first
+
+```bash
+aos batch <file.yaml | - | inline yaml> [--check] [--json]
+aos batch demo.yaml
+aos batch --check demo.yaml
+aos batch '[launch: calc, parallel: [say: seven, click: Calculator Seven], type: Notepad done]'
+aos batch verbs   # every verb, generated from the commands
+```
+
+### `aos batch verbs`
+
+List every verb a batch step can use
+
+```bash
+aos batch verbs [--json]
+aos batch verbs
+aos batch verbs --json
+```
+
+
 ## battery
 
 Battery presence and charge
@@ -995,6 +1022,64 @@ aos remote url
 ```
 
 
+## say
+
+Speak text aloud with the machine's built-in voices, shown as a subtitle while it plays
+
+### `aos say`
+
+Speak text aloud (or render it to an mp3/wav/aiff); --async returns at once
+
+*platforms: darwin, windows*
+
+```bash
+aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--json] [-- <command...> [--then-wait=false]] [any `subtitle show` style flag: --position --size --color --bg --font --weight --align --max-width --margin --app/--title ...]
+aos say "Now I open Notepad and type the note" -- aos key type --app=Notepad "hello"   # speak AND act, wait for both
+aos say "build finished"
+aos say "Hello there" --voice=Samantha --rate=190
+aos say "welcome to the demo" --out=~/Desktop/welcome.mp3
+aos say "now I open the settings" --async   # keeps talking while the script goes on
+aos say wait
+# the text is shown as a subtitle while it is spoken, cleared when it ends; --no-subtitle turns that off
+aos say "Saving the report now" --position=top-center --size=L --app=Notepad   # caption style: the subtitle show flags
+# long text is captioned a sentence (or clause, ~2 lines) at a time, each timed to its own audio
+```
+
+### `aos say voices`
+
+List the installed voices
+
+*platforms: darwin, windows*
+
+```bash
+aos say voices [--json]
+aos say voices
+aos say voices --json
+```
+
+### `aos say wait`
+
+Block until every queued and playing `say --async` has finished
+
+*platforms: darwin, windows*
+
+```bash
+aos say wait [--timeout=<seconds>]
+aos say wait
+aos say wait --timeout=30
+```
+
+### `aos say stop`
+
+Stop speaking now and drop anything queued
+
+*platforms: darwin, windows*
+
+```bash
+aos say stop
+```
+
+
 ## serve
 
 Expose this machine's commands to other agents
@@ -1130,11 +1215,12 @@ Show a film-style caption over everything (or over one app's window) for a few s
 *display*
 
 ```bash
-aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--detach] [--wait] [--preview=<out.png>] [--json]
+aos subtitle show <text...> [--seconds=<n>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h>] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--size=S|M|L|XL|<px>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--say] [--detach] [--wait] [--preview=<out.png>] [--json]
 aos subtitle show "installing dependencies"
 aos subtitle show "Now I'm opening Safari" --app=Safari --position=bottom
 aos subtitle show "running the migration" --seconds=30 --position=top
 aos subtitle show "step 1 of 3" --seconds=4 --wait
+aos subtitle show "Saving the report" --say   # show it and say it
 aos subtitle stop
 # white on a translucent dark pill, bottom-center, 8% up; a new caption replaces the last
 ```

@@ -12,7 +12,7 @@ import (
 // ones are present so a missing dependency is one command away from obvious.
 var probedTools = map[string][]string{
 	"darwin":  {"brew", "screencapture", "pmset", "osascript", "networksetup", "system_profiler"},
-	"windows": {"winget", "scoop", "choco", "powershell", "pwsh", "netsh", "clip.exe"},
+	"windows": {"winget", "scoop", "choco", "netsh", "clip.exe"},
 	// wmctrl / xdotool / xrandr and a screenshot tool are what the window,
 	// input, and capture backends shell out to on X11; Xvfb is what `headless
 	// start` needs on a machine with no screen.

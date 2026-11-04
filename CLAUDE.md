@@ -20,3 +20,14 @@
   it pulls the team's prebuilt store when the config declares one, otherwise rebuilds every module store in seconds.</no-local-store>
 </ctx-optimize>
 <!-- ctx-optimize:end -->
+
+## Windows: no PowerShell
+
+No `powershell`, `pwsh` or `.ps1` anywhere in aos: not in Go code, tests,
+test helpers or scripts, not even a temp `.ps1` run with `-File`. Use native
+Go (Win32 and COM through `syscall.SyscallN` / `golang.org/x/sys/windows`) or
+a `.cmd` file. Why: Windows Defender quarantined `aos.exe` as potentially
+unwanted software after it started a hidden PowerShell, and the owner forbids
+it. Naming PowerShell as a terminal app to *detect* (e.g. in
+`internal/engine/input_target.go`) is fine. Live Windows checks live in
+`test/windows/` as Go programs with `.cmd` runners.
