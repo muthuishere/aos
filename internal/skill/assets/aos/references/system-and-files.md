@@ -65,6 +65,7 @@ child's flags. On a Linux box with a virtual display,
 
 ```bash
 aos process list --filter=chrome --json
+aos process list --sort=mem --top=5   # what is eating memory (--sort=cpu|mem|name|pid)
 aos process find node --json
 aos process kill 4821                   # confirm first
 
@@ -92,11 +93,15 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
+aos system load --json     # CPU busy % overall + per core, load averages (none on Windows)
+aos system uptime          # up 9d 14h 8m (since …)
+aos system memory --json   # total / used / available / free RAM, swap, pressure (macOS)
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
 aos disk list --json · aos disk usage [path]   # free / total per volume
 aos disk eject /Volumes/USB   # removable only; refuses / and C:
+aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
