@@ -871,6 +871,32 @@ aos network ports 3000          # who is on port 3000; exit 1 if nobody
 aos network ports --json
 ```
 
+### `aos network wifi on`
+
+Turn the Wi-Fi radio on
+
+```bash
+aos network wifi on
+```
+
+### `aos network wifi off`
+
+Turn the Wi-Fi radio off (drops the connection; confirm first if you are remote)
+
+```bash
+aos network wifi off
+```
+
+### `aos network wifi join`
+
+Join a Wi-Fi network; a password is read from stdin, never argv
+
+```bash
+aos network wifi join <ssid> [--password-stdin]
+aos network wifi join HomeNet              # saved or open network
+printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
+```
+
 
 ## notify
 
