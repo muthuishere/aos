@@ -12,6 +12,7 @@ aos key type "hello" --app=TextEdit --verify           # focus-free + read back:
 aos key press enter --app=TextEdit                      # posted to the app, no focus change
 aos mouse click --app=Calculator --find=7 --role=button # AXPress / UIA Invoke: no pointer, no focus
 aos launch Terminal --wait                              # start an app and wait for its window
+aos app list --filter=code --json                       # resolve a fuzzy name to the real app (name, id, path; * = running)
 aos window wait Chrome --timeout=5000                   # ms
 ```
 

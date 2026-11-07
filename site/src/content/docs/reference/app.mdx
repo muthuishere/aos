@@ -1,0 +1,35 @@
+---
+title: aos app
+description: Installed and running applications
+sidebar:
+  label: app
+  order: 1
+---
+
+<p class="cmd-lead">Installed and running applications</p>
+
+1 command. Run `aos app --help` for the same list from the binary, or [see every group](../commands/).
+
+Installed and running applications, so "open vs code" can resolve to the real app before `aos launch` runs it. `list` merges installed apps with the running ones (marked `*`, with their pid); `--running` shows only what is open, `--filter` narrows by name or id. The id is the bundle id on macOS, the desktop file id on Linux, and the Uninstall registry key (installed) or executable name (running) on Windows.
+
+## Commands
+
+### aos app list
+
+<p class="cmd-lead">List installed applications, or only the running ones, with id and path</p>
+
+```sh
+aos app list [--running] [--filter=<substring>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--running` |  | Optional |
+| `--filter` | `<substring>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos app list
+aos app list --running
+aos app list --filter=code --json
+```
