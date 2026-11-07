@@ -95,6 +95,9 @@ aos system info            # OS, host, hardware
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
+aos bluetooth status · aos bluetooth list --json   # radio on? paired devices, connected first
+aos bluetooth connect AirPods · aos bluetooth disconnect AirPods   # macOS + Linux; Windows exits 2
+aos bluetooth on · aos bluetooth off   # Linux only (macOS/Windows exit 2); off drops keyboards, confirm first
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state

@@ -123,6 +123,66 @@ aos battery percent    # 87
 ```
 
 
+## bluetooth
+
+Bluetooth: radio state, paired devices, connect
+
+### `aos bluetooth status`
+
+Print whether Bluetooth is present and on
+
+```bash
+aos bluetooth status [--json]
+aos bluetooth status
+aos bluetooth status --json
+```
+
+### `aos bluetooth list`
+
+List paired devices and whether each is connected
+
+```bash
+aos bluetooth list [--json]
+aos bluetooth list
+aos bluetooth list --json
+```
+
+### `aos bluetooth on`
+
+Turn the Bluetooth radio on (Linux)
+
+```bash
+aos bluetooth on
+```
+
+### `aos bluetooth off`
+
+Turn the Bluetooth radio off (Linux; drops keyboards and mice, confirm first)
+
+```bash
+aos bluetooth off
+```
+
+### `aos bluetooth connect`
+
+Connect a paired device by name or address
+
+```bash
+aos bluetooth connect <name|address>
+aos bluetooth connect AirPods
+aos bluetooth connect D1:08:D1:0E:60:DB
+```
+
+### `aos bluetooth disconnect`
+
+Disconnect a paired device by name or address
+
+```bash
+aos bluetooth disconnect <name|address>
+aos bluetooth disconnect AirPods
+```
+
+
 ## capture
 
 Screenshots
