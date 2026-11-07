@@ -9,6 +9,8 @@ engine as a library, so the behaviour is identical.
 aos window list --json            # every app window: App, Title, Bounds, Monitor, Focused
 aos window list --app=Chrome      # bare word = app name, falls back to the title
 aos display list                  # monitors: id, geometry, ACTIVE (pointer) / FOCUSED (frontmost window)
+aos appearance dark [on|off|toggle] · aos appearance nightlight [on|off]   # bare prints on/off
+aos display brightness [50|+10|-10]   # built-in panel (else main display); bare prints 0-100
 aos display active                # id of the monitor the pointer is on
 aos display modes 2 [--json]      # resolutions/refresh rates monitor 2 supports
 aos display mode 2 2560x1440@60   # switch it (highest refresh without @Hz); confirm first
