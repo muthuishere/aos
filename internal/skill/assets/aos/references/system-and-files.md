@@ -92,6 +92,8 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
+aos system load --json     # CPU busy % overall + per core, load averages (none on Windows)
+aos system uptime          # up 9d 14h 8m (since …)
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery

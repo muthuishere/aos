@@ -1250,6 +1250,26 @@ aos subtitle test
 
 Session power state: lock, sleep, restart, shutdown, logout
 
+### `aos system load`
+
+Print CPU busy % overall and per core, and load averages
+
+```bash
+aos system load [--json]
+aos system load
+aos system load --json
+```
+
+### `aos system uptime`
+
+Print how long the machine has been up and when it booted
+
+```bash
+aos system uptime [--json]
+aos system uptime
+aos system uptime --json
+```
+
 ### `aos system lock`
 
 Lock the screen
