@@ -14,10 +14,9 @@ import (
 
 // processInfo is one running process, in the shape `process list --json` emits.
 //
-// CPU is a percentage of one core on macOS and Linux, where `ps` reports it
-// directly. Windows has no cheap equivalent, so there it is the process's total
-// CPU seconds since it started — the field is still comparable between
-// processes on the same machine, which is what it is used for.
+// CPU is a percentage of one core on every OS: `ps` reports it directly on
+// macOS and Linux, and on Windows listProcesses samples CPU time over half a
+// second to get the same unit.
 type processInfo struct {
 	PID      int     `json:"pid"`
 	Name     string  `json:"name"`
@@ -33,11 +32,12 @@ func init() {
 			&cli.Command{
 				Group: "process", Name: "list",
 				Summary: "List running processes",
-				Args:    "[--filter=<substring>] [--json]",
+				Args:    "[--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]",
 				Examples: []string{
 					"aos process list",
 					"aos process list --filter=chrome",
-					"aos process list --json",
+					"aos process list --sort=mem --top=5",
+					"aos process list --sort=cpu --top=10 --json",
 				},
 				Run: runProcessList,
 			},
@@ -53,12 +53,13 @@ func init() {
 			},
 			&cli.Command{
 				Group: "process", Name: "kill",
-				Summary: "Kill a process by pid, or by name when it is unambiguous",
-				Args:    "<pid|name> [--force]",
+				Summary: "Kill a process by pid, by name when it is unambiguous, or by the port it listens on",
+				Args:    "<pid|name> [--force] | --port=<n> [--force]",
 				Examples: []string{
 					"aos process kill 4821",
 					"aos process kill Calculator",
 					"aos process kill Calculator --force",
+					"aos process kill --port=8080",
 				},
 				Run: runProcessKill,
 			},
@@ -67,11 +68,11 @@ func init() {
 }
 
 func runProcessList(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "filter")
+	set, err := parseArgs(args, "filter", "sort", "top")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("filter", "json"); err != nil {
+	if err := set.Reject("filter", "sort", "top", "json"); err != nil {
 		return err
 	}
 	if len(set.Rest) > 0 {
@@ -84,6 +85,14 @@ func runProcessList(c *cli.Ctx, args []string) error {
 	}
 	if filter := set.String("filter", ""); filter != "" {
 		found = matchProcesses(found, filter)
+	}
+	top, err := set.Int("top", 0)
+	if err != nil {
+		return err
+	}
+	found, err = rankProcesses(found, set.String("sort", ""), top)
+	if err != nil {
+		return err
 	}
 	return printProcesses(c, found, set.Has("json"))
 }
@@ -120,17 +129,23 @@ func runProcessFind(c *cli.Ctx, args []string) error {
 }
 
 func runProcessKill(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args)
+	set, err := parseArgs(args, "port")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("force", "f"); err != nil {
+	if err := set.Reject("force", "f", "port"); err != nil {
 		return err
 	}
-	if len(set.Rest) == 0 {
-		return fmt.Errorf("`process kill` needs a pid or a process name")
-	}
 	force := set.Has("force") || set.Has("f")
+	if set.Has("port") {
+		if len(set.Rest) > 0 {
+			return fmt.Errorf("give either --port or a pid/name, not both")
+		}
+		return killByPort(c, set.String("port", ""), force)
+	}
+	if len(set.Rest) == 0 {
+		return fmt.Errorf("`process kill` needs a pid, a process name, or --port=<n>")
+	}
 	target := strings.Join(set.Rest, " ")
 
 	// A bare number is a pid. Anything else is a name, and has to resolve to
@@ -194,6 +209,95 @@ func matchProcesses(all []processInfo, query string) []processInfo {
 	}
 	sort.Slice(matches, func(i, j int) bool { return matches[i].PID < matches[j].PID })
 	return matches
+}
+
+// killByPort kills every process listening on the port: usually one, but a
+// pre-forking server has several workers on the same socket, and killing one
+// would leave the port taken.
+func killByPort(c *cli.Ctx, value string, force bool) error {
+	port, err := parsePort(value)
+	if err != nil {
+		return err
+	}
+	ports, err := listListening()
+	if err != nil {
+		return err
+	}
+	owners := portOwners(ports, port)
+	if len(owners) == 0 {
+		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("nothing is listening on port %d", port)}
+	}
+	for _, o := range owners {
+		if o.PID == 0 {
+			return &cli.ExitError{Code: 1, Message: fmt.Sprintf("port %d is held by a process this user cannot see; try again with more rights", port)}
+		}
+		if err := guardKill(o.PID, os.Getpid()); err != nil {
+			return err
+		}
+	}
+	for _, o := range owners {
+		if err := killProcess(o.PID, force); err != nil {
+			return &cli.ExitError{Code: 1, Message: err.Error()}
+		}
+		c.Printf("killed %d  %s  (port %d)\n", o.PID, o.Process, port)
+	}
+	return nil
+}
+
+// portOwners is the distinct processes listening on port, in pid order.
+func portOwners(ports []listenPort, port int) []listenPort {
+	seen := map[int]bool{}
+	var out []listenPort
+	for _, p := range dedupePorts(ports) {
+		if p.Port == port && !seen[p.PID] {
+			seen[p.PID] = true
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// rankProcesses orders processes by key and keeps the first top of them.
+//
+// cpu and mem sort heaviest first, name and pid ascending; ties fall back to
+// pid so the order is stable. top 0 keeps everything. Asking for a top N
+// without a key ranks by cpu, since "the top 5 processes" means the busiest.
+func rankProcesses(all []processInfo, key string, top int) ([]processInfo, error) {
+	if top < 0 {
+		return nil, fmt.Errorf("--top must be a positive number, got %d", top)
+	}
+	if key == "" && top > 0 {
+		key = "cpu"
+	}
+	var less func(a, b processInfo) bool
+	switch key {
+	case "":
+	case "cpu":
+		less = func(a, b processInfo) bool { return a.CPU > b.CPU }
+	case "mem", "memory":
+		less = func(a, b processInfo) bool { return a.MemoryMB > b.MemoryMB }
+	case "name":
+		less = func(a, b processInfo) bool { return strings.ToLower(a.Name) < strings.ToLower(b.Name) }
+	case "pid":
+		less = func(a, b processInfo) bool { return a.PID < b.PID }
+	default:
+		return nil, fmt.Errorf("--sort must be cpu, mem, name or pid, got %q", key)
+	}
+	if less != nil {
+		sort.SliceStable(all, func(i, j int) bool {
+			if less(all[i], all[j]) {
+				return true
+			}
+			if less(all[j], all[i]) {
+				return false
+			}
+			return all[i].PID < all[j].PID
+		})
+	}
+	if top > 0 && top < len(all) {
+		all = all[:top]
+	}
+	return all, nil
 }
 
 // resolveKillTarget turns a name into the single process to kill.
@@ -308,4 +412,15 @@ func processBase(command string) string {
 	// elsewhere, so normalise before taking the base.
 	command = strings.ReplaceAll(command, "\\", "/")
 	return filepath.Base(command)
+}
+
+// cpuPercent turns two readings of total CPU seconds, elapsed seconds apart,
+// into a percentage of one core. A process that started between the readings
+// has no first reading and counts from zero; a negative delta (pid reused)
+// reads as idle.
+func cpuPercent(before, after, elapsed float64) float64 {
+	if elapsed <= 0 || after <= before {
+		return 0
+	}
+	return (after - before) / elapsed * 100
 }
