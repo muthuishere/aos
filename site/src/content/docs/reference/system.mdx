@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Session power state: lock, sleep, restart, shutdown, logout</p>
 
-6 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
+9 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
 
-Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three.
+Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three. `load` samples CPU for half a second and prints busy % overall and per core plus the 1/5/15-minute load averages (Windows has none); `uptime` prints how long the machine has been up and when it booted. `memory` reports total, used, available and free RAM plus swap; *available* is the number that answers "how much memory is left", since idle RAM is used as cache and *free* is usually small.
 
 ## Commands
 
@@ -24,6 +24,23 @@ aos system info
 
 ```sh
 aos system info
+```
+
+### aos system load
+
+<p class="cmd-lead">Print CPU busy % overall and per core, and load averages</p>
+
+```sh
+aos system load [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos system load
+aos system load --json
 ```
 
 ### aos system lock
@@ -52,6 +69,23 @@ aos system logout
 
 ```sh
 aos system logout
+```
+
+### aos system memory
+
+<p class="cmd-lead">Print total, used, available and free RAM, and swap</p>
+
+```sh
+aos system memory [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos system memory
+aos system memory --json
 ```
 
 ### aos system restart
@@ -88,4 +122,21 @@ aos system sleep
 
 ```sh
 aos system sleep
+```
+
+### aos system uptime
+
+<p class="cmd-lead">Print how long the machine has been up and when it booted</p>
+
+```sh
+aos system uptime [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos system uptime
+aos system uptime --json
 ```
