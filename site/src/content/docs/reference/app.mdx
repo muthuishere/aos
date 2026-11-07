@@ -1,0 +1,41 @@
+---
+title: aos app
+description: Installed and running applications
+sidebar:
+  label: app
+  order: 1
+---
+
+<p class="cmd-lead">Installed and running applications</p>
+
+2 commands. Run `aos app --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos app hide-others
+
+<p class="cmd-lead">Hide (minimize) every app except the frontmost one</p>
+
+```sh
+aos app hide-others
+```
+
+```sh
+aos app hide-others
+```
+
+### aos app quit-all
+
+<p class="cmd-lead">Quit every running app, except those named; asks first unless --yes</p>
+
+```sh
+aos app quit-all [--except=<name,name>] [--yes]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--except` | `<name,name>` | Optional. comma-separated |
+| `--yes` |  | Optional |
+
+```sh
+aos app quit-all                       # lists what would quit, then asks
+aos app quit-all --except="Slack,Visual Studio Code" --yes
+```
