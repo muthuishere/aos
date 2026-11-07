@@ -98,3 +98,12 @@ the public internet and get an explicit "yes" first, every time.
 When no focus-free route works, aos takes the foreground (SetForegroundWindow +
 SendInput) for the moment it needs, after the polite wait, and hands the front
 window and the pointer back. It never calls UIA SetFocus.
+
+## Shortcuts (macOS)
+
+```bash
+aos shortcuts list [--folder=Work] [--json]
+aos shortcuts run "Resize Image" --input=~/Desktop/photo.jpg   # or --text="…"; prints the shortcut's output
+```
+
+Run the person's own automations instead of re-building them with clicks. Windows and Linux exit 2.
