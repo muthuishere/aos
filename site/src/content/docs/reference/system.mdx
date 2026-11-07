@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Session power state: lock, sleep, restart, shutdown, logout</p>
 
-6 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
+7 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
 
-Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three.
+Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three. `memory` reports total, used, available and free RAM plus swap; *available* is the number that answers "how much memory is left", since idle RAM is used as cache and *free* is usually small.
 
 ## Commands
 
@@ -52,6 +52,23 @@ aos system logout
 
 ```sh
 aos system logout
+```
+
+### aos system memory
+
+<p class="cmd-lead">Print total, used, available and free RAM, and swap</p>
+
+```sh
+aos system memory [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos system memory
+aos system memory --json
 ```
 
 ### aos system restart
