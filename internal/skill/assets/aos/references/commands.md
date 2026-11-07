@@ -40,6 +40,22 @@ aos adapters example --write
 ```
 
 
+## app
+
+Installed and running applications
+
+### `aos app list`
+
+List installed applications, or only the running ones, with id and path
+
+```bash
+aos app list [--running] [--filter=<substring>] [--json]
+aos app list
+aos app list --running
+aos app list --filter=code --json
+```
+
+
 ## audio
 
 Output volume and mute
