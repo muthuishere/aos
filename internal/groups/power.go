@@ -17,7 +17,7 @@ type powerState struct {
 
 func init() {
 	register(func(r *cli.Registry) {
-		r.Describe("power", "Power source detection")
+		r.Describe("power", "Power source detection and keep-awake")
 		r.Add(
 			&cli.Command{
 				Group: "power", Name: "status",
@@ -58,9 +58,13 @@ func init() {
 		r.Add(
 			&cli.Command{
 				Group: "battery", Name: "status",
-				Summary:  "Print battery charge and charging state",
-				Examples: []string{"aos battery status"},
-				Run:      runBatteryStatus,
+				Summary: "Print battery charge, charging state, and health (capacity, cycles) where reported",
+				Args:    "[--json]",
+				Examples: []string{
+					"aos battery status    # 87%  discharging  3:41 remaining  (health 97%, 15 cycles, 30.7°C)",
+					"aos battery status --json",
+				},
+				Run: runBatteryStatus,
 			},
 			&cli.Command{
 				Group: "battery", Name: "present",
@@ -97,10 +101,35 @@ func init() {
 	})
 }
 
-func runBatteryStatus(c *cli.Ctx, _ []string) error {
+// batteryJSON is what `battery status --json` emits.
+type batteryJSON struct {
+	Present   bool   `json:"present"`
+	Percent   *int   `json:"percent,omitempty"`
+	Status    string `json:"status,omitempty"`
+	Remaining string `json:"remaining,omitempty"`
+	OnAC      bool   `json:"on_ac"`
+	batteryHealth
+}
+
+func runBatteryStatus(c *cli.Ctx, args []string) error {
+	asJSON, err := jsonOnly("battery status", args)
+	if err != nil {
+		return err
+	}
 	state, err := readPower()
 	if err != nil {
 		return err
+	}
+	var health batteryHealth
+	if state.HasBattery {
+		health, _ = readBatteryHealth()
+	}
+	if asJSON {
+		out := batteryJSON{Present: state.HasBattery, Status: state.Status, Remaining: state.Remaining, OnAC: state.OnAC, batteryHealth: health}
+		if state.HasBattery && state.Percent >= 0 {
+			out.Percent = &state.Percent
+		}
+		return writeJSON(c, out)
 	}
 	if !state.HasBattery {
 		c.Println("no battery")
@@ -115,6 +144,9 @@ func runBatteryStatus(c *cli.Ctx, _ []string) error {
 	}
 	if state.Remaining != "" {
 		line += "  " + state.Remaining + " remaining"
+	}
+	if h := describeHealth(health); h != "" {
+		line += "  (" + h + ")"
 	}
 	c.Println(line)
 	return nil

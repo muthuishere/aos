@@ -40,9 +40,73 @@ aos adapters example --write
 ```
 
 
+## app
+
+Installed and running applications
+
+### `aos app list`
+
+List installed applications, or only the running ones, with id and path
+
+```bash
+aos app list [--running] [--filter=<substring>] [--json]
+aos app list
+aos app list --running
+aos app list --filter=code --json
+```
+
+### `aos app hide-others`
+
+Hide (minimize) every app except the frontmost one
+
+```bash
+aos app hide-others
+```
+
+### `aos app quit-all`
+
+Quit every running app, except those named; asks first unless --yes
+
+```bash
+aos app quit-all [--except=<name,name>] [--yes]
+aos app quit-all                       # lists what would quit, then asks
+aos app quit-all --except="Slack,Visual Studio Code" --yes
+```
+
+
+## appearance
+
+Dark mode and night light (Night Shift)
+
+### `aos appearance dark`
+
+Print or set dark mode: on, off or toggle
+
+*display*
+
+```bash
+aos appearance dark [on|off|toggle]
+aos appearance dark          # on | off
+aos appearance dark on
+aos appearance dark toggle
+```
+
+### `aos appearance nightlight`
+
+Print or set the warm night colours (Night Shift, Night Light)
+
+*display*
+
+```bash
+aos appearance nightlight [on|off|toggle]
+aos appearance nightlight    # on | off
+aos appearance nightlight on
+```
+
+
 ## audio
 
-Output volume and mute
+Volume, mute, and output/input devices
 
 ### `aos audio volume`
 
@@ -62,6 +126,37 @@ Print or change the output mute state
 ```bash
 aos audio mute [on|off|toggle]
 aos audio mute toggle
+```
+
+### `aos audio devices`
+
+List output and input sound devices, marking the defaults
+
+```bash
+aos audio devices [--json]
+aos audio devices
+aos audio devices --json
+```
+
+### `aos audio output`
+
+Print the default output device, or switch it by name or id
+
+```bash
+aos audio output [<device>]
+aos audio output
+aos audio output AirPods
+aos audio output "MacBook Pro Speakers"
+```
+
+### `aos audio input`
+
+Print the default input device, or switch it by name or id
+
+```bash
+aos audio input [<device>]
+aos audio input
+aos audio input "MacBook Pro Microphone"
 ```
 
 
@@ -98,10 +193,12 @@ Battery presence and charge
 
 ### `aos battery status`
 
-Print battery charge and charging state
+Print battery charge, charging state, and health (capacity, cycles) where reported
 
 ```bash
-aos battery status
+aos battery status [--json]
+aos battery status    # 87%  discharging  3:41 remaining  (health 97%, 15 cycles, 30.7°C)
+aos battery status --json
 ```
 
 ### `aos battery present`
@@ -123,6 +220,66 @@ aos battery percent    # 87
 ```
 
 
+## bluetooth
+
+Bluetooth: radio state, paired devices, connect
+
+### `aos bluetooth status`
+
+Print whether Bluetooth is present and on
+
+```bash
+aos bluetooth status [--json]
+aos bluetooth status
+aos bluetooth status --json
+```
+
+### `aos bluetooth list`
+
+List paired devices and whether each is connected
+
+```bash
+aos bluetooth list [--json]
+aos bluetooth list
+aos bluetooth list --json
+```
+
+### `aos bluetooth on`
+
+Turn the Bluetooth radio on (Linux)
+
+```bash
+aos bluetooth on
+```
+
+### `aos bluetooth off`
+
+Turn the Bluetooth radio off (Linux; drops keyboards and mice, confirm first)
+
+```bash
+aos bluetooth off
+```
+
+### `aos bluetooth connect`
+
+Connect a paired device by name or address
+
+```bash
+aos bluetooth connect <name|address>
+aos bluetooth connect AirPods
+aos bluetooth connect D1:08:D1:0E:60:DB
+```
+
+### `aos bluetooth disconnect`
+
+Disconnect a paired device by name or address
+
+```bash
+aos bluetooth disconnect <name|address>
+aos bluetooth disconnect AirPods
+```
+
+
 ## capture
 
 Screenshots
@@ -140,6 +297,20 @@ aos capture screenshot region --copy
 aos capture screenshot --monitor=2
 aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
+```
+
+### `aos capture text`
+
+OCR a screen region or a whole monitor and print its text in reading order
+
+*display*
+
+```bash
+aos capture text [--region=<x,y,w,h>] [--monitor=<n>] [--max-chars=<n>] [--json]
+aos capture text --region=100,100,800,400
+aos capture text --monitor=2 --json
+aos capture text --monitor=1 --region=0,0,600,300   # region relative to monitor 1
+# a window's text: aos window text --app=Preview --source=ocr
 ```
 
 ### `aos capture video start`
@@ -279,6 +450,35 @@ aos clipboard paste > note.txt
 ```
 
 
+## color
+
+Read the color of a pixel on screen
+
+### `aos color at`
+
+Print the color of the screen pixel at x,y (global screen points)
+
+*display*
+
+```bash
+aos color at <x> <y> [--json]
+aos color at 640 400         # #1E1E1E  rgb(30, 30, 30)
+aos color at -1200 300 --json
+```
+
+### `aos color pick`
+
+Print the color under the mouse pointer, after an optional delay to point
+
+*display*
+
+```bash
+aos color pick [--delay=<seconds>] [--json]
+aos color pick
+aos color pick --delay=3     # 3 s to move the pointer onto the color
+```
+
+
 ## completion
 
 Shell tab-completion for aos
@@ -316,9 +516,59 @@ aos debug tools
 ```
 
 
+## disk
+
+Volumes: free and total space, eject removable drives
+
+### `aos disk list`
+
+List mounted volumes with total, used and free space
+
+```bash
+aos disk list [--json]
+aos disk list
+aos disk list --json
+```
+
+### `aos disk usage`
+
+Print total, used and free space of the volume holding a path
+
+```bash
+aos disk usage [<path>] [--json]
+aos disk usage              # the volume holding your home folder
+aos disk usage /Volumes/USB --json
+aos disk usage D:\
+```
+
+### `aos disk eject`
+
+Unmount and eject a removable volume, by mount point or device
+
+```bash
+aos disk eject <mount|device>
+aos disk eject /Volumes/USB
+aos disk eject /dev/sdb1
+aos disk eject E:
+```
+
+
 ## display
 
 Attached monitors
+
+### `aos display brightness`
+
+Print or set screen brightness 0-100 (the built-in panel, else the main display)
+
+*display*
+
+```bash
+aos display brightness [<0-100>|+<n>|-<n>]
+aos display brightness       # 70
+aos display brightness 50
+aos display brightness -10
+```
 
 ### `aos display list`
 
@@ -557,6 +807,17 @@ aos file delete <path> [--recursive]
 aos file delete /tmp/scratch --recursive
 ```
 
+### `aos file recent`
+
+List recently opened documents, newest first, from the OS's own recents
+
+```bash
+aos file recent [--app=<name>] [--limit=<n>] [--json]
+aos file recent
+aos file recent --app=textedit --limit=5
+aos file recent --json
+```
+
 
 ## find
 
@@ -574,6 +835,39 @@ aos find --app=Calculator --text=7
 aos find Safari --text="Reload this page" --role=button --json
 aos find --title=Settings --text=Wi-Fi --source=ocr --all
 # exit 3 when the window or the text is not found
+```
+
+
+## focus
+
+Do Not Disturb / Focus: read it, and set it where the OS allows
+
+### `aos focus status`
+
+Print whether Do Not Disturb (Focus) is on, which mode, and until when
+
+```bash
+aos focus status [--json]
+aos focus status
+aos focus status --json
+```
+
+### `aos focus on`
+
+Turn Do Not Disturb on, optionally for a while (GNOME)
+
+```bash
+aos focus on [--for=<duration>]
+aos focus on
+aos focus on --for=1h
+```
+
+### `aos focus off`
+
+Turn Do Not Disturb off (GNOME)
+
+```bash
+aos focus off
 ```
 
 
@@ -692,6 +986,61 @@ aos launch Chrome --wait
 ```
 
 
+## media
+
+What is playing, and play / pause / skip
+
+### `aos media now`
+
+Print the track playing now: app, title, artist, position
+
+```bash
+aos media now [--json]
+aos media now
+aos media now --json
+```
+
+### `aos media play`
+
+Resume playback
+
+```bash
+aos media play
+```
+
+### `aos media pause`
+
+Pause playback
+
+```bash
+aos media pause
+```
+
+### `aos media toggle`
+
+Play if paused, pause if playing
+
+```bash
+aos media toggle
+```
+
+### `aos media next`
+
+Skip to the next track
+
+```bash
+aos media next
+```
+
+### `aos media prev`
+
+Go back to the previous track
+
+```bash
+aos media prev
+```
+
+
 ## menu
 
 Search and run an app's menu bar commands (macOS accessibility)
@@ -768,6 +1117,44 @@ aos mouse position     # 784 539
 
 Connectivity, addresses, and Wi-Fi
 
+### `aos network public-ip`
+
+Print this machine's public IP address as the internet sees it
+
+```bash
+aos network public-ip [--json]
+aos network public-ip
+aos network public-ip --json   # ip, country, source
+```
+
+### `aos network vpn status`
+
+List the system's VPN connections and which are connected
+
+```bash
+aos network vpn status [--json]
+aos network vpn status
+aos network vpn status --json
+```
+
+### `aos network vpn on`
+
+Connect a system VPN by name
+
+```bash
+aos network vpn on <name>
+aos network vpn on "Work VPN"
+```
+
+### `aos network vpn off`
+
+Disconnect a system VPN by name
+
+```bash
+aos network vpn off <name>
+aos network vpn off "Work VPN"
+```
+
 ### `aos network status`
 
 Print the active interface, address, and Wi-Fi network
@@ -791,6 +1178,60 @@ Print the Wi-Fi network currently joined
 
 ```bash
 aos network wifi
+```
+
+### `aos network ports`
+
+List listening TCP ports with the pid and process that own them
+
+```bash
+aos network ports [<port>] [--json]
+aos network ports
+aos network ports 3000          # who is on port 3000; exit 1 if nobody
+aos network ports --json
+```
+
+### `aos network wifi on`
+
+Turn the Wi-Fi radio on
+
+```bash
+aos network wifi on
+```
+
+### `aos network wifi off`
+
+Turn the Wi-Fi radio off (drops the connection; confirm first if you are remote)
+
+```bash
+aos network wifi off
+```
+
+### `aos network wifi join`
+
+Join a Wi-Fi network; a password is read from stdin, never argv
+
+```bash
+aos network wifi join <ssid> [--password-stdin]
+aos network wifi join HomeNet              # saved or open network
+printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
+```
+
+
+## notify
+
+Post a native desktop notification to the person at the screen
+
+### `aos notify`
+
+Post a native notification with a title and an optional body
+
+*display*
+
+```bash
+aos notify <title> [<body>] [--sound]
+aos notify "Build finished"
+aos notify "Timer" "Tea is ready" --sound
 ```
 
 
@@ -977,7 +1418,36 @@ aos pkg manager        # homebrew
 
 ## power
 
-Power source detection
+Power source detection and keep-awake
+
+### `aos power awake`
+
+Keep the machine from sleeping, for a while or until `power awake off`
+
+```bash
+aos power awake [--for=<duration>] [--display] [--json]
+aos power awake --for=2h
+aos power awake --for=30m --display
+aos power awake            # until `aos power awake off`
+```
+
+### `aos power awake off`
+
+End the keep-awake started by `power awake`
+
+```bash
+aos power awake off
+```
+
+### `aos power awake status`
+
+Print whether a keep-awake is active and until when
+
+```bash
+aos power awake status [--json]
+aos power awake status
+aos power awake status --json
+```
 
 ### `aos power status`
 
@@ -997,10 +1467,11 @@ Running processes: list, find, kill
 List running processes
 
 ```bash
-aos process list [--filter=<substring>] [--json]
+aos process list [--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]
 aos process list
 aos process list --filter=chrome
-aos process list --json
+aos process list --sort=mem --top=5
+aos process list --sort=cpu --top=10 --json
 ```
 
 ### `aos process find`
@@ -1015,13 +1486,14 @@ aos process find node --json
 
 ### `aos process kill`
 
-Kill a process by pid, or by name when it is unambiguous
+Kill a process by pid, by name when it is unambiguous, or by the port it listens on
 
 ```bash
-aos process kill <pid|name> [--force]
+aos process kill <pid|name> [--force] | --port=<n> [--force]
 aos process kill 4821
 aos process kill Calculator
 aos process kill Calculator --force
+aos process kill --port=8080
 ```
 
 
@@ -1195,6 +1667,36 @@ aos service list
 ```
 
 
+## shortcuts
+
+Run the person's Shortcuts automations (macOS)
+
+### `aos shortcuts list`
+
+List the Shortcuts automations, optionally in one folder
+
+*platforms: darwin*
+
+```bash
+aos shortcuts list [--folder=<name>] [--json]
+aos shortcuts list
+aos shortcuts list --folder=Work --json
+```
+
+### `aos shortcuts run`
+
+Run a shortcut by name or id, with optional input, and print its output
+
+*platforms: darwin*
+
+```bash
+aos shortcuts run <name|id> [--input=<file>] [--text=<input text>]
+aos shortcuts run "Resize Image" --input=~/Desktop/photo.jpg
+aos shortcuts run "Translate" --text="good morning"
+aos shortcuts run "Start Focus Timer"
+```
+
+
 ## skill
 
 The agent skill bundled in this binary
@@ -1280,6 +1782,36 @@ aos subtitle test
 
 Session power state: lock, sleep, restart, shutdown, logout
 
+### `aos system load`
+
+Print CPU busy % overall and per core, and load averages
+
+```bash
+aos system load [--json]
+aos system load
+aos system load --json
+```
+
+### `aos system uptime`
+
+Print how long the machine has been up and when it booted
+
+```bash
+aos system uptime [--json]
+aos system uptime
+aos system uptime --json
+```
+
+### `aos system memory`
+
+Print total, used, available and free RAM, and swap
+
+```bash
+aos system memory [--json]
+aos system memory
+aos system memory --json
+```
+
 ### `aos system lock`
 
 Lock the screen
@@ -1330,6 +1862,18 @@ Print OS, host, and hardware facts
 
 ```bash
 aos system info
+```
+
+### `aos system thermal`
+
+Print the thermal state (throttling) and temperatures the OS exposes
+
+*platforms: darwin, linux*
+
+```bash
+aos system thermal [--json]
+aos system thermal
+aos system thermal --json
 ```
 
 
@@ -1445,6 +1989,31 @@ aos tab click --title="Telegram" --find=Send --role=button
 ```
 
 
+## trash
+
+The Trash / Recycle Bin: how much it holds, and emptying it
+
+### `aos trash size`
+
+Print how many items the Trash holds and how much space they take
+
+```bash
+aos trash size [--json]
+aos trash size
+aos trash size --json
+```
+
+### `aos trash empty`
+
+Permanently delete everything in the Trash (asks first unless --yes)
+
+```bash
+aos trash empty [--yes]
+aos trash empty          # asks y/N at a terminal
+aos trash empty --yes    # no question; required when not at a terminal
+```
+
+
 ## version
 
 Version information
@@ -1532,6 +2101,16 @@ aos webapp open https://app.slack.com
 ## window
 
 Desktop windows: list, focus, move, resize, arrange
+
+### `aos window desktop`
+
+Show the desktop (toggle: run again to bring the windows back)
+
+*display*
+
+```bash
+aos window desktop
+```
 
 ### `aos window list`
 
