@@ -40,6 +40,36 @@ aos adapters example --write
 ```
 
 
+## appearance
+
+Dark mode and night light (Night Shift)
+
+### `aos appearance dark`
+
+Print or set dark mode: on, off or toggle
+
+*display*
+
+```bash
+aos appearance dark [on|off|toggle]
+aos appearance dark          # on | off
+aos appearance dark on
+aos appearance dark toggle
+```
+
+### `aos appearance nightlight`
+
+Print or set the warm night colours (Night Shift, Night Light)
+
+*display*
+
+```bash
+aos appearance nightlight [on|off|toggle]
+aos appearance nightlight    # on | off
+aos appearance nightlight on
+```
+
+
 ## audio
 
 Output volume and mute
