@@ -96,6 +96,8 @@ aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
+aos network wifi on · aos network wifi off   # confirm before off: it drops the connection
+printf '%s' "$PW" | aos network wifi join <ssid> --password-stdin   # never put a password on argv
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
 aos font list mono · aos font dirs
