@@ -32,6 +32,19 @@ aos file write notes.txt "first line"   # or: cat in.txt | aos file write out.tx
 aos file append log.txt "done"
 aos file list ~/Downloads --json        # --all includes dotfiles
 aos file stat go.mod --json             # size, mode, modified
+aos file search invoice --limit=10      # by name, substring; globs too: "*.pdf"
+aos file search notes --root=~/Documents --kind=dir --json
+```
+
+`aos file search` asks the OS index first and says which engine answered
+(`"source"` in JSON, a stderr summary otherwise): macOS `mdfind`; Linux
+`plocate`/`locate`, then `fd`; Windows Everything's `es.exe` when on PATH.
+An index that is missing or answers nothing falls back to a parallel walk
+(`--engine=walk`; default root is home; skips node_modules, .git,
+$Recycle.Bin, Windows\WinSxS; stops at `--limit`, default 50).
+`--engine=auto|everything|index|walk` forces one.
+
+```bash
 aos file mkdir ~/.config/aos/layouts    # with parents
 aos file copy a.txt b.txt
 aos file move old.txt new.txt
