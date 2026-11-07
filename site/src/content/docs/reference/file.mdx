@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Read, write, and inspect files</p>
 
-10 commands. Run `aos file --help` for the same list from the binary, or [see every group](../commands/).
+11 commands. Run `aos file --help` for the same list from the binary, or [see every group](../commands/).
 
 Read, write and inspect files with exit codes an agent can trust. `read` takes a line range, `write` and `append` take words or stdin, `list` and `stat` have `--json`. `delete` refuses filesystem roots, your home directory and system directories, and needs `--recursive` for a directory. `recent` lists the documents the person opened lately, newest first, from the OS's own recents: macOS Recent Documents (per-app lists with `--app`, matched against the bundle id), the freedesktop `recently-used.xbel` on Linux (with `--app`), and the shortcuts in the Windows Recent folder (no `--app` there). It follows the host, because it is about the person's desktop.
 
@@ -152,6 +152,29 @@ aos file recent [--app=<name>] [--limit=<n>] [--json]
 aos file recent
 aos file recent --app=textedit --limit=5
 aos file recent --json
+```
+
+### aos file search
+
+<p class="cmd-lead">Find files and folders by name, through the OS index when there is one</p>
+
+```sh
+aos file search <query> [--root=<dir>] [--kind=file|dir] [--limit=<n>] [--engine=auto|everything|index|walk] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<query>` | | Required positional argument |
+| `--root` | `<dir>` | Optional |
+| `--kind` | `file`, `dir` | Optional |
+| `--limit` | `<n>` | Optional |
+| `--engine` | `auto`, `everything`, `index`, `walk` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos file search invoice --limit=10
+aos file search "*.pdf" --root=~/Downloads --json
+aos file search notes --kind=dir --engine=walk
 ```
 
 ### aos file stat

@@ -843,6 +843,17 @@ aos file delete <path> [--recursive]
 aos file delete /tmp/scratch --recursive
 ```
 
+### `aos file search`
+
+Find files and folders by name, through the OS index when there is one
+
+```bash
+aos file search <query> [--root=<dir>] [--kind=file|dir] [--limit=<n>] [--engine=auto|everything|index|walk] [--json]
+aos file search invoice --limit=10
+aos file search "*.pdf" --root=~/Downloads --json
+aos file search notes --kind=dir --engine=walk
+```
+
 ### `aos file recent`
 
 List recently opened documents, newest first, from the OS's own recents
