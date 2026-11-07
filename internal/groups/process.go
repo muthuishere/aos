@@ -14,10 +14,9 @@ import (
 
 // processInfo is one running process, in the shape `process list --json` emits.
 //
-// CPU is a percentage of one core on macOS and Linux, where `ps` reports it
-// directly. Windows has no cheap equivalent, so there it is the process's total
-// CPU seconds since it started — the field is still comparable between
-// processes on the same machine, which is what it is used for.
+// CPU is a percentage of one core on every OS: `ps` reports it directly on
+// macOS and Linux, and on Windows listProcesses samples CPU time over half a
+// second to get the same unit.
 type processInfo struct {
 	PID      int     `json:"pid"`
 	Name     string  `json:"name"`
@@ -360,4 +359,15 @@ func processBase(command string) string {
 	// elsewhere, so normalise before taking the base.
 	command = strings.ReplaceAll(command, "\\", "/")
 	return filepath.Base(command)
+}
+
+// cpuPercent turns two readings of total CPU seconds, elapsed seconds apart,
+// into a percentage of one core. A process that started between the readings
+// has no first reading and counts from zero; a negative delta (pid reused)
+// reads as idle.
+func cpuPercent(before, after, elapsed float64) float64 {
+	if elapsed <= 0 || after <= before {
+		return 0
+	}
+	return (after - before) / elapsed * 100
 }

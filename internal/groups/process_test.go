@@ -263,3 +263,18 @@ func TestRankProcesses(t *testing.T) {
 		t.Error("negative top should fail")
 	}
 }
+
+func TestCPUPercent(t *testing.T) {
+	cases := []struct{ before, after, elapsed, want float64 }{
+		{10, 10.25, 0.5, 50},
+		{10, 11, 0.5, 200}, // two cores busy
+		{0, 0.1, 0.5, 20},  // started between readings
+		{5, 1, 0.5, 0},     // pid reused
+		{1, 2, 0, 0},
+	}
+	for _, c := range cases {
+		if got := cpuPercent(c.before, c.after, c.elapsed); got != c.want {
+			t.Errorf("cpuPercent(%v,%v,%v) = %v, want %v", c.before, c.after, c.elapsed, got, c.want)
+		}
+	}
+}
