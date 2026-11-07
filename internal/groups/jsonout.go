@@ -14,6 +14,21 @@ func writeJSON(c *cli.Ctx, v any) error {
 	return enc.Encode(v)
 }
 
+// jsonOnly parses the args of a command whose only flag is --json.
+func jsonOnly(route string, args []string) (bool, error) {
+	set, err := parseArgs(args)
+	if err != nil {
+		return false, err
+	}
+	if err := set.Reject("json"); err != nil {
+		return false, err
+	}
+	if len(set.Rest) > 0 {
+		return false, fmt.Errorf("`%s` takes no positional arguments", route)
+	}
+	return set.Has("json"), nil
+}
+
 // humanBytes renders a byte count the way people read it: 16.0 GB, 512.0 MB.
 // It uses binary multiples, which is what every OS's own tools show for RAM.
 func humanBytes(n uint64) string {

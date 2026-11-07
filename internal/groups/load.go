@@ -114,21 +114,6 @@ func runSystemUptime(c *cli.Ctx, args []string) error {
 	return nil
 }
 
-// jsonOnly parses the args of a command whose only flag is --json.
-func jsonOnly(route string, args []string) (bool, error) {
-	set, err := parseArgs(args)
-	if err != nil {
-		return false, err
-	}
-	if err := set.Reject("json"); err != nil {
-		return false, err
-	}
-	if len(set.Rest) > 0 {
-		return false, fmt.Errorf("`%s` takes no positional arguments", route)
-	}
-	return set.Has("json"), nil
-}
-
 // cpuPercents turns two counter samples into busy percentages, overall and per
 // core, rounded to one decimal.
 func cpuPercents(before, after []cpuTicks) (float64, []float64) {
