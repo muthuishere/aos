@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-7 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+11 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`.
 
 ## Commands
 
@@ -45,6 +45,23 @@ aos network ports 3000          # who is on port 3000; exit 1 if nobody
 aos network ports --json
 ```
 
+### aos network public-ip
+
+<p class="cmd-lead">Print this machine's public IP address as the internet sees it</p>
+
+```sh
+aos network public-ip [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network public-ip
+aos network public-ip --json   # ip, country, source
+```
+
 ### aos network status
 
 <p class="cmd-lead">Print the active interface, address, and Wi-Fi network</p>
@@ -55,6 +72,55 @@ aos network status
 
 ```sh
 aos network status
+```
+
+### aos network vpn off
+
+<p class="cmd-lead">Disconnect a system VPN by name</p>
+
+```sh
+aos network vpn off <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos network vpn off "Work VPN"
+```
+
+### aos network vpn on
+
+<p class="cmd-lead">Connect a system VPN by name</p>
+
+```sh
+aos network vpn on <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos network vpn on "Work VPN"
+```
+
+### aos network vpn status
+
+<p class="cmd-lead">List the system's VPN connections and which are connected</p>
+
+```sh
+aos network vpn status [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network vpn status
+aos network vpn status --json
 ```
 
 ### aos network wifi

@@ -110,6 +110,8 @@ aos disk list --json · aos disk usage [path]   # free / total per volume
 aos disk eject /Volumes/USB   # removable only; refuses / and C:
 aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
+aos network public-ip [--json]   # as the internet sees it (Cloudflare trace)
+aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos network wifi on · aos network wifi off   # confirm before off: it drops the connection
 printf '%s' "$PW" | aos network wifi join <ssid> --password-stdin   # never put a password on argv
 aos network ports [3000] [--json]   # listening TCP ports → pid, process; exit 1 if the port is free
