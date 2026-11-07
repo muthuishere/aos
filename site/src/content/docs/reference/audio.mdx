@@ -1,18 +1,52 @@
 ---
 title: aos audio
-description: Output volume and mute
+description: Volume, mute, and output/input devices
 sidebar:
   label: audio
   order: 1
 ---
 
-<p class="cmd-lead">Output volume and mute</p>
+<p class="cmd-lead">Volume, mute, and output/input devices</p>
 
-2 commands. Run `aos audio --help` for the same list from the binary, or [see every group](../commands/).
+5 commands. Run `aos audio --help` for the same list from the binary, or [see every group](../commands/).
 
-Output volume and mute for the system sound device. `volume` with no argument prints the level 0 to 100; with a number it sets it, and `+n` or `-n` nudges it. `mute` prints or changes the mute state. These work without a display, so they are fine over SSH.
+Output volume and mute for the system sound device. `volume` with no argument prints the level 0 to 100; with a number it sets it, and `+n` or `-n` nudges it. `mute` prints or changes the mute state. These work without a display, so they are fine over SSH. `devices` lists every output and input device with the defaults marked; `output` and `input` print the current default, or switch it by name, a unique part of the name, or id (an ambiguous name is refused with the candidates).
 
 ## Commands
+
+### aos audio devices
+
+<p class="cmd-lead">List output and input sound devices, marking the defaults</p>
+
+```sh
+aos audio devices [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos audio devices
+aos audio devices --json
+```
+
+### aos audio input
+
+<p class="cmd-lead">Print the default input device, or switch it by name or id</p>
+
+```sh
+aos audio input [<device>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<device>` | | Optional positional argument |
+
+```sh
+aos audio input
+aos audio input "MacBook Pro Microphone"
+```
 
 ### aos audio mute
 
@@ -24,6 +58,24 @@ aos audio mute [on|off|toggle]
 
 ```sh
 aos audio mute toggle
+```
+
+### aos audio output
+
+<p class="cmd-lead">Print the default output device, or switch it by name or id</p>
+
+```sh
+aos audio output [<device>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<device>` | | Optional positional argument |
+
+```sh
+aos audio output
+aos audio output AirPods
+aos audio output "MacBook Pro Speakers"
 ```
 
 ### aos audio volume

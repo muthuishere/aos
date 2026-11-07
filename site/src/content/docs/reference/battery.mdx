@@ -10,7 +10,7 @@ sidebar:
 
 3 commands. Run `aos battery --help` for the same list from the binary, or [see every group](../commands/).
 
-Battery facts for laptops. `status` prints the charge and whether it is charging, `percent` prints a bare number for scripts, and `present` exits 0 or 1 so a script can branch on whether there is a battery at all. On a desktop, `present` exits 1 and the others say no battery.
+Battery facts for laptops. `status` prints the charge and whether it is charging, `percent` prints a bare number for scripts, and `present` exits 0 or 1 so a script can branch on whether there is a battery at all. On a desktop, `present` exits 1 and the others say no battery. `status` also shows battery health where the OS reports it: full-charge capacity against design capacity (the Maximum Capacity figure in macOS System Settings), cycle count, and pack temperature.
 
 ## Commands
 
@@ -40,12 +40,17 @@ aos battery present && echo has a battery
 
 ### aos battery status
 
-<p class="cmd-lead">Print battery charge and charging state</p>
+<p class="cmd-lead">Print battery charge, charging state, and health (capacity, cycles) where reported</p>
 
 ```sh
-aos battery status
+aos battery status [--json]
 ```
 
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
 ```sh
-aos battery status
+aos battery status    # 87%  discharging  3:41 remaining  (health 97%, 15 cycles, 30.7°C)
+aos battery status --json
 ```

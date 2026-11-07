@@ -1,0 +1,106 @@
+---
+title: aos bluetooth
+description: Bluetooth - radio state, paired devices, connect
+sidebar:
+  label: bluetooth
+  order: 1
+---
+
+<p class="cmd-lead">Bluetooth: radio state, paired devices, connect</p>
+
+6 commands. Run `aos bluetooth --help` for the same list from the binary, or [see every group](../commands/).
+
+The Bluetooth radio and paired devices. `status` and `list` work on macOS (system_profiler), Linux (bluetoothctl) and Windows (the classic Bluetooth API). `connect` and `disconnect` take a name, a unique part of one, or an address, and work on macOS (public IOBluetooth) and Linux. `on` and `off` work on Linux only: macOS and Windows have no public, dependency-free way to switch the radio, so those exit 2. It follows the host, since the headphones and keyboard belong to the person at the screen.
+
+## Commands
+
+### aos bluetooth connect
+
+<p class="cmd-lead">Connect a paired device by name or address</p>
+
+```sh
+aos bluetooth connect <name|address>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name\|address>` | | Required positional argument |
+
+```sh
+aos bluetooth connect AirPods
+aos bluetooth connect D1:08:D1:0E:60:DB
+```
+
+### aos bluetooth disconnect
+
+<p class="cmd-lead">Disconnect a paired device by name or address</p>
+
+```sh
+aos bluetooth disconnect <name|address>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name\|address>` | | Required positional argument |
+
+```sh
+aos bluetooth disconnect AirPods
+```
+
+### aos bluetooth list
+
+<p class="cmd-lead">List paired devices and whether each is connected</p>
+
+```sh
+aos bluetooth list [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos bluetooth list
+aos bluetooth list --json
+```
+
+### aos bluetooth off
+
+<p class="cmd-lead">Turn the Bluetooth radio off (Linux; drops keyboards and mice, confirm first)</p>
+
+```sh
+aos bluetooth off
+```
+
+```sh
+aos bluetooth off
+```
+
+### aos bluetooth on
+
+<p class="cmd-lead">Turn the Bluetooth radio on (Linux)</p>
+
+```sh
+aos bluetooth on
+```
+
+```sh
+aos bluetooth on
+```
+
+### aos bluetooth status
+
+<p class="cmd-lead">Print whether Bluetooth is present and on</p>
+
+```sh
+aos bluetooth status [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos bluetooth status
+aos bluetooth status --json
+```
