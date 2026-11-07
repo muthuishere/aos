@@ -1,0 +1,49 @@
+---
+title: aos trash
+description: The Trash / Recycle Bin - how much it holds, and emptying it
+sidebar:
+  label: trash
+  order: 1
+---
+
+<p class="cmd-lead">The Trash / Recycle Bin: how much it holds, and emptying it</p>
+
+2 commands. Run `aos trash --help` for the same list from the binary, or [see every group](../commands/).
+
+The Trash (macOS), the Recycle Bin on every drive (Windows) and the freedesktop home trash (Linux). `size` counts the items and bytes in it. `empty` deletes them permanently. At a terminal it asks y/N first; anywhere else (an agent, MCP, a pipe) it refuses unless given `--yes`, so an agent has to get the person's agreement before it passes the flag. On macOS, reading the Trash needs Full Disk Access for the terminal, and emptying goes through Finder.
+
+## Commands
+
+### aos trash empty
+
+<p class="cmd-lead">Permanently delete everything in the Trash (asks first unless --yes)</p>
+
+```sh
+aos trash empty [--yes]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--yes` |  | Optional |
+
+```sh
+aos trash empty          # asks y/N at a terminal
+aos trash empty --yes    # no question; required when not at a terminal
+```
+
+### aos trash size
+
+<p class="cmd-lead">Print how many items the Trash holds and how much space they take</p>
+
+```sh
+aos trash size [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos trash size
+aos trash size --json
+```

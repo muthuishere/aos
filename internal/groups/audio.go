@@ -10,7 +10,7 @@ import (
 
 func init() {
 	register(func(r *cli.Registry) {
-		r.Describe("audio", "Output volume and mute")
+		r.Describe("audio", "Volume, mute, and output/input devices")
 		r.Add(
 			&cli.Command{
 				Group: "audio", Name: "volume",
