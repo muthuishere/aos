@@ -51,6 +51,28 @@ aos clipboard paste > note.txt
 The clipboard is the person's. Copying over it loses what they had; paste it
 first if you will need to restore it.
 
+### Clipboard history
+
+No OS keeps a usable clipboard history, so aos records its own, opt-in. Only
+what the recorder saw while it ran is in the history.
+
+```bash
+aos clipboard history start             # detached recorder (ask the person first)
+aos clipboard history status            # running? how many entries (--json)
+aos clipboard history --limit=5 --json  # newest first: [{n, at, text}]
+aos clipboard history get 2             # print entry 2 (1 is the newest)
+aos clipboard history restore 2         # put entry 2 back on the clipboard
+aos clipboard history stop              # stop recording; the history is kept
+aos clipboard history clear             # delete the history
+```
+
+Text only, stored as JSON Lines (mode 0600) under the aos config dir. It keeps
+200 entries for 7 days, skips consecutive duplicates and texts over 64 KB, and
+skips items a password manager marks as concealed
+(`org.nspasteboard.ConcealedType` on macOS, `ExcludeClipboardContentFromMonitorProcessing`
+on Windows, `x-kde-passwordManagerHint` on Linux). The history holds whatever
+the person copied: read it only for what the task needs.
+
 ## Running commands
 
 ```bash
