@@ -12,6 +12,7 @@ earlier:
 | command | what it does |
 |---|---|
 | `system restart` · `system shutdown` | reboots / powers off the machine — your session dies with it |
+| `trash empty --yes` | permanently deletes everything in the Trash / Recycle Bin; without `--yes` it refuses away from a terminal |
 | `system logout` | logs the user out, closing their apps (unsaved work is lost) |
 | `system sleep` · `system lock` | less harmful, but still takes the screen away from the person |
 | `process kill <pid\|name> [--force]` | ends a process; `--force` skips the graceful signal |
@@ -92,6 +93,7 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
+aos trash size [--json]    # items and bytes in the Trash / Recycle Bin
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
