@@ -6,6 +6,7 @@ screenshot → read the pixel → click / type → screenshot again.
 aos capture screenshot --app=Chrome --out=/tmp/c.png   # prints the captured rect WxH+X+Y
 aos capture screenshot --monitor=2 --out=/tmp/m2.png
 aos capture screenshot --region=100,100,800,600 --out=/tmp/r.png
+aos capture text --region=100,100,800,400 [--monitor=2] [--json]   # OCR an area; a window: window text --source=ocr
 aos color at 640 400 [--json]      # #1E1E1E  rgb(30, 30, 30): one pixel, global points
 aos color pick --delay=3           # the color under the pointer after 3 s
 aos mouse move 400 300 · aos mouse click 400 300 --double · aos mouse click --button=right

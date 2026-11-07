@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Screenshots</p>
 
-10 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
+11 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
 
-Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them.
+Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them. `text` OCRs a screen area and prints its lines in reading order: `--region` (global, or relative to `--monitor`), or a whole monitor. It uses the same OCR as `window text --source=ocr`: Vision on macOS, Windows.Media.Ocr on Windows, tesseract on Linux.
 
 ## Commands
 
@@ -38,6 +38,30 @@ aos capture screenshot region --copy
 aos capture screenshot --monitor=2
 aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
+```
+
+### aos capture text
+
+<p class="cmd-lead">OCR a screen region or a whole monitor and print its text in reading order</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture text [--region=<x,y,w,h>] [--monitor=<n>] [--max-chars=<n>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--region` | `<x,y,w,h>` | Optional. comma-separated |
+| `--monitor` | `<n>` | Optional |
+| `--max-chars` | `<n>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos capture text --region=100,100,800,400
+aos capture text --monitor=2 --json
+aos capture text --monitor=1 --region=0,0,600,300   # region relative to monitor 1
+# a window's text: aos window text --app=Preview --source=ocr
 ```
 
 ### aos capture video devices

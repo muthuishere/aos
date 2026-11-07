@@ -299,6 +299,20 @@ aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
 ```
 
+### `aos capture text`
+
+OCR a screen region or a whole monitor and print its text in reading order
+
+*display*
+
+```bash
+aos capture text [--region=<x,y,w,h>] [--monitor=<n>] [--max-chars=<n>] [--json]
+aos capture text --region=100,100,800,400
+aos capture text --monitor=2 --json
+aos capture text --monitor=1 --region=0,0,600,300   # region relative to monitor 1
+# a window's text: aos window text --app=Preview --source=ocr
+```
+
 ### `aos capture video start`
 
 Start recording the screen with ffmpeg (detached; ask the person first)
