@@ -97,6 +97,7 @@ aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos network public-ip [--json]   # as the internet sees it (Cloudflare trace)
+aos network speed [--max-mb 5] [--json]   # ping/jitter/down/up Mbps vs Cloudflare; ~5 MB down, 2 MB up
 aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
