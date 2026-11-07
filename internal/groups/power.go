@@ -17,7 +17,7 @@ type powerState struct {
 
 func init() {
 	register(func(r *cli.Registry) {
-		r.Describe("power", "Power source detection")
+		r.Describe("power", "Power source detection and keep-awake")
 		r.Add(
 			&cli.Command{
 				Group: "power", Name: "status",

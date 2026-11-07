@@ -947,7 +947,36 @@ aos pkg manager        # homebrew
 
 ## power
 
-Power source detection
+Power source detection and keep-awake
+
+### `aos power awake`
+
+Keep the machine from sleeping, for a while or until `power awake off`
+
+```bash
+aos power awake [--for=<duration>] [--display] [--json]
+aos power awake --for=2h
+aos power awake --for=30m --display
+aos power awake            # until `aos power awake off`
+```
+
+### `aos power awake off`
+
+End the keep-awake started by `power awake`
+
+```bash
+aos power awake off
+```
+
+### `aos power awake status`
+
+Print whether a keep-awake is active and until when
+
+```bash
+aos power awake status [--json]
+aos power awake status
+aos power awake status --json
+```
 
 ### `aos power status`
 
