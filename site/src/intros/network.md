@@ -1,1 +1,1 @@
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`.
