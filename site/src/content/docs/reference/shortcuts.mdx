@@ -1,0 +1,57 @@
+---
+title: aos shortcuts
+description: Run the person's Shortcuts automations (macOS)
+sidebar:
+  label: shortcuts
+  order: 1
+---
+
+<p class="cmd-lead">Run the person's Shortcuts automations (macOS)</p>
+
+2 commands. Run `aos shortcuts --help` for the same list from the binary, or [see every group](../commands/).
+
+The person's Shortcuts automations on macOS, through the system `shortcuts` command. `list` shows them by name (and id with `--json`). `run` runs one by name or id. It can pass a file (`--input`) or a piece of text (`--text`), and prints whatever the shortcut returns, as text. On Windows and Linux these commands exit 2: Windows App Actions have no command-line or Win32 entry point yet, and Linux has no equivalent.
+
+## Commands
+
+### aos shortcuts list
+
+<p class="cmd-lead">List the Shortcuts automations, optionally in one folder</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin only</span></p>
+
+```sh
+aos shortcuts list [--folder=<name>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--folder` | `<name>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos shortcuts list
+aos shortcuts list --folder=Work --json
+```
+
+### aos shortcuts run
+
+<p class="cmd-lead">Run a shortcut by name or id, with optional input, and print its output</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin only</span></p>
+
+```sh
+aos shortcuts run <name|id> [--input=<file>] [--text=<input text>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name\|id>` | | Required positional argument |
+| `--input` | `<file>` | Optional |
+| `--text` | `<input text>` | Optional |
+
+```sh
+aos shortcuts run "Resize Image" --input=~/Desktop/photo.jpg
+aos shortcuts run "Translate" --text="good morning"
+aos shortcuts run "Start Focus Timer"
+```

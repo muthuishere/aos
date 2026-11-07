@@ -1165,6 +1165,36 @@ aos service list
 ```
 
 
+## shortcuts
+
+Run the person's Shortcuts automations (macOS)
+
+### `aos shortcuts list`
+
+List the Shortcuts automations, optionally in one folder
+
+*platforms: darwin*
+
+```bash
+aos shortcuts list [--folder=<name>] [--json]
+aos shortcuts list
+aos shortcuts list --folder=Work --json
+```
+
+### `aos shortcuts run`
+
+Run a shortcut by name or id, with optional input, and print its output
+
+*platforms: darwin*
+
+```bash
+aos shortcuts run <name|id> [--input=<file>] [--text=<input text>]
+aos shortcuts run "Resize Image" --input=~/Desktop/photo.jpg
+aos shortcuts run "Translate" --text="good morning"
+aos shortcuts run "Start Focus Timer"
+```
+
+
 ## skill
 
 The agent skill bundled in this binary
