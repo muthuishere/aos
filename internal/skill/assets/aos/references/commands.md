@@ -1191,6 +1191,17 @@ aos network vpn off <name>
 aos network vpn off "Work VPN"
 ```
 
+### `aos network speed`
+
+Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)
+
+```bash
+aos network speed [--max-mb <n>] [--json]
+aos network speed
+aos network speed --json        # ping_ms, jitter_ms, download_mbps, upload_mbps
+aos network speed --max-mb 25   # bigger budget, steadier number on fast links
+```
+
 ### `aos network status`
 
 Print the active interface, address, and Wi-Fi network

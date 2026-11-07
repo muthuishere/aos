@@ -115,6 +115,7 @@ aos disk eject /Volumes/USB   # removable only; refuses / and C:
 aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos network public-ip [--json]   # as the internet sees it (Cloudflare trace)
+aos network speed [--max-mb 5] [--json]   # ping/jitter/down/up Mbps vs Cloudflare; ~5 MB down, 2 MB up
 aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos network wifi on · aos network wifi off   # confirm before off: it drops the connection
 printf '%s' "$PW" | aos network wifi join <ssid> --password-stdin   # never put a password on argv
