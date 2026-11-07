@@ -352,6 +352,42 @@ aos display focused
 aos window move Chrome --monitor=$(aos display focused)
 ```
 
+### `aos display modes`
+
+List the resolutions and refresh rates a monitor supports
+
+*display*
+
+```bash
+aos display modes <monitor id> [--json]
+aos display modes 1
+aos display modes 2 --json
+```
+
+### `aos display mode`
+
+Switch a monitor to a resolution (highest refresh unless @Hz is given)
+
+*display*
+
+```bash
+aos display mode <monitor id> <WxH[@Hz]>
+aos display mode 2 2560x1440
+aos display mode 1 1920x1080@60
+```
+
+### `aos display mirror`
+
+Mirror every monitor to the main one (on) or extend the desktop (off)
+
+*display*
+
+```bash
+aos display mirror on|off
+aos display mirror on
+aos display mirror off
+```
+
 
 ## doctor
 
