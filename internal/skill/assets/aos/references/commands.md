@@ -279,6 +279,35 @@ aos clipboard paste > note.txt
 ```
 
 
+## color
+
+Read the color of a pixel on screen
+
+### `aos color at`
+
+Print the color of the screen pixel at x,y (global screen points)
+
+*display*
+
+```bash
+aos color at <x> <y> [--json]
+aos color at 640 400         # #1E1E1E  rgb(30, 30, 30)
+aos color at -1200 300 --json
+```
+
+### `aos color pick`
+
+Print the color under the mouse pointer, after an optional delay to point
+
+*display*
+
+```bash
+aos color pick [--delay=<seconds>] [--json]
+aos color pick
+aos color pick --delay=3     # 3 s to move the pointer onto the color
+```
+
+
 ## completion
 
 Shell tab-completion for aos
