@@ -14,7 +14,7 @@ earlier:
 | `system restart` · `system shutdown` | reboots / powers off the machine — your session dies with it |
 | `system logout` | logs the user out, closing their apps (unsaved work is lost) |
 | `system sleep` · `system lock` | less harmful, but still takes the screen away from the person |
-| `process kill <pid\|name> [--force]` | ends a process; `--force` skips the graceful signal |
+| `process kill <pid\|name> [--force]` · `process kill --port=<n>` | ends a process (or every process listening on the port); `--force` skips the graceful signal |
 | `file delete <path> [--recursive]` | no trash, no undo |
 | `pkg remove <pkg...>` · `pkg upgrade` | changes installed software machine-wide |
 | `service remove <name>` | stops a service and deletes its definition |
@@ -68,6 +68,7 @@ aos process list --filter=chrome --json
 aos process list --sort=mem --top=5   # what is eating memory (--sort=cpu|mem|name|pid)
 aos process find node --json
 aos process kill 4821                   # confirm first
+aos process kill --port=8080            # whoever listens on 8080; confirm first
 
 aos service create mcp --autostart --now -- aos serve mcp
 aos service start mcp · aos service stop mcp
@@ -103,6 +104,7 @@ aos disk list --json · aos disk usage [path]   # free / total per volume
 aos disk eject /Volumes/USB   # removable only; refuses / and C:
 aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
+aos network ports [3000] [--json]   # listening TCP ports → pid, process; exit 1 if the port is free
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
 aos font list mono · aos font dirs
