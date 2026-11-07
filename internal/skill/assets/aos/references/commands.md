@@ -98,10 +98,12 @@ Battery presence and charge
 
 ### `aos battery status`
 
-Print battery charge and charging state
+Print battery charge, charging state, and health (capacity, cycles) where reported
 
 ```bash
-aos battery status
+aos battery status [--json]
+aos battery status    # 87%  discharging  3:41 remaining  (health 97%, 15 cycles, 30.7°C)
+aos battery status --json
 ```
 
 ### `aos battery present`
@@ -1300,6 +1302,18 @@ Print OS, host, and hardware facts
 
 ```bash
 aos system info
+```
+
+### `aos system thermal`
+
+Print the thermal state (throttling) and temperatures the OS exposes
+
+*platforms: darwin, linux*
+
+```bash
+aos system thermal [--json]
+aos system thermal
+aos system thermal --json
 ```
 
 

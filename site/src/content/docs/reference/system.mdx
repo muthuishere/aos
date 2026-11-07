@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Session power state: lock, sleep, restart, shutdown, logout</p>
 
-6 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
+7 commands. Run `aos system --help` for the same list from the binary, or [see every group](../commands/).
 
-Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three.
+Session and power state. `info` prints OS and hardware facts and works everywhere. `lock`, `sleep`, `logout`, `restart` and `shutdown` do exactly what they say with no confirmation, so an agent should check with the person before the last three. `thermal` prints how hard the OS is throttling to stay cool (macOS: nominal, fair, serious, critical) and the temperatures it exposes: the battery on macOS, where die temperatures sit behind the private SMC, and every thermal zone on Linux. Windows keeps temperatures behind WMI, so `thermal` is not offered there.
 
 ## Commands
 
@@ -88,4 +88,23 @@ aos system sleep
 
 ```sh
 aos system sleep
+```
+
+### aos system thermal
+
+<p class="cmd-lead">Print the thermal state (throttling) and temperatures the OS exposes</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin · linux only</span></p>
+
+```sh
+aos system thermal [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos system thermal
+aos system thermal --json
 ```
