@@ -1,1 +1,1 @@
-Whether the machine runs on mains power or battery. For charge level, see `battery`.
+Whether the machine runs on mains power or battery. For charge level, see `battery`. `awake` keeps the machine from sleeping, for `--for=2h` or until `aos power awake off`; `--display` keeps the screen on too. It is held by a small child process (`caffeinate`, `systemd-inhibit`, or aos itself on Windows), so a crash or reboot never leaves the machine stuck awake.
