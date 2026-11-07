@@ -10,7 +10,7 @@ aos tab list --app=Ghostty                     # one app (loose: chrome, ghostty
 aos tab list --window=22626                    # one window (aos window id or the app's own)
 aos tab focus --url=github.com/me/repo/pulls   # raise the window, select the tab
 aos tab focus --title=Inbox --app=Chrome --exact
-aos tab focus --cwd=os-cli --kind=terminal     # the terminal tab sitting in that folder
+aos tab focus --cwd=aos --kind=terminal     # the terminal tab sitting in that folder
 aos tab open https://example.com --app=Chrome  # prints the new tab's id
 aos tab open https://example.com --app=Safari --new-window --background
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"

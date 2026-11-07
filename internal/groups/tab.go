@@ -44,7 +44,7 @@ func init() {
 				Examples: []string{
 					"aos tab focus --url=github.com/muthuishere/aos/pulls",
 					"aos tab focus --title=Inbox --app=Chrome",
-					"aos tab focus --cwd=os-cli --kind=terminal",
+					"aos tab focus --cwd=aos --kind=terminal",
 					"# exit 3 when no tab matches",
 				},
 				Platforms: platforms,
