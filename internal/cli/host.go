@@ -28,7 +28,7 @@ var hostTable = map[string]bool{
 	"draw": true, "subtitle": true, "say": true, "capture": true, "tab": true,
 	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
 	"launch": true, "open": true, "webapp": true,
-	"remote": true, "audio": true, "permission": true, "font": true,
+	"remote": true, "audio": true, "permission": true, "font": true, "appearance": true,
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are
 	// never forwarded: taking down the wrong machine is not recoverable.
 	"system lock": true, "system sleep": true,
