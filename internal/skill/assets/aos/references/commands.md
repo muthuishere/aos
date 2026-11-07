@@ -449,6 +449,67 @@ aos clipboard paste
 aos clipboard paste > note.txt
 ```
 
+### `aos clipboard history`
+
+List the texts the history recorder saw, newest first
+
+```bash
+aos clipboard history [--limit=<n>] [--json]
+aos clipboard history
+aos clipboard history --limit=5 --json
+```
+
+### `aos clipboard history start`
+
+Start recording clipboard history in the background (opt-in; ask the person first)
+
+```bash
+aos clipboard history start
+```
+
+### `aos clipboard history stop`
+
+Stop the clipboard history recorder (the history is kept)
+
+```bash
+aos clipboard history stop
+```
+
+### `aos clipboard history status`
+
+Say whether the history recorder is running and how much it holds
+
+```bash
+aos clipboard history status [--json]
+aos clipboard history status
+```
+
+### `aos clipboard history get`
+
+Print history entry <n> (1 is the newest)
+
+```bash
+aos clipboard history get <n>
+aos clipboard history get 2
+```
+
+### `aos clipboard history restore`
+
+Put history entry <n> back on the clipboard (1 is the newest)
+
+```bash
+aos clipboard history restore <n>
+aos clipboard history restore 2
+```
+
+### `aos clipboard history clear`
+
+Delete the recorded clipboard history
+
+```bash
+aos clipboard history clear
+```
+
 
 ## color
 
@@ -1200,6 +1261,17 @@ Disconnect a system VPN by name
 ```bash
 aos network vpn off <name>
 aos network vpn off "Work VPN"
+```
+
+### `aos network speed`
+
+Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)
+
+```bash
+aos network speed [--max-mb <n>] [--json]
+aos network speed
+aos network speed --json        # ping_ms, jitter_ms, download_mbps, upload_mbps
+aos network speed --max-mb 25   # bigger budget, steadier number on fast links
 ```
 
 ### `aos network status`
