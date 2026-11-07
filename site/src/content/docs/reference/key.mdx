@@ -21,7 +21,7 @@ Keystrokes and typed text. With `--app` or `--title`, input goes to that window 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]]
+aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]] [--force]
 ```
 
 | flag | values | meaning |
@@ -31,6 +31,7 @@ aos key press <combo> [--app=<name>|--title=<substring> [--focus] [--json]]
 | `--title` | `<substring>` | Optional |
 | `--focus` |  | Optional |
 | `--json` |  | Optional |
+| `--force` |  | Optional |
 
 ```sh
 aos key press cmd+shift+s
@@ -44,7 +45,7 @@ aos key press enter --app=TextEdit   # posted to the app, no focus change
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]]
+aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [--json]] [--tab=<title|index|id>] [--force]
 ```
 
 | flag | values | meaning |
@@ -55,6 +56,8 @@ aos key type <text...> [--app=<name>|--title=<substring> [--verify] [--focus] [-
 | `--verify` |  | Optional |
 | `--focus` |  | Optional |
 | `--json` |  | Optional |
+| `--tab` | `title`, `index`, `id` | Optional |
+| `--force` |  | Optional |
 
 ```sh
 aos key type "hello world"
