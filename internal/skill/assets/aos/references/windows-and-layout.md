@@ -10,6 +10,9 @@ aos window list --json            # every app window: App, Title, Bounds, Monito
 aos window list --app=Chrome      # bare word = app name, falls back to the title
 aos display list                  # monitors: id, geometry, ACTIVE (pointer) / FOCUSED (frontmost window)
 aos display active                # id of the monitor the pointer is on
+aos display modes 2 [--json]      # resolutions/refresh rates monitor 2 supports
+aos display mode 2 2560x1440@60   # switch it (highest refresh without @Hz); confirm first
+aos display mirror on · aos display mirror off   # mirror all to main / extend; confirm first
 aos display focused               # id of the monitor holding the frontmost window
 ```
 
