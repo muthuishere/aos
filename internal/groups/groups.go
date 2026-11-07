@@ -23,6 +23,7 @@ func register(fn func(*cli.Registry)) { registrars = append(registrars, fn) }
 // command in them needs a display server.
 var guiGroups = map[string]bool{
 	"capture":    true,
+	"color":      true,
 	"display":    true,
 	"draw":       true,
 	"find":       true,
