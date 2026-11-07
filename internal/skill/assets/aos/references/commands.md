@@ -763,6 +763,17 @@ Print the Wi-Fi network currently joined
 aos network wifi
 ```
 
+### `aos network ports`
+
+List listening TCP ports with the pid and process that own them
+
+```bash
+aos network ports [<port>] [--json]
+aos network ports
+aos network ports 3000          # who is on port 3000; exit 1 if nobody
+aos network ports --json
+```
+
 
 ## obs
 
@@ -985,13 +996,14 @@ aos process find node --json
 
 ### `aos process kill`
 
-Kill a process by pid, or by name when it is unambiguous
+Kill a process by pid, by name when it is unambiguous, or by the port it listens on
 
 ```bash
-aos process kill <pid|name> [--force]
+aos process kill <pid|name> [--force] | --port=<n> [--force]
 aos process kill 4821
 aos process kill Calculator
 aos process kill Calculator --force
+aos process kill --port=8080
 ```
 
 
