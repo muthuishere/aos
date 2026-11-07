@@ -32,6 +32,8 @@ var hostTable = map[string]bool{
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are
 	// never forwarded: taking down the wrong machine is not recoverable.
 	"system lock": true, "system sleep": true,
+	// The documents the person opened at their desktop, not the agent's box.
+	"file recent": true,
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,

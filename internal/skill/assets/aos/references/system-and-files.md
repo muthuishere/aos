@@ -32,6 +32,7 @@ aos file write notes.txt "first line"   # or: cat in.txt | aos file write out.tx
 aos file append log.txt "done"
 aos file list ~/Downloads --json        # --all includes dotfiles
 aos file stat go.mod --json             # size, mode, modified
+aos file recent --app=textedit --limit=5 [--json]   # recently opened docs, newest first (the person's desktop)
 aos file mkdir ~/.config/aos/layouts    # with parents
 aos file copy a.txt b.txt
 aos file move old.txt new.txt
