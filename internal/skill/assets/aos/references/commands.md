@@ -764,6 +764,23 @@ aos network wifi
 ```
 
 
+## notify
+
+Post a native desktop notification to the person at the screen
+
+### `aos notify`
+
+Post a native notification with a title and an optional body
+
+*display*
+
+```bash
+aos notify <title> [<body>] [--sound]
+aos notify "Build finished"
+aos notify "Timer" "Tea is ready" --sound
+```
+
+
 ## obs
 
 What this machine has been asked to do
