@@ -1270,6 +1270,16 @@ aos system uptime
 aos system uptime --json
 ```
 
+### `aos system memory`
+
+Print total, used, available and free RAM, and swap
+
+```bash
+aos system memory [--json]
+aos system memory
+aos system memory --json
+```
+
 ### `aos system lock`
 
 Lock the screen
