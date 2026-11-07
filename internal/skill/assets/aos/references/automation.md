@@ -15,6 +15,7 @@ aos launch Terminal --wait                              # start an app and wait 
 aos window desktop                                      # show desktop (toggle)
 aos app hide-others                                     # hide everything but the frontmost app
 aos app quit-all --except=Slack --yes                   # quits the person's apps: ask them first; never quits aos's own terminal
+aos app list --filter=code --json                       # resolve a fuzzy name to the real app (name, id, path; * = running)
 aos window wait Chrome --timeout=5000                   # ms
 ```
 
