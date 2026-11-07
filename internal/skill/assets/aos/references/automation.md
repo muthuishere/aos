@@ -99,6 +99,15 @@ When no focus-free route works, aos takes the foreground (SetForegroundWindow +
 SendInput) for the moment it needs, after the polite wait, and hands the front
 window and the pointer back. It never calls UIA SetFocus.
 
+## Menu bar commands (macOS)
+
+```bash
+aos menu list --app=Preview --filter=export [--json]   # "File > Export as PDF…"; frontmost app by default
+aos menu run "File > Export as PDF…" --app=Preview    # exact path, or a unique substring; ambiguous is refused
+```
+
+Runs any menu command by name through accessibility (AXPress), without opening the menu. It acts on the person's app, so confirm first. Windows and Linux exit 2.
+
 ## Shortcuts (macOS)
 
 ```bash

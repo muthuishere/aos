@@ -31,6 +31,7 @@ var guiGroups = map[string]bool{
 	"key":        true,
 	"notify":     true,
 	"launch":     true,
+	"menu":       true,
 	"mouse":      true,
 	"open":       true,
 	"permission": true,

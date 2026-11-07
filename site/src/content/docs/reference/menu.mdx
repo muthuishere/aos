@@ -1,0 +1,57 @@
+---
+title: aos menu
+description: Search and run an app's menu bar commands (macOS accessibility)
+sidebar:
+  label: menu
+  order: 1
+---
+
+<p class="cmd-lead">Search and run an app's menu bar commands (macOS accessibility)</p>
+
+2 commands. Run `aos menu --help` for the same list from the binary, or [see every group](../commands/).
+
+An app's menu bar as a searchable list of commands, read through macOS accessibility: `list` prints every item as a path such as `File > Export as PDF…` (the frontmost app unless `--app` names one), and `run` presses one. An exact path always wins; otherwise the text must match exactly one path, and an ambiguous match is refused with the candidates listed, because running the wrong command cannot be undone. Menus are read and pressed without being opened. Needs the Accessibility permission. Windows and Linux exit 2 for now.
+
+## Commands
+
+### aos menu list
+
+<p class="cmd-lead">List every menu command of an app (frontmost by default) as a path</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin only</span></p>
+
+```sh
+aos menu list [--app=<name>] [--filter=<substring>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--app` | `<name>` | Optional |
+| `--filter` | `<substring>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos menu list --app=Preview
+aos menu list --filter=export
+aos menu list --app=Safari --json
+```
+
+### aos menu run
+
+<p class="cmd-lead">Run a menu command by path; exact path wins, else a unique substring</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin only</span></p>
+
+```sh
+aos menu run <path> [--app=<name>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<path>` | | Required positional argument |
+| `--app` | `<name>` | Optional |
+
+```sh
+aos menu run "File > Export as PDF…" --app=Preview
+aos menu run "export as pdf" --app=Preview   # unique substring
+```
