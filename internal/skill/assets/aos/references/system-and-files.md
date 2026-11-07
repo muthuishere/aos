@@ -95,6 +95,8 @@ aos system info            # OS, host, hardware
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
+aos focus status --json    # Do Not Disturb on? mode, until (macOS, GNOME; Windows exits 2)
+aos focus on --for=1h · aos focus off   # GNOME only; macOS and Windows have no API, exit 2
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
