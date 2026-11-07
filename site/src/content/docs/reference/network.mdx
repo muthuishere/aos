@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-6 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+7 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line).
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`.
 
 ## Commands
 
@@ -24,6 +24,25 @@ aos network ip
 
 ```sh
 aos network ip         # 192.168.1.20
+```
+
+### aos network ports
+
+<p class="cmd-lead">List listening TCP ports with the pid and process that own them</p>
+
+```sh
+aos network ports [<port>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<port>` | | Optional positional argument |
+| `--json` |  | Optional |
+
+```sh
+aos network ports
+aos network ports 3000          # who is on port 3000; exit 1 if nobody
+aos network ports --json
 ```
 
 ### aos network status

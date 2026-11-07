@@ -2,6 +2,7 @@ package groups
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -215,5 +216,65 @@ func TestResolveKillTargetCapsTheCandidateList(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "matches 40 processes") {
 		t.Errorf("refusal does not give the real total:\n%s", err)
+	}
+}
+
+func TestRankProcesses(t *testing.T) {
+	all := func() []processInfo {
+		return []processInfo{
+			{PID: 3, Name: "beta", CPU: 5, MemoryMB: 900},
+			{PID: 1, Name: "Alpha", CPU: 50, MemoryMB: 10},
+			{PID: 2, Name: "gamma", CPU: 50, MemoryMB: 300},
+		}
+	}
+	pids := func(ps []processInfo) []int {
+		var out []int
+		for _, p := range ps {
+			out = append(out, p.PID)
+		}
+		return out
+	}
+	cases := []struct {
+		key  string
+		top  int
+		want []int
+	}{
+		{"cpu", 0, []int{1, 2, 3}}, // tie on cpu breaks by pid
+		{"mem", 2, []int{3, 2}},
+		{"name", 0, []int{1, 3, 2}},
+		{"pid", 0, []int{1, 2, 3}},
+		{"", 1, []int{1}},       // --top alone ranks by cpu
+		{"", 0, []int{3, 1, 2}}, // nothing asked: order untouched
+		{"cpu", 10, []int{1, 2, 3}},
+	}
+	for _, tc := range cases {
+		got, err := rankProcesses(all(), tc.key, tc.top)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fmt.Sprint(pids(got)) != fmt.Sprint(tc.want) {
+			t.Errorf("rank(%q, %d) = %v, want %v", tc.key, tc.top, pids(got), tc.want)
+		}
+	}
+	if _, err := rankProcesses(all(), "size", 0); err == nil {
+		t.Error("unknown sort key should fail")
+	}
+	if _, err := rankProcesses(all(), "cpu", -1); err == nil {
+		t.Error("negative top should fail")
+	}
+}
+
+func TestCPUPercent(t *testing.T) {
+	cases := []struct{ before, after, elapsed, want float64 }{
+		{10, 10.25, 0.5, 50},
+		{10, 11, 0.5, 200}, // two cores busy
+		{0, 0.1, 0.5, 20},  // started between readings
+		{5, 1, 0.5, 0},     // pid reused
+		{1, 2, 0, 0},
+	}
+	for _, c := range cases {
+		if got := cpuPercent(c.before, c.after, c.elapsed); got != c.want {
+			t.Errorf("cpuPercent(%v,%v,%v) = %v, want %v", c.before, c.after, c.elapsed, got, c.want)
+		}
 	}
 }
