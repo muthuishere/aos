@@ -106,6 +106,7 @@ aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power 
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos network ports [3000] [--json]   # listening TCP ports → pid, process; exit 1 if the port is free
 aos audio volume · aos audio volume 40 · aos audio volume +5
+aos notify "Build finished" "all 212 tests green" [--sound]   # native notification to the person
 aos audio mute toggle      # on | off | toggle; bare prints the state
 aos font list mono · aos font dirs
 ```
