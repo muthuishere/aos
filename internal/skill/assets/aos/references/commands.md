@@ -1330,7 +1330,7 @@ Raise a tab's window and select the tab
 aos tab focus (--title=<substring> | --url=<substring> | --cwd=<substring> | --id=<tab id>) [--app=<name>] [--kind=<kind>] [--exact]
 aos tab focus --url=github.com/muthuishere/aos/pulls
 aos tab focus --title=Inbox --app=Chrome
-aos tab focus --cwd=os-cli --kind=terminal
+aos tab focus --cwd=aos --kind=terminal
 # exit 3 when no tab matches
 ```
 

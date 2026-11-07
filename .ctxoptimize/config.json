@@ -1,5 +1,5 @@
 {
-  "name": "os-cli",
+  "name": "aos",
   "modules": [
     {
       "path": "npm"
