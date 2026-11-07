@@ -1,0 +1,56 @@
+---
+title: aos color
+description: Read the color of a pixel on screen
+sidebar:
+  label: color
+  order: 1
+---
+
+<p class="cmd-lead">Read the color of a pixel on screen</p>
+
+2 commands. Run `aos color --help` for the same list from the binary, or [see every group](../commands/).
+
+Read the color of one pixel on screen as hex and RGB. `at` takes global screen points, the same coordinates as `mouse` and `capture screenshot --region`, so negative x reaches a monitor to the left. `pick` samples under the mouse pointer, with an optional `--delay` so the person can move the pointer onto the color first. It reads through the same capture path as screenshots, so on macOS it needs Screen Recording permission; without it, every pixel reads as black.
+
+## Commands
+
+### aos color at
+
+<p class="cmd-lead">Print the color of the screen pixel at x,y (global screen points)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos color at <x> <y> [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<x>` | | Required positional argument |
+| `<y>` | | Required positional argument |
+| `--json` |  | Optional |
+
+```sh
+aos color at 640 400         # #1E1E1E  rgb(30, 30, 30)
+aos color at -1200 300 --json
+```
+
+### aos color pick
+
+<p class="cmd-lead">Print the color under the mouse pointer, after an optional delay to point</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos color pick [--delay=<seconds>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--delay` | `<seconds>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos color pick
+aos color pick --delay=3     # 3 s to move the pointer onto the color
+```
