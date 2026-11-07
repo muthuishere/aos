@@ -65,6 +65,7 @@ child's flags. On a Linux box with a virtual display,
 
 ```bash
 aos process list --filter=chrome --json
+aos process list --sort=mem --top=5   # what is eating memory (--sort=cpu|mem|name|pid)
 aos process find node --json
 aos process kill 4821                   # confirm first
 

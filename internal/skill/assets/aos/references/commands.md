@@ -967,10 +967,11 @@ Running processes: list, find, kill
 List running processes
 
 ```bash
-aos process list [--filter=<substring>] [--json]
+aos process list [--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]
 aos process list
 aos process list --filter=chrome
-aos process list --json
+aos process list --sort=mem --top=5
+aos process list --sort=cpu --top=10 --json
 ```
 
 ### `aos process find`
