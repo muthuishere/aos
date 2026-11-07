@@ -28,6 +28,7 @@ var guiGroups = map[string]bool{
 	"draw":       true,
 	"find":       true,
 	"key":        true,
+	"notify":     true,
 	"launch":     true,
 	"mouse":      true,
 	"open":       true,

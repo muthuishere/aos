@@ -1,0 +1,36 @@
+---
+title: aos notify
+description: Post a native desktop notification to the person at the screen
+sidebar:
+  label: notify
+  order: 1
+---
+
+<p class="cmd-lead">Post a native desktop notification to the person at the screen</p>
+
+1 command. Run `aos notify --help` for the same list from the binary, or [see every group](../commands/).
+
+A native desktop notification, for telling the person something finished while they look elsewhere. macOS posts through Notification Center, Linux through `notify-send` or the freedesktop D-Bus service (exit 2 when neither exists), and Windows through the notification-area balloon, which Windows 10 and 11 show as a toast and which needs no registered app id. It follows the host: from WSL or over SSH the notification appears on the screen you are looking at.
+
+## Commands
+
+### aos notify
+
+<p class="cmd-lead">Post a native notification with a title and an optional body</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos notify <title> [<body>] [--sound]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<title>` | | Required positional argument |
+| `<body>` | | Optional positional argument |
+| `--sound` |  | Optional |
+
+```sh
+aos notify "Build finished"
+aos notify "Timer" "Tea is ready" --sound
+```
