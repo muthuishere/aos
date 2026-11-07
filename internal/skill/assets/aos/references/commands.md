@@ -320,6 +320,19 @@ aos debug tools
 
 Attached monitors
 
+### `aos display brightness`
+
+Print or set screen brightness 0-100 (the built-in panel, else the main display)
+
+*display*
+
+```bash
+aos display brightness [<0-100>|+<n>|-<n>]
+aos display brightness       # 70
+aos display brightness 50
+aos display brightness -10
+```
+
 ### `aos display list`
 
 List attached monitors with geometry and focus state
