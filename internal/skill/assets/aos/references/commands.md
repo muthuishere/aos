@@ -316,6 +316,43 @@ aos debug tools
 ```
 
 
+## disk
+
+Volumes: free and total space, eject removable drives
+
+### `aos disk list`
+
+List mounted volumes with total, used and free space
+
+```bash
+aos disk list [--json]
+aos disk list
+aos disk list --json
+```
+
+### `aos disk usage`
+
+Print total, used and free space of the volume holding a path
+
+```bash
+aos disk usage [<path>] [--json]
+aos disk usage              # the volume holding your home folder
+aos disk usage /Volumes/USB --json
+aos disk usage D:\
+```
+
+### `aos disk eject`
+
+Unmount and eject a removable volume, by mount point or device
+
+```bash
+aos disk eject <mount|device>
+aos disk eject /Volumes/USB
+aos disk eject /dev/sdb1
+aos disk eject E:
+```
+
+
 ## display
 
 Attached monitors
