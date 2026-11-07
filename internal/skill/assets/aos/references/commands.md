@@ -793,6 +793,17 @@ aos file delete <path> [--recursive]
 aos file delete /tmp/scratch --recursive
 ```
 
+### `aos file recent`
+
+List recently opened documents, newest first, from the OS's own recents
+
+```bash
+aos file recent [--app=<name>] [--limit=<n>] [--json]
+aos file recent
+aos file recent --app=textedit --limit=5
+aos file recent --json
+```
+
 
 ## find
 
