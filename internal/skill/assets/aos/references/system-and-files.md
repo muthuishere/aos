@@ -98,6 +98,8 @@ aos power status           # ac | battery
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
+aos media now --json       # track, artist, app, position; exit 1 when nothing plays
+aos media play · aos media pause · aos media toggle · aos media next · aos media prev
 aos font list mono · aos font dirs
 ```
 
