@@ -1627,6 +1627,31 @@ aos tab click --title="Telegram" --find=Send --role=button
 ```
 
 
+## trash
+
+The Trash / Recycle Bin: how much it holds, and emptying it
+
+### `aos trash size`
+
+Print how many items the Trash holds and how much space they take
+
+```bash
+aos trash size [--json]
+aos trash size
+aos trash size --json
+```
+
+### `aos trash empty`
+
+Permanently delete everything in the Trash (asks first unless --yes)
+
+```bash
+aos trash empty [--yes]
+aos trash empty          # asks y/N at a terminal
+aos trash empty --yes    # no question; required when not at a terminal
+```
+
+
 ## version
 
 Version information
