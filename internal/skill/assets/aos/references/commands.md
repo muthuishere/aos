@@ -854,6 +854,61 @@ aos launch Chrome --wait
 ```
 
 
+## media
+
+What is playing, and play / pause / skip
+
+### `aos media now`
+
+Print the track playing now: app, title, artist, position
+
+```bash
+aos media now [--json]
+aos media now
+aos media now --json
+```
+
+### `aos media play`
+
+Resume playback
+
+```bash
+aos media play
+```
+
+### `aos media pause`
+
+Pause playback
+
+```bash
+aos media pause
+```
+
+### `aos media toggle`
+
+Play if paused, pause if playing
+
+```bash
+aos media toggle
+```
+
+### `aos media next`
+
+Skip to the next track
+
+```bash
+aos media next
+```
+
+### `aos media prev`
+
+Go back to the previous track
+
+```bash
+aos media prev
+```
+
+
 ## mouse
 
 Pointer position and clicks

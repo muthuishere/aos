@@ -1,0 +1,92 @@
+---
+title: aos media
+description: What is playing, and play / pause / skip
+sidebar:
+  label: media
+  order: 1
+---
+
+<p class="cmd-lead">What is playing, and play / pause / skip</p>
+
+6 commands. Run `aos media --help` for the same list from the binary, or [see every group](../commands/).
+
+What is playing and the transport controls. `now` prints the current track, artist, app and position, and exits 1 when nothing plays. `play`, `pause`, `toggle`, `next` and `prev` act on whichever app owns the media session. On macOS `now` reads Music and Spotify (the system-wide Now Playing data is closed to other apps since macOS 15.4) and the controls send the keyboard's media keys; on Linux everything goes through `playerctl` (MPRIS); on Windows the controls send media keys and `now` is not available yet.
+
+## Commands
+
+### aos media next
+
+<p class="cmd-lead">Skip to the next track</p>
+
+```sh
+aos media next
+```
+
+```sh
+aos media next
+```
+
+### aos media now
+
+<p class="cmd-lead">Print the track playing now: app, title, artist, position</p>
+
+```sh
+aos media now [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos media now
+aos media now --json
+```
+
+### aos media pause
+
+<p class="cmd-lead">Pause playback</p>
+
+```sh
+aos media pause
+```
+
+```sh
+aos media pause
+```
+
+### aos media play
+
+<p class="cmd-lead">Resume playback</p>
+
+```sh
+aos media play
+```
+
+```sh
+aos media play
+```
+
+### aos media prev
+
+<p class="cmd-lead">Go back to the previous track</p>
+
+```sh
+aos media prev
+```
+
+```sh
+aos media prev
+```
+
+### aos media toggle
+
+<p class="cmd-lead">Play if paused, pause if playing</p>
+
+```sh
+aos media toggle
+```
+
+```sh
+aos media toggle
+```
