@@ -1250,6 +1250,16 @@ aos subtitle test
 
 Session power state: lock, sleep, restart, shutdown, logout
 
+### `aos system memory`
+
+Print total, used, available and free RAM, and swap
+
+```bash
+aos system memory [--json]
+aos system memory
+aos system memory --json
+```
+
 ### `aos system lock`
 
 Lock the screen

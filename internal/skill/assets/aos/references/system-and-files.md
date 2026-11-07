@@ -92,6 +92,7 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
+aos system memory --json   # total / used / available / free RAM, swap, pressure (macOS)
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
