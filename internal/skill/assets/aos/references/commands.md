@@ -704,6 +704,39 @@ aos find --title=Settings --text=Wi-Fi --source=ocr --all
 ```
 
 
+## focus
+
+Do Not Disturb / Focus: read it, and set it where the OS allows
+
+### `aos focus status`
+
+Print whether Do Not Disturb (Focus) is on, which mode, and until when
+
+```bash
+aos focus status [--json]
+aos focus status
+aos focus status --json
+```
+
+### `aos focus on`
+
+Turn Do Not Disturb on, optionally for a while (GNOME)
+
+```bash
+aos focus on [--for=<duration>]
+aos focus on
+aos focus on --for=1h
+```
+
+### `aos focus off`
+
+Turn Do Not Disturb off (GNOME)
+
+```bash
+aos focus off
+```
+
+
 ## font
 
 Installed fonts
