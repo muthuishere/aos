@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-7 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+11 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`.
 
 ## Commands
 
@@ -24,6 +24,25 @@ aos network ip
 
 ```sh
 aos network ip         # 192.168.1.20
+```
+
+### aos network ports
+
+<p class="cmd-lead">List listening TCP ports with the pid and process that own them</p>
+
+```sh
+aos network ports [<port>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<port>` | | Optional positional argument |
+| `--json` |  | Optional |
+
+```sh
+aos network ports
+aos network ports 3000          # who is on port 3000; exit 1 if nobody
+aos network ports --json
 ```
 
 ### aos network public-ip
@@ -114,4 +133,46 @@ aos network wifi
 
 ```sh
 aos network wifi
+```
+
+### aos network wifi join
+
+<p class="cmd-lead">Join a Wi-Fi network; a password is read from stdin, never argv</p>
+
+```sh
+aos network wifi join <ssid> [--password-stdin]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<ssid>` | | Required positional argument |
+| `--password-stdin` |  | Optional |
+
+```sh
+aos network wifi join HomeNet              # saved or open network
+printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
+```
+
+### aos network wifi off
+
+<p class="cmd-lead">Turn the Wi-Fi radio off (drops the connection; confirm first if you are remote)</p>
+
+```sh
+aos network wifi off
+```
+
+```sh
+aos network wifi off
+```
+
+### aos network wifi on
+
+<p class="cmd-lead">Turn the Wi-Fi radio on</p>
+
+```sh
+aos network wifi on
+```
+
+```sh
+aos network wifi on
 ```
