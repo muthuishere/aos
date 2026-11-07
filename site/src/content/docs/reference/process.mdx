@@ -58,16 +58,19 @@ aos process kill --port=8080
 <p class="cmd-lead">List running processes</p>
 
 ```sh
-aos process list [--filter=<substring>] [--json]
+aos process list [--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
 | `--filter` | `<substring>` | Optional |
+| `--sort` | `cpu`, `mem`, `name`, `pid` | Optional |
+| `--top` | `<n>` | Optional |
 | `--json` |  | Optional |
 
 ```sh
 aos process list
 aos process list --filter=chrome
-aos process list --json
+aos process list --sort=mem --top=5
+aos process list --sort=cpu --top=10 --json
 ```
