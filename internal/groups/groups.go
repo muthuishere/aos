@@ -22,11 +22,14 @@ func register(fn func(*cli.Registry)) { registrars = append(registrars, fn) }
 // guiGroups drive the desktop: windows, pointer, keyboard, screen. Every
 // command in them needs a display server.
 var guiGroups = map[string]bool{
+	"appearance": true,
 	"capture":    true,
+	"color":      true,
 	"display":    true,
 	"draw":       true,
 	"find":       true,
 	"key":        true,
+	"notify":     true,
 	"launch":     true,
 	"mouse":      true,
 	"open":       true,

@@ -1,0 +1,46 @@
+---
+title: aos appearance
+description: Dark mode and night light (Night Shift)
+sidebar:
+  label: appearance
+  order: 1
+---
+
+<p class="cmd-lead">Dark mode and night light (Night Shift)</p>
+
+2 commands. Run `aos appearance --help` for the same list from the binary, or [see every group](../commands/).
+
+Dark mode and the warm night colours (Night Shift on macOS, Night light on Windows and GNOME). Both take `on`, `off` or `toggle`, and print `on` or `off` when given nothing. `dark` uses System Events on macOS, the Personalize registry values plus a theme-change broadcast on Windows, and the GNOME `color-scheme` setting on Linux. `nightlight` uses CoreBrightness on macOS and the GNOME setting on Linux, and exits 2 on Windows, which has no supported API for it. These follow the host: they change the screen the person is looking at.
+
+## Commands
+
+### aos appearance dark
+
+<p class="cmd-lead">Print or set dark mode: on, off or toggle</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos appearance dark [on|off|toggle]
+```
+
+```sh
+aos appearance dark          # on | off
+aos appearance dark on
+aos appearance dark toggle
+```
+
+### aos appearance nightlight
+
+<p class="cmd-lead">Print or set the warm night colours (Night Shift, Night Light)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos appearance nightlight [on|off|toggle]
+```
+
+```sh
+aos appearance nightlight    # on | off
+aos appearance nightlight on
+```

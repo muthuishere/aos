@@ -37,11 +37,3 @@ func readPower() (powerState, error) {
 	}
 	return state, nil
 }
-
-func readSysfs(dir, name string) string {
-	data, err := os.ReadFile(filepath.Join(dir, name))
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(data))
-}
