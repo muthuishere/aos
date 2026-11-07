@@ -92,7 +92,8 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
-aos battery status · aos battery percent    # 87
+aos battery status [--json] · aos battery percent    # 87; status adds health %, cycles, °C where reported
+aos system thermal [--json]   # nominal|fair|serious|critical + sensors (macOS, Linux)
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
