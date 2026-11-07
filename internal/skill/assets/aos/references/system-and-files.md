@@ -104,6 +104,9 @@ aos system memory --json   # total / used / available / free RAM, swap, pressure
 aos battery status · aos battery percent    # 87
 aos battery present && echo laptop          # exit 1 on a desktop: not an error
 aos power status           # ac | battery
+aos bluetooth status · aos bluetooth list --json   # radio on? paired devices, connected first
+aos bluetooth connect AirPods · aos bluetooth disconnect AirPods   # macOS + Linux; Windows exits 2
+aos bluetooth on · aos bluetooth off   # Linux only (macOS/Windows exit 2); off drops keyboards, confirm first
 aos focus status --json    # Do Not Disturb on? mode, until (macOS, GNOME; Windows exits 2)
 aos focus on --for=1h · aos focus off   # GNOME only; macOS and Windows have no API, exit 2
 aos disk list --json · aos disk usage [path]   # free / total per volume
