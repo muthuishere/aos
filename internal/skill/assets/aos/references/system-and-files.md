@@ -98,6 +98,8 @@ aos power status           # ac | battery
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos audio mute toggle      # on | off | toggle; bare prints the state
+aos audio devices --json   # outputs and inputs, * = default
+aos audio output AirPods · aos audio input "MacBook Pro Microphone"   # switch by name/id; bare prints current
 aos font list mono · aos font dirs
 ```
 
