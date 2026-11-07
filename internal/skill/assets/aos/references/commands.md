@@ -40,6 +40,22 @@ aos adapters example --write
 ```
 
 
+## app
+
+Installed and running applications
+
+### `aos app list`
+
+List installed applications, or only the running ones, with id and path
+
+```bash
+aos app list [--running] [--filter=<substring>] [--json]
+aos app list
+aos app list --running
+aos app list --filter=code --json
+```
+
+
 ## audio
 
 Volume, mute, and output/input devices
@@ -347,9 +363,59 @@ aos debug tools
 ```
 
 
+## disk
+
+Volumes: free and total space, eject removable drives
+
+### `aos disk list`
+
+List mounted volumes with total, used and free space
+
+```bash
+aos disk list [--json]
+aos disk list
+aos disk list --json
+```
+
+### `aos disk usage`
+
+Print total, used and free space of the volume holding a path
+
+```bash
+aos disk usage [<path>] [--json]
+aos disk usage              # the volume holding your home folder
+aos disk usage /Volumes/USB --json
+aos disk usage D:\
+```
+
+### `aos disk eject`
+
+Unmount and eject a removable volume, by mount point or device
+
+```bash
+aos disk eject <mount|device>
+aos disk eject /Volumes/USB
+aos disk eject /dev/sdb1
+aos disk eject E:
+```
+
+
 ## display
 
 Attached monitors
+
+### `aos display brightness`
+
+Print or set screen brightness 0-100 (the built-in panel, else the main display)
+
+*display*
+
+```bash
+aos display brightness [<0-100>|+<n>|-<n>]
+aos display brightness       # 70
+aos display brightness 50
+aos display brightness -10
+```
 
 ### `aos display list`
 
@@ -794,6 +860,34 @@ Print the Wi-Fi network currently joined
 aos network wifi
 ```
 
+### `aos network ports`
+
+List listening TCP ports with the pid and process that own them
+
+```bash
+aos network ports [<port>] [--json]
+aos network ports
+aos network ports 3000          # who is on port 3000; exit 1 if nobody
+aos network ports --json
+```
+
+
+## notify
+
+Post a native desktop notification to the person at the screen
+
+### `aos notify`
+
+Post a native notification with a title and an optional body
+
+*display*
+
+```bash
+aos notify <title> [<body>] [--sound]
+aos notify "Build finished"
+aos notify "Timer" "Tea is ready" --sound
+```
+
 
 ## obs
 
@@ -978,7 +1072,36 @@ aos pkg manager        # homebrew
 
 ## power
 
-Power source detection
+Power source detection and keep-awake
+
+### `aos power awake`
+
+Keep the machine from sleeping, for a while or until `power awake off`
+
+```bash
+aos power awake [--for=<duration>] [--display] [--json]
+aos power awake --for=2h
+aos power awake --for=30m --display
+aos power awake            # until `aos power awake off`
+```
+
+### `aos power awake off`
+
+End the keep-awake started by `power awake`
+
+```bash
+aos power awake off
+```
+
+### `aos power awake status`
+
+Print whether a keep-awake is active and until when
+
+```bash
+aos power awake status [--json]
+aos power awake status
+aos power awake status --json
+```
 
 ### `aos power status`
 
@@ -998,10 +1121,11 @@ Running processes: list, find, kill
 List running processes
 
 ```bash
-aos process list [--filter=<substring>] [--json]
+aos process list [--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]
 aos process list
 aos process list --filter=chrome
-aos process list --json
+aos process list --sort=mem --top=5
+aos process list --sort=cpu --top=10 --json
 ```
 
 ### `aos process find`
@@ -1016,13 +1140,14 @@ aos process find node --json
 
 ### `aos process kill`
 
-Kill a process by pid, or by name when it is unambiguous
+Kill a process by pid, by name when it is unambiguous, or by the port it listens on
 
 ```bash
-aos process kill <pid|name> [--force]
+aos process kill <pid|name> [--force] | --port=<n> [--force]
 aos process kill 4821
 aos process kill Calculator
 aos process kill Calculator --force
+aos process kill --port=8080
 ```
 
 
@@ -1280,6 +1405,36 @@ aos subtitle test
 ## system
 
 Session power state: lock, sleep, restart, shutdown, logout
+
+### `aos system load`
+
+Print CPU busy % overall and per core, and load averages
+
+```bash
+aos system load [--json]
+aos system load
+aos system load --json
+```
+
+### `aos system uptime`
+
+Print how long the machine has been up and when it booted
+
+```bash
+aos system uptime [--json]
+aos system uptime
+aos system uptime --json
+```
+
+### `aos system memory`
+
+Print total, used, available and free RAM, and swap
+
+```bash
+aos system memory [--json]
+aos system memory
+aos system memory --json
+```
 
 ### `aos system lock`
 
