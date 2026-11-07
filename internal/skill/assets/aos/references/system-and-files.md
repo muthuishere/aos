@@ -95,6 +95,8 @@ aos pkg remove ripgrep     # confirm first
 
 ```bash
 aos system info            # OS, host, hardware
+aos battery status [--json] · aos battery percent    # 87; status adds health %, cycles, °C where reported
+aos system thermal [--json]   # nominal|fair|serious|critical + sensors (macOS, Linux)
 aos trash size [--json]    # items and bytes in the Trash / Recycle Bin
 aos system load --json     # CPU busy % overall + per core, load averages (none on Windows)
 aos system uptime          # up 9d 14h 8m (since …)
