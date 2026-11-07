@@ -278,6 +278,67 @@ aos clipboard paste
 aos clipboard paste > note.txt
 ```
 
+### `aos clipboard history`
+
+List the texts the history recorder saw, newest first
+
+```bash
+aos clipboard history [--limit=<n>] [--json]
+aos clipboard history
+aos clipboard history --limit=5 --json
+```
+
+### `aos clipboard history start`
+
+Start recording clipboard history in the background (opt-in; ask the person first)
+
+```bash
+aos clipboard history start
+```
+
+### `aos clipboard history stop`
+
+Stop the clipboard history recorder (the history is kept)
+
+```bash
+aos clipboard history stop
+```
+
+### `aos clipboard history status`
+
+Say whether the history recorder is running and how much it holds
+
+```bash
+aos clipboard history status [--json]
+aos clipboard history status
+```
+
+### `aos clipboard history get`
+
+Print history entry <n> (1 is the newest)
+
+```bash
+aos clipboard history get <n>
+aos clipboard history get 2
+```
+
+### `aos clipboard history restore`
+
+Put history entry <n> back on the clipboard (1 is the newest)
+
+```bash
+aos clipboard history restore <n>
+aos clipboard history restore 2
+```
+
+### `aos clipboard history clear`
+
+Delete the recorded clipboard history
+
+```bash
+aos clipboard history clear
+```
+
 
 ## completion
 
