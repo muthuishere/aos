@@ -1,1 +1,1 @@
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line).
