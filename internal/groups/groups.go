@@ -24,6 +24,7 @@ func register(fn func(*cli.Registry)) { registrars = append(registrars, fn) }
 var guiGroups = map[string]bool{
 	"appearance": true,
 	"capture":    true,
+	"color":      true,
 	"display":    true,
 	"draw":       true,
 	"find":       true,
