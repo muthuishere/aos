@@ -5,7 +5,7 @@ import (
 	"github.com/muthuishere/aos/internal/sys"
 )
 
-func needNmcli() error {
+func needNmcliVPN() error {
 	if !sys.Has("nmcli") {
 		return &cli.ExitError{Code: 2, Message: "VPN control needs NetworkManager's nmcli, which this machine does not have"}
 	}
@@ -13,7 +13,7 @@ func needNmcli() error {
 }
 
 func listVPNs() ([]vpnConn, error) {
-	if err := needNmcli(); err != nil {
+	if err := needNmcliVPN(); err != nil {
 		return nil, err
 	}
 	out, err := sys.Output("nmcli", "-t", "-f", "NAME,TYPE,STATE", "connection", "show")
@@ -24,7 +24,7 @@ func listVPNs() ([]vpnConn, error) {
 }
 
 func switchVPN(name string, on bool) error {
-	if err := needNmcli(); err != nil {
+	if err := needNmcliVPN(); err != nil {
 		return err
 	}
 	verb := "down"
