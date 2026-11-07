@@ -58,7 +58,7 @@ aos app list --filter=code --json
 
 ## audio
 
-Output volume and mute
+Volume, mute, and output/input devices
 
 ### `aos audio volume`
 
@@ -78,6 +78,37 @@ Print or change the output mute state
 ```bash
 aos audio mute [on|off|toggle]
 aos audio mute toggle
+```
+
+### `aos audio devices`
+
+List output and input sound devices, marking the defaults
+
+```bash
+aos audio devices [--json]
+aos audio devices
+aos audio devices --json
+```
+
+### `aos audio output`
+
+Print the default output device, or switch it by name or id
+
+```bash
+aos audio output [<device>]
+aos audio output
+aos audio output AirPods
+aos audio output "MacBook Pro Speakers"
+```
+
+### `aos audio input`
+
+Print the default input device, or switch it by name or id
+
+```bash
+aos audio input [<device>]
+aos audio input
+aos audio input "MacBook Pro Microphone"
 ```
 
 

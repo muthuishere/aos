@@ -108,6 +108,8 @@ aos network ports [3000] [--json]   # listening TCP ports → pid, process; exit
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos notify "Build finished" "all 212 tests green" [--sound]   # native notification to the person
 aos audio mute toggle      # on | off | toggle; bare prints the state
+aos audio devices --json   # outputs and inputs, * = default
+aos audio output AirPods · aos audio input "MacBook Pro Microphone"   # switch by name/id; bare prints current
 aos font list mono · aos font dirs
 ```
 
