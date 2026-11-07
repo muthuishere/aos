@@ -692,6 +692,36 @@ aos launch Chrome --wait
 ```
 
 
+## menu
+
+Search and run an app's menu bar commands (macOS accessibility)
+
+### `aos menu list`
+
+List every menu command of an app (frontmost by default) as a path
+
+*display · platforms: darwin*
+
+```bash
+aos menu list [--app=<name>] [--filter=<substring>] [--json]
+aos menu list --app=Preview
+aos menu list --filter=export
+aos menu list --app=Safari --json
+```
+
+### `aos menu run`
+
+Run a menu command by path; exact path wins, else a unique substring
+
+*display · platforms: darwin*
+
+```bash
+aos menu run <path> [--app=<name>]
+aos menu run "File > Export as PDF…" --app=Preview
+aos menu run "export as pdf" --app=Preview   # unique substring
+```
+
+
 ## mouse
 
 Pointer position and clicks
