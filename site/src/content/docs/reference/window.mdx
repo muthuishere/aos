@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Desktop windows: list, focus, move, resize, arrange</p>
 
-9 commands. Run `aos window --help` for the same list from the binary, or [see every group](../commands/).
+10 commands. Run `aos window --help` for the same list from the binary, or [see every group](../commands/).
 
-Desktop windows on every platform: list them with geometry, focus one, move it to a zone or exact bounds, resize it, wait for one to appear, and save or apply a whole layout. Zones are `1A`/`1B` for halves, `2A` to `2D` for quarters and `M:N` for the M-th of N columns; `zones` shows them on a real monitor.
+Desktop windows on every platform: list them with geometry, focus one, move it to a zone or exact bounds, resize it, wait for one to appear, and save or apply a whole layout. Zones are `1A`/`1B` for halves, `2A` to `2D` for quarters and `M:N` for the M-th of N columns; `zones` shows them on a real monitor. `desktop` toggles Show Desktop.
 
 ## Commands
 
@@ -31,6 +31,20 @@ aos window arrange <layout.json | ->
 ```sh
 aos window arrange ~/.config/aos/layouts/work.json
 echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos window arrange -
+```
+
+### aos window desktop
+
+<p class="cmd-lead">Show the desktop (toggle: run again to bring the windows back)</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos window desktop
+```
+
+```sh
+aos window desktop
 ```
 
 ### aos window focus

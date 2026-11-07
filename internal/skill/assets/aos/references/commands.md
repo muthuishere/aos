@@ -55,6 +55,24 @@ aos app list --running
 aos app list --filter=code --json
 ```
 
+### `aos app hide-others`
+
+Hide (minimize) every app except the frontmost one
+
+```bash
+aos app hide-others
+```
+
+### `aos app quit-all`
+
+Quit every running app, except those named; asks first unless --yes
+
+```bash
+aos app quit-all [--except=<name,name>] [--yes]
+aos app quit-all                       # lists what would quit, then asks
+aos app quit-all --except="Slack,Visual Studio Code" --yes
+```
+
 
 ## appearance
 
@@ -1871,6 +1889,16 @@ aos webapp open https://app.slack.com
 ## window
 
 Desktop windows: list, focus, move, resize, arrange
+
+### `aos window desktop`
+
+Show the desktop (toggle: run again to bring the windows back)
+
+*display*
+
+```bash
+aos window desktop
+```
 
 ### `aos window list`
 

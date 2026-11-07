@@ -8,11 +8,23 @@ sidebar:
 
 <p class="cmd-lead">Installed and running applications</p>
 
-1 command. Run `aos app --help` for the same list from the binary, or [see every group](../commands/).
+3 commands. Run `aos app --help` for the same list from the binary, or [see every group](../commands/).
 
 Installed and running applications, so "open vs code" can resolve to the real app before `aos launch` runs it. `list` merges installed apps with the running ones (marked `*`, with their pid); `--running` shows only what is open, `--filter` narrows by name or id. The id is the bundle id on macOS, the desktop file id on Linux, and the Uninstall registry key (installed) or executable name (running) on Windows.
 
 ## Commands
+
+### aos app hide-others
+
+<p class="cmd-lead">Hide (minimize) every app except the frontmost one</p>
+
+```sh
+aos app hide-others
+```
+
+```sh
+aos app hide-others
+```
 
 ### aos app list
 
@@ -32,4 +44,22 @@ aos app list [--running] [--filter=<substring>] [--json]
 aos app list
 aos app list --running
 aos app list --filter=code --json
+```
+
+### aos app quit-all
+
+<p class="cmd-lead">Quit every running app, except those named; asks first unless --yes</p>
+
+```sh
+aos app quit-all [--except=<name,name>] [--yes]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--except` | `<name,name>` | Optional. comma-separated |
+| `--yes` |  | Optional |
+
+```sh
+aos app quit-all                       # lists what would quit, then asks
+aos app quit-all --except="Slack,Visual Studio Code" --yes
 ```
