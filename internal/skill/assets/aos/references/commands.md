@@ -738,6 +738,55 @@ aos mouse position     # 784 539
 
 Connectivity, addresses, and Wi-Fi
 
+### `aos network public-ip`
+
+Print this machine's public IP address as the internet sees it
+
+```bash
+aos network public-ip [--json]
+aos network public-ip
+aos network public-ip --json   # ip, country, source
+```
+
+### `aos network vpn status`
+
+List the system's VPN connections and which are connected
+
+```bash
+aos network vpn status [--json]
+aos network vpn status
+aos network vpn status --json
+```
+
+### `aos network vpn on`
+
+Connect a system VPN by name
+
+```bash
+aos network vpn on <name>
+aos network vpn on "Work VPN"
+```
+
+### `aos network vpn off`
+
+Disconnect a system VPN by name
+
+```bash
+aos network vpn off <name>
+aos network vpn off "Work VPN"
+```
+
+### `aos network speed`
+
+Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)
+
+```bash
+aos network speed [--max-mb <n>] [--json]
+aos network speed
+aos network speed --json        # ping_ms, jitter_ms, download_mbps, upload_mbps
+aos network speed --max-mb 25   # bigger budget, steadier number on fast links
+```
+
 ### `aos network status`
 
 Print the active interface, address, and Wi-Fi network

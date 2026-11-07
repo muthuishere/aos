@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-3 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+8 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `speed` runs a small speed test against Cloudflare (`speed.cloudflare.com`, no account): a burst of empty requests for median ping and jitter, then 100 KB, 1 MB and the rest of a 5 MB download budget, then 2 MB up; `--max-mb` raises the budget.
 
 ## Commands
 
@@ -26,6 +26,43 @@ aos network ip
 aos network ip         # 192.168.1.20
 ```
 
+### aos network public-ip
+
+<p class="cmd-lead">Print this machine's public IP address as the internet sees it</p>
+
+```sh
+aos network public-ip [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network public-ip
+aos network public-ip --json   # ip, country, source
+```
+
+### aos network speed
+
+<p class="cmd-lead">Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)</p>
+
+```sh
+aos network speed [--max-mb <n>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<n>` | | Optional positional argument |
+| `--max-mb` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos network speed
+aos network speed --json        # ping_ms, jitter_ms, download_mbps, upload_mbps
+aos network speed --max-mb 25   # bigger budget, steadier number on fast links
+```
+
 ### aos network status
 
 <p class="cmd-lead">Print the active interface, address, and Wi-Fi network</p>
@@ -36,6 +73,55 @@ aos network status
 
 ```sh
 aos network status
+```
+
+### aos network vpn off
+
+<p class="cmd-lead">Disconnect a system VPN by name</p>
+
+```sh
+aos network vpn off <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos network vpn off "Work VPN"
+```
+
+### aos network vpn on
+
+<p class="cmd-lead">Connect a system VPN by name</p>
+
+```sh
+aos network vpn on <name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+
+```sh
+aos network vpn on "Work VPN"
+```
+
+### aos network vpn status
+
+<p class="cmd-lead">List the system's VPN connections and which are connected</p>
+
+```sh
+aos network vpn status [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network vpn status
+aos network vpn status --json
 ```
 
 ### aos network wifi
