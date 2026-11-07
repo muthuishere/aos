@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">What this machine has been asked to do</p>
 
-7 commands. Run `aos obs --help` for the same list from the binary, or [see every group](../commands/).
+6 commands. Run `aos obs --help` for the same list from the binary, or [see every group](../commands/).
 
 What this machine has been asked to do. Every command records one span with the route, the source (`cli` or `mcp`), the exit code, the duration and the number of arguments, never their values. `audit` lists commands in order, `stats` and `summary` aggregate, `tail` shows the latest, `export` emits OTLP JSON. See [observability](/aos/observability/).
 
@@ -49,25 +49,6 @@ aos obs export [--since=<duration>]
 
 ```sh
 aos obs export --since=1h > spans.json
-```
-
-### aos obs focus
-
-<p class="cmd-lead">Who took (or tried to take) focus or the pointer through aos, newest last</p>
-
-```sh
-aos obs focus [--limit=<n>] [--since=<duration>] [--json]
-```
-
-| flag | values | meaning |
-|---|---|---|
-| `--limit` | `<n>` | Optional |
-| `--since` | `<duration>` | Optional |
-| `--json` |  | Optional |
-
-```sh
-aos obs focus --since=1h
-# columns: time, action, refused or done, the person's idle time, caller (agent via parent process)
 ```
 
 ### aos obs path

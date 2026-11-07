@@ -123,7 +123,7 @@ aos tab list --app=Ghostty
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--background]
 ```
 
 | flag | values | meaning |
@@ -134,15 +134,12 @@ aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [
 | `--new-window` |  | Optional |
 | `--cwd` | `<dir>` | Optional |
 | `--command` | `<cmd>` | Optional |
-| `--title` | `<t>` | Optional |
-| `--wt-window` | `<name>` | Optional |
 | `--background` |  | Optional |
 
 ```sh
 aos tab open https://example.com --app=Chrome
 aos tab open https://example.com --app=Safari --new-window
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
-aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window
 ```
 
 ### aos tab read

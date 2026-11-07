@@ -21,7 +21,7 @@ Pointer position and clicks. `click --app=X --find=Label` presses a control thro
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json] [--force]
+aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>] | --app=<name>|--title=<s> --find=<text> [--role=<r>] [--focus] [--json]
 ```
 
 | flag | values | meaning |
@@ -37,7 +37,6 @@ aos mouse click [<x> <y>] [--button=left|right|middle] [--double] [--monitor=<n>
 | `--role` | `<r>` | Optional |
 | `--focus` |  | Optional |
 | `--json` |  | Optional |
-| `--force` |  | Optional |
 
 ```sh
 aos mouse click
@@ -53,7 +52,7 @@ aos mouse click --button=right
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos mouse move <x> <y> [--monitor=<n>] [--force]
+aos mouse move <x> <y> [--monitor=<n>]
 ```
 
 | flag | values | meaning |
@@ -61,7 +60,6 @@ aos mouse move <x> <y> [--monitor=<n>] [--force]
 | `<x>` | | Required positional argument |
 | `<y>` | | Required positional argument |
 | `--monitor` | `<n>` | Optional |
-| `--force` |  | Optional |
 
 ```sh
 aos mouse move 400 300

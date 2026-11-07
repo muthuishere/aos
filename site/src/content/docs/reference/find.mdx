@@ -21,7 +21,7 @@ Locate a button, menu item, link or text inside a window by its label, and get i
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
 ```sh
-aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--raise] [--json]
+aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=auto|accessibility|ocr] [--role=<role>] [--exact] [--all] [--no-raise] [--json]
 ```
 
 | flag | values | meaning |
@@ -34,7 +34,7 @@ aos find (<app> | --app=<name> | --title=<substring>) --text=<text> [--source=au
 | `--role` | `<role>` | Optional |
 | `--exact` |  | Optional |
 | `--all` |  | Optional |
-| `--raise` |  | Optional |
+| `--no-raise` |  | Optional |
 | `--json` |  | Optional |
 
 ```sh
