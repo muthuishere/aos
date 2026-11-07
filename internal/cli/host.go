@@ -28,14 +28,14 @@ var hostTable = map[string]bool{
 	"draw": true, "subtitle": true, "say": true, "capture": true, "tab": true,
 	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
 	"launch": true, "open": true, "webapp": true, "app": true,
-	"remote": true, "audio": true, "permission": true, "font": true,
+	"remote": true, "audio": true, "permission": true, "font": true, "notify": true,
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are
 	// never forwarded: taking down the wrong machine is not recoverable.
 	"system lock": true, "system sleep": true,
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,
-	"watch file": false, "network": false, "battery": false, "power": false,
+	"watch file": false, "network": false, "disk": false, "battery": false, "power": false,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
 	"version": false, "doctor": false, "install": false, "uninstall": false,

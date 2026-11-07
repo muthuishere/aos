@@ -1,18 +1,67 @@
 ---
 title: aos power
-description: Power source detection
+description: Power source detection and keep-awake
 sidebar:
   label: power
   order: 1
 ---
 
-<p class="cmd-lead">Power source detection</p>
+<p class="cmd-lead">Power source detection and keep-awake</p>
 
-1 command. Run `aos power --help` for the same list from the binary, or [see every group](../commands/).
+4 commands. Run `aos power --help` for the same list from the binary, or [see every group](../commands/).
 
-Whether the machine runs on mains power or battery. For charge level, see `battery`.
+Whether the machine runs on mains power or battery. For charge level, see `battery`. `awake` keeps the machine from sleeping, for `--for=2h` or until `aos power awake off`; `--display` keeps the screen on too. It is held by a small child process (`caffeinate`, `systemd-inhibit`, or aos itself on Windows), so a crash or reboot never leaves the machine stuck awake.
 
 ## Commands
+
+### aos power awake
+
+<p class="cmd-lead">Keep the machine from sleeping, for a while or until `power awake off`</p>
+
+```sh
+aos power awake [--for=<duration>] [--display] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--for` | `<duration>` | Optional |
+| `--display` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos power awake --for=2h
+aos power awake --for=30m --display
+aos power awake            # until `aos power awake off`
+```
+
+### aos power awake off
+
+<p class="cmd-lead">End the keep-awake started by `power awake`</p>
+
+```sh
+aos power awake off
+```
+
+```sh
+aos power awake off
+```
+
+### aos power awake status
+
+<p class="cmd-lead">Print whether a keep-awake is active and until when</p>
+
+```sh
+aos power awake status [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos power awake status
+aos power awake status --json
+```
 
 ### aos power status
 
