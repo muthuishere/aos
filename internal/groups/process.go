@@ -53,12 +53,13 @@ func init() {
 			},
 			&cli.Command{
 				Group: "process", Name: "kill",
-				Summary: "Kill a process by pid, or by name when it is unambiguous",
-				Args:    "<pid|name> [--force]",
+				Summary: "Kill a process by pid, by name when it is unambiguous, or by the port it listens on",
+				Args:    "<pid|name> [--force] | --port=<n> [--force]",
 				Examples: []string{
 					"aos process kill 4821",
 					"aos process kill Calculator",
 					"aos process kill Calculator --force",
+					"aos process kill --port=8080",
 				},
 				Run: runProcessKill,
 			},
@@ -120,17 +121,23 @@ func runProcessFind(c *cli.Ctx, args []string) error {
 }
 
 func runProcessKill(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args)
+	set, err := parseArgs(args, "port")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("force", "f"); err != nil {
+	if err := set.Reject("force", "f", "port"); err != nil {
 		return err
 	}
-	if len(set.Rest) == 0 {
-		return fmt.Errorf("`process kill` needs a pid or a process name")
-	}
 	force := set.Has("force") || set.Has("f")
+	if set.Has("port") {
+		if len(set.Rest) > 0 {
+			return fmt.Errorf("give either --port or a pid/name, not both")
+		}
+		return killByPort(c, set.String("port", ""), force)
+	}
+	if len(set.Rest) == 0 {
+		return fmt.Errorf("`process kill` needs a pid, a process name, or --port=<n>")
+	}
 	target := strings.Join(set.Rest, " ")
 
 	// A bare number is a pid. Anything else is a name, and has to resolve to
@@ -194,6 +201,52 @@ func matchProcesses(all []processInfo, query string) []processInfo {
 	}
 	sort.Slice(matches, func(i, j int) bool { return matches[i].PID < matches[j].PID })
 	return matches
+}
+
+// killByPort kills every process listening on the port: usually one, but a
+// pre-forking server has several workers on the same socket, and killing one
+// would leave the port taken.
+func killByPort(c *cli.Ctx, value string, force bool) error {
+	port, err := parsePort(value)
+	if err != nil {
+		return err
+	}
+	ports, err := listListening()
+	if err != nil {
+		return err
+	}
+	owners := portOwners(ports, port)
+	if len(owners) == 0 {
+		return &cli.ExitError{Code: 1, Message: fmt.Sprintf("nothing is listening on port %d", port)}
+	}
+	for _, o := range owners {
+		if o.PID == 0 {
+			return &cli.ExitError{Code: 1, Message: fmt.Sprintf("port %d is held by a process this user cannot see; try again with more rights", port)}
+		}
+		if err := guardKill(o.PID, os.Getpid()); err != nil {
+			return err
+		}
+	}
+	for _, o := range owners {
+		if err := killProcess(o.PID, force); err != nil {
+			return &cli.ExitError{Code: 1, Message: err.Error()}
+		}
+		c.Printf("killed %d  %s  (port %d)\n", o.PID, o.Process, port)
+	}
+	return nil
+}
+
+// portOwners is the distinct processes listening on port, in pid order.
+func portOwners(ports []listenPort, port int) []listenPort {
+	seen := map[int]bool{}
+	var out []listenPort
+	for _, p := range dedupePorts(ports) {
+		if p.Port == port && !seen[p.PID] {
+			seen[p.PID] = true
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // resolveKillTarget turns a name into the single process to kill.
