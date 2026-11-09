@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-10 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+11 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
@@ -263,6 +263,36 @@ aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab
 aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h
 aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m
 # with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes
+```
+
+### aos watch url
+
+<p class="cmd-lead">Poll a URL over plain HTTP and report when its text changes, appears or goes away</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos watch url <url> [--every=<1m>] [--match=<text> | --gone=<text>] [--exact] [--timeout=<duration>] [--max=<n>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<url>` | | Required positional argument |
+| `--every` | `<1m>` | Optional. default 1m |
+| `--match` | `<text>` | Optional |
+| `--gone` | `<text>` | Optional |
+| `--exact` |  | Optional |
+| `--timeout` | `<duration>` | Optional |
+| `--max` | `<n>` | Optional |
+
+```sh
+aos watch url https://example.com/status
+aos watch url https://example.com/release --every=5m --match="v2.0" --timeout=12h && aos open https://example.com/release
+aos watch url https://shop.example.com/item --every=10m --gone="Out of stock"
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout
+# pages that need a login or JavaScript: use `aos watch tab`
 ```
 
 ### aos watch window

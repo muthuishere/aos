@@ -2373,6 +2373,21 @@ aos watch process --name=Xcode --start                       # exit 0 when Xcode
 aos watch process --name=node                                # a JSON line per start and stop
 ```
 
+### `aos watch url`
+
+Poll a URL over plain HTTP and report when its text changes, appears or goes away
+
+*display · blocking*
+
+```bash
+aos watch url <url> [--every=<1m>] [--match=<text> | --gone=<text>] [--exact] [--timeout=<duration>] [--max=<n>]
+aos watch url https://example.com/status
+aos watch url https://example.com/release --every=5m --match="v2.0" --timeout=12h && aos open https://example.com/release
+aos watch url https://shop.example.com/item --every=10m --gone="Out of stock"
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout
+# pages that need a login or JavaScript: use `aos watch tab`
+```
+
 
 ## webapp
 

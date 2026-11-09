@@ -115,6 +115,8 @@ aos watch tab --url=x --near="Price" --match="Sold out"                # only th
   field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.
   Interval is 1 s by default and at minimum. Navigating the tab reports the new
   page as added text. If the tab closes, it exits 3.
+- A public page that needs no login and no JavaScript does not need a tab:
+  `aos watch url <url> --match=...` polls it over HTTP with no browser.
 - `watch tab` exits 0 when its condition is met and 3 on `--timeout` or when
   the tab closes. The command never alerts or acts: chain the next step with
   `&&` (the agent decides what "then" means).
