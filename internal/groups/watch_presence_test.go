@@ -14,10 +14,10 @@ import (
 
 func TestConsentApps(t *testing.T) {
 	entries := []consentEntry{
-		{Key: "Microsoft.WindowsCamera_8wekyb3d8bbwe", Start: 200, Stop: 0},                    // holding it
+		{Key: "Microsoft.WindowsCamera_8wekyb3d8bbwe", Start: 200, Stop: 0},                   // holding it
 		{Key: `C:#Program Files#Zoom#bin#Zoom.exe`, NonPackaged: true, Start: 300, Stop: 100}, // stop older than start
-		{Key: `C:#Tools#obs64.exe`, NonPackaged: true, Start: 100, Stop: 150},                  // released
-		{Key: "Never.Used_abc", Start: 0, Stop: 0},                                             // no use recorded
+		{Key: `C:#Tools#obs64.exe`, NonPackaged: true, Start: 100, Stop: 150},                 // released
+		{Key: "Never.Used_abc", Start: 0, Stop: 0},                                            // no use recorded
 	}
 	got := consentApps(entries)
 	want := []string{"Microsoft.WindowsCamera", "Zoom.exe"}
