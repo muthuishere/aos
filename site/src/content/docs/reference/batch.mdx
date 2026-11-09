@@ -14,6 +14,8 @@ sidebar:
 
 <p class="cmd-lead">Run a YAML list of steps (a file, - for stdin, or the YAML inline); everything is checked first</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos batch <file.yaml | - | inline yaml> [--check] [--json]
 ```
@@ -34,6 +36,8 @@ aos batch verbs   # every verb, generated from the commands
 ### aos batch verbs
 
 <p class="cmd-lead">List every verb a batch step can use</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos batch verbs [--json]

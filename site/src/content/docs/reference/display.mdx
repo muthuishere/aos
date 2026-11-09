@@ -20,6 +20,8 @@ Attached monitors. `list` prints each monitor with its geometry and which one is
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos display active
 ```
@@ -33,6 +35,8 @@ aos capture screenshot --monitor=$(aos display active)
 <p class="cmd-lead">Print or set screen brightness 0-100 (the built-in panel, else the main display)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display brightness [<0-100>|+<n>|-<n>]
@@ -56,6 +60,8 @@ aos display brightness -10
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos display focused
 ```
@@ -69,6 +75,8 @@ aos window move Chrome --monitor=$(aos display focused)
 <p class="cmd-lead">List attached monitors with geometry and focus state</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos monitors</code></span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display list
@@ -84,6 +92,8 @@ aos display list
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos display mirror on|off
 ```
@@ -98,6 +108,8 @@ aos display mirror off
 <p class="cmd-lead">Switch a monitor to a resolution (highest refresh unless @Hz is given)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display mode <monitor id> <WxH[@Hz]>
@@ -118,6 +130,8 @@ aos display mode 1 1920x1080@60
 <p class="cmd-lead">List the resolutions and refresh rates a monitor supports</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display modes <monitor id> [--json]
