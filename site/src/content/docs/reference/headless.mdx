@@ -18,6 +18,8 @@ Run aos on a machine with no screen. `status` says whether a display is availabl
 
 <p class="cmd-lead">Run a command against the managed virtual display</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos headless run <command> [args...]
 ```
@@ -35,6 +37,8 @@ aos headless run aos window list
 <p class="cmd-lead">Start a virtual display, so window and input commands work</p>
 
 <p class="cmd-badges"><span class="cmd-badge">linux only</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos headless start [--display=:99] [--size=<WxH>] [--wm]
@@ -55,6 +59,8 @@ aos headless start --display=:101 --size=1920x1080 --wm
 
 <p class="cmd-lead">Report whether a display is available, and where it came from</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos headless status
 ```
@@ -68,6 +74,8 @@ aos headless status
 <p class="cmd-lead">Stop the virtual display this machine started</p>
 
 <p class="cmd-badges"><span class="cmd-badge">linux only</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos headless stop

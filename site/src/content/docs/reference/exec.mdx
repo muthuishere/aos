@@ -18,6 +18,8 @@ Run programs. `run` streams the output to the terminal, `capture` returns stdout
 
 <p class="cmd-lead">Run a command and print stdout, stderr, and exit code as JSON</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos exec capture <command> [args...]
 ```
@@ -35,6 +37,8 @@ aos exec capture -- ls -la
 
 <p class="cmd-lead">Run a command with its output streamed to this terminal</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos exec run <command> [args...]
 ```
@@ -50,6 +54,8 @@ aos exec run git status
 ### aos exec shell
 
 <p class="cmd-lead">Run a command line through the platform shell</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos exec shell <script>
