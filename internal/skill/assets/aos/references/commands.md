@@ -2200,6 +2200,36 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch camera`
+
+Report when any app starts or stops using the camera
+
+*display · blocking · platforms: darwin, windows*
+
+```bash
+aos watch camera [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch camera
+aos watch camera --until=busy --timeout=10m
+aos watch camera --until=free && echo 'call is over, start the build'
+aos watch camera --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
+### `aos watch mic`
+
+Report when any app starts or stops using the microphone
+
+*display · blocking · platforms: darwin, windows*
+
+```bash
+aos watch mic [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch mic
+aos watch mic --until=free --timeout=1h
+aos watch mic --until=busy && echo 'someone is on a call'
+aos watch mic --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
 
 ## webapp
 
