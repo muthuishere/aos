@@ -167,6 +167,16 @@ type Chord struct {
 	Key   string
 }
 
+// ForegroundReporter is implemented by adapters that can name the window
+// the OS reports as having keyboard focus (Windows GetForegroundWindow).
+// ids are the candidate window IDs that count as focused (the foreground
+// window and its root owner); empty means nothing listable has focus, as
+// when the desktop or the shell is foreground after Win+D. Optional: without
+// it, Focused falls back to the frontmost window on the focused monitor.
+type ForegroundReporter interface {
+	ForegroundWindowIDs() (ids []string)
+}
+
 // TargetedInput is implemented by adapters that can deliver keyboard
 // input to one window's process without giving it OS focus (macOS
 // CGEventPostToPid, Windows PostMessage to the window's focused child).

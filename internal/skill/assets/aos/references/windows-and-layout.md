@@ -25,7 +25,8 @@ aos display focused               # id of the monitor holding the frontmost wind
   Map "the laptop", "the external", "this screen" to an id from `display list`;
   never hardcode. A window's `Monitor` uses the same numbering (0 = off-screen).
 - "This window" / "my current screen": read `Focused` from `window list --json`
-  and FOCUSED from `display list` instead of guessing.
+  and FOCUSED from `display list` instead of guessing. No window is `Focused`
+  when the desktop or taskbar has focus (Windows, e.g. after `window desktop`).
 
 ## Zones
 
