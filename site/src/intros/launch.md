@@ -1,1 +1,1 @@
-Start an application by name. `--wait` blocks until its window exists, so the next command can act on it. Unknown flags are passed through to the application on purpose.
+Start an application by name. `--wait` blocks until its window exists, so the next command can act on it. Unknown flags are passed through to the application on purpose. `--or-focus` raises the app's window if it is already open and launches it only when it is not, so an agent can say "get me Slack" without opening a second copy.

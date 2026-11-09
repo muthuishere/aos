@@ -66,6 +66,8 @@ export default defineConfig({
 						{ label: 'Browser and terminal tabs', slug: 'tabs' },
 						{ label: 'WSL and SSH (the host)', slug: 'host' },
 						{ label: 'Extending it', slug: 'extending' },
+						{ label: 'Waiting for things (watch)', slug: 'watching' },
+						{ label: 'Serving files', slug: 'serve-files' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
 						{ label: 'Recording a demo', slug: 'capture-video' },
 						{ label: 'Observability', slug: 'observability' },

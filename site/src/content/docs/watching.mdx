@@ -1,0 +1,58 @@
+---
+title: Waiting for things
+description: The aos watch set waits for a condition on this machine, then exits 0. On timeout it exits 3. The agent does the alerting and the next step.
+---
+
+`aos watch` waits. It never alerts you and never decides what happens next. That is the agent's job, and the exit code is the hand-off.
+
+## The contract
+
+| exit | meaning |
+|---|---|
+| `0` | the condition was met |
+| `3` | `--timeout` ran out first (or the thing being watched went away, such as a closed tab) |
+| `1` or `2` | the watch could not run: nothing to wait for, or the command is not supported here |
+
+Without a condition, a watch prints one compact JSON line per event and runs until interrupted. The first sample is a baseline, so `--max=1` means "the next change".
+
+## The set
+
+| command | waits for |
+|---|---|
+| `watch tab` | text to appear in (`--match`) or leave (`--gone`) a browser tab; `--reload` refreshes between reads, `--near` narrows to the lines around an anchor |
+| `watch window --app` | text to appear in or leave a native app window, read without raising it |
+| `watch url` | a page, fetched over plain HTTP, to change, gain or lose text |
+| `watch network` | online, offline, or a different Wi-Fi network |
+| `watch idle` | the person to be idle for `--for`, or active again with `--active` |
+| `watch lock` | lock, unlock, sleep or wake |
+| `watch process` | a process to exit or to start |
+| `watch battery` | a charge level, or charging, discharging, full |
+| `watch display` | a monitor to be plugged in or removed |
+| `watch device` | a volume, audio or Bluetooth device to be connected or removed |
+| `watch camera`, `watch mic` | an app to start or stop using it, which is what a meeting looks like |
+| `watch clipboard`, `watch file` | a change to the clipboard (text hidden unless `--content`) or to a file or folder |
+
+Every one works on macOS and Windows. A watch that cannot work on a platform is not shipped.
+
+## Chaining
+
+The watch is the condition and the agent is the action, so they join with the shell:
+
+```sh
+aos watch process --name=ffmpeg --exit --timeout=30m && aos notify "render done"
+aos watch network --until=online --timeout=10m && aos exec run -- git push
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" \
+  && aos tab click --url=example.com/slots --find="Book now"
+aos watch window --app=Notes --gone="Syncing" --timeout=2m || echo "still syncing"
+aos watch idle --for=10m && ./noisy-build.sh
+```
+
+`&&` runs the next step only when the condition was met. `||` catches the timeout.
+
+## Run it in the background
+
+A watch is a blocking command, so it is not an MCP tool, and the [socket host](/aos/host/) over SSH refuses it with a reason. Run it on the machine with the screen. From a shell an agent runs it in the background, or gives it a `--timeout`.
+
+## Not for mail or chat
+
+aos watches the machine. For mail, Teams, WhatsApp or calendar events, use [apl](https://github.com/deemwar-products/apl). To react to a chat window on screen, `watch window --app=Teams --match=...` works, but reading the account is the better tool.

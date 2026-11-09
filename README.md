@@ -147,7 +147,7 @@ supplies — and it buys things a server cannot:
   failing deep; on Linux `headless start --wm` gives it a display. Spans are
   written on the machine that ran the command, so `ssh server aos obs audit`
   shows what an agent did *there*.
-- **Nothing is filtered out.** Blocking commands (`watch clipboard`,
+- **Nothing is filtered out.** Blocking commands (every `watch`, `serve files`,
   `remote share`) are deliberately absent from the MCP tool list, because a
   request/response call has no sensible end. From a shell they are ordinary
   commands.
@@ -252,14 +252,20 @@ not offering it — it will try, fail, and try again.
 
 ## Command groups
 
+215 public commands in 49 groups (`aos commands --all`; 222 in 51 groups counting
+hidden ones). `aos doctor` reports how many this machine can run: 218 of 222 on
+macOS, where `headless start` and `stop` are Linux-only and `notify hold` and
+`power awake-hold` are Windows-only.
+
 | | |
 |---|---|
-| **Desktop** | `window` (list · focus · move to zone/split/coords · resize · wait · save a layout · arrange it back · `--kind=browser\|terminal`), `tab` (list · focus · open · send · close browser and terminal tabs), `display`, `mouse`, `key`, `permission` |
-| **Machine** | `system` (lock · sleep · restart · shutdown · logout · info), `process` (list · find · kill), `power`, `battery`, `network`, `audio`, `font`, `pkg`, `debug` |
-| **Content** | `capture`, `clipboard`, `file`, `exec`, `open`, `launch`, `webapp`, `subtitle` |
+| **Desktop** | `window` (list · focus · move to zone/split/coords · resize · wait · text · save a layout · arrange it back), `tab` (list · focus · open · send · close · read · type · click browser and terminal tabs), `display` (list · brightness · modes · mirror · `of` a window), `mouse`, `key`, `permission`, `app`, `focus` (Do Not Disturb), `menu`, `shortcuts` |
+| **Point** | `find` locates a button, menu or text by its label · `draw` puts a click-through arrow, ring or box with a sign on screen · `color` reads a pixel |
+| **Machine** | `system` (lock · sleep · info · load · memory · thermal · uptime · restart · shutdown · logout), `process`, `power`, `battery`, `network` (status · wifi · captive-portal · wifi-qr · speed · ports · vpn · public-ip), `audio`, `bluetooth`, `media`, `appearance`, `disk` (list · usage · top · eject), `trash`, `font`, `pkg`, `debug` |
+| **Content** | `capture` (screenshot · video · text · qr), `clipboard`, `file`, `exec`, `open`, `launch` (`--or-focus`), `webapp`, `subtitle`, `say`, `notify`, `batch` |
 | **Remote** | `remote` — hand this screen and its input to a browser on the LAN, for as long as the command runs |
-| **Watch** | `watch` — long-running monitors (clipboard, focused window, files and directories) that print one JSON line per change |
-| **Agents** | `serve` — expose all of the above over MCP; `service` — keep any of it running as a per-user OS service; `headless` — run the desktop commands with no screen; `completion` — shell completions generated from the registry |
+| **Watch** | `watch` — wait for something to happen: a tab, window text, a URL, the network, idle, lock and sleep, a process, the battery, a monitor, a device, the camera or mic, the clipboard, a file. Exits 0 when the condition is met, 3 on timeout |
+| **Agents** | `serve` — `mcp` exposes all of the above as tools, `files` serves a folder read-only; `service` — keep any of it running as a per-user OS service; `headless` — run the desktop commands with no screen; `completion` — shell completions generated from the registry |
 
 Windows, monitors, input, screenshots and drawing are handled by aos's own
 engine in `internal/engine` (absorbed from the now-deprecated windowctl); MCP
@@ -287,21 +293,48 @@ it is the laptop you connected from, through a forwarded socket. Commands
 like `exec` and `file` stay where the agent is. See
 [WSL and SSH](https://muthuishere.github.io/aos/host/) for the setup.
 
-## Reacting to what happens
+## Waiting for what happens
 
-`watch` commands run until interrupted and print one compact JSON line per
-event, so an agent can pipe one and act on each line.
+aos is primitives. A `watch` is a condition: it waits, then exits `0` when the
+condition is met or `3` on `--timeout`. Alerting and the next step belong to the
+agent, which chains them with `&&` and `||`.
+
+```sh
+aos watch process --name=ffmpeg --exit && aos notify "render done"
+aos watch network --until=online --timeout=10m && aos exec run -- git push
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"
+aos watch window --app=Notes --gone="Syncing" --timeout=2m || echo "still syncing"
+aos watch idle --for=10m && ./noisy-build.sh
+```
+
+Without a condition, `watch` prints one compact JSON line per event, so an agent
+can pipe it and act on each line:
 
 ```sh
 aos watch clipboard              # {"event":"clipboard","at":…,"seq":1,"length":34,"digest":"7a37ded45b5e"}
 aos watch clipboard --content    # include the text — opt-in, clipboards hold passwords
-aos watch window --max=1         # wait for the next focus change, then exit
 aos watch file ./src --recursive # {"event":"file",…,"kind":"created","path":"./src/x.go","size":12}
+aos watch lock                   # lock, unlock, sleep and wake
+aos watch device                 # volumes, audio and Bluetooth devices added or removed
 ```
 
-The first sample is only a baseline, so `--max=1` means "the next change", which
-is also what makes a watcher scriptable. An agent reads these by running the
-CLI — which is the case for the skill path in a sentence.
+The first sample of a stream is a baseline, so `--max=1` means "the next change".
+The set: `tab`, `window`, `url`, `network`, `idle`, `lock`, `process`, `battery`,
+`display`, `device`, `camera`, `mic`, `clipboard`, `file`. To wait for mail,
+Teams, WhatsApp or calendar events, use
+[apl](https://github.com/deemwar-products/apl); that is not aos's job.
+
+## Serving files
+
+`aos serve files <dir>` is a read-only static file server with listings. It binds
+loopback on a free port; `--lan` serves a phone on the same Wi-Fi behind a random
+token in the path, and `--for=10m` stops it on its own.
+
+```sh
+aos serve files ./dist
+aos serve files ~/Downloads --lan --for=10m
+aos network wifi-qr              # a QR the phone scans to join this Wi-Fi
+```
 
 ## Window layouts
 

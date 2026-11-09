@@ -30,7 +30,7 @@ An agent that can run shell commands can already run `aos`. The skill fills in w
 
 - **Nothing runs in the background.** No server, no port, no process to restart after a reboot.
 - **It works over SSH.** The skill is instructions, not a connection, so it applies to any machine with the binary.
-- **Every command is available.** Commands that run until interrupted, like `watch clipboard` and `remote share`, are left out of the MCP tool list. From a shell an agent can run them with `--max=1` or in the background.
+- **Every command is available.** Commands that run until interrupted, like every `watch`, `serve files` and `remote share`, are left out of the MCP tool list. From a shell an agent can run them with `--max=1` or in the background.
 - **The help is always current.** `aos commands --json` and `aos <group> --help` come from the installed binary.
 
 Use [MCP](/aos/mcp/) when your agent wants typed tools with schemas instead of a terminal. Both paths run the same code.

@@ -147,7 +147,7 @@ The arrow appears on your laptop, along with a caption, "aos controlled from mys
 - **Only screen commands.** The laptop refuses `exec`, `file`, `process` and every other local command sent over the socket. This is not remote exec.
 - `--out` files, such as screenshots, `--preview` images and saved layouts, come back to the path you gave on the server.
 - **Refused, each with a reason:**
-  - commands that stream: `watch clipboard`, `watch window`, `remote share`
+  - commands that run until interrupted: every `watch`, `serve files`, `remote share`
   - video files
   - commands that read a file on the server. For a layout, pipe it in instead: `aos window arrange - < layout.json`
 

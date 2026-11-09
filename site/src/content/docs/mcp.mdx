@@ -91,6 +91,6 @@ The token is still required through the tunnel, and it never crosses the network
 ## Gotchas
 
 - **A pinned token shorter than 16 characters is refused.**
-- **Commands that run until interrupted are not tools.** `watch clipboard`, `watch window`, `watch file` and `remote share` are left out. Use them from a shell.
+- **Commands that run until interrupted are not tools.** Every `watch` command, `serve files` and `remote share` are left out. Use them from a shell.
 - **`--addr` on a non-loopback address sends the token in clear text.** Prefer an SSH tunnel.
 - **The server does not sandbox `exec`.** If an agent should not run arbitrary commands, leave the `exec` group out with `--groups`. See the [safety model](/aos/safety/).
