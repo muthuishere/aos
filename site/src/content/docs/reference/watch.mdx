@@ -8,11 +8,36 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-4 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+6 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
 ## Commands
+
+### aos watch camera
+
+<p class="cmd-lead">Report when any app starts or stops using the camera</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos watch camera [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--until` | `busy`, `free` | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch camera
+aos watch camera --until=busy --timeout=10m
+aos watch camera --until=free && echo 'call is over, start the build'
+aos watch camera --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
 
 ### aos watch clipboard
 
@@ -60,6 +85,31 @@ aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
 aos watch file ~/Downloads
 aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
+```
+
+### aos watch mic
+
+<p class="cmd-lead">Report when any app starts or stops using the microphone</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+```sh
+aos watch mic [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--until` | `busy`, `free` | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch mic
+aos watch mic --until=free --timeout=1h
+aos watch mic --until=busy && echo 'someone is on a call'
+aos watch mic --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
 ```
 
 ### aos watch tab
