@@ -16,14 +16,14 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `appearance` | `dark`, `nightlight` |  |
 | `audio` | `volume`, `mute`, `devices`, `output`, `input` |  |
 | `batch` |  | `aos batch`, `verbs` |
-| `battery` |  | `status`, `present`, `percent` |
+| `battery` | `status`, `present`, `percent` |  |
 | `bluetooth` | `status`, `list`, `on`, `off`, `connect`, `disconnect` |  |
 | `capture` | `screenshot`, `text`, `video start`, `video stop`, `video status`, `video mark`, `video focus`, `video unfocus`, `video follow`, `video devices`, `video zoom` |  |
 | `clipboard` | `copy`, `paste`, `history`, `history start`, `history stop`, `history status`, `history get`, `history restore`, `history clear` |  |
 | `color` | `at`, `pick` |  |
 | `completion` |  | `aos completion` |
 | `debug` |  | `aos debug`, `tools` |
-| `disk` |  | `list`, `usage`, `eject` |
+| `disk` | `list`, `usage`, `eject` |  |
 | `display` | `brightness`, `list`, `active`, `focused`, `modes`, `mode`, `mirror` |  |
 | `doctor` |  | `aos doctor` |
 | `draw` | `aos draw`, `text`, `stop`, `config`, `fonts` |  |
@@ -44,7 +44,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `open` | `aos open` |  |
 | `permission` | `check`, `request` |  |
 | `pkg` |  | `install`, `remove`, `search`, `list`, `refresh`, `upgrade`, `manager` |
-| `power` |  | `awake`, `awake off`, `awake status`, `status` |
+| `power` | `awake`, `awake off`, `awake status`, `status` |  |
 | `process` |  | `list`, `find`, `kill` |
 | `remote` | `share`, `url` |  |
 | `say` | `aos say`, `voices`, `wait`, `stop` |  |

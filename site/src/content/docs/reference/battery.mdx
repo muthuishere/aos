@@ -18,7 +18,7 @@ Battery facts for laptops. `status` prints the charge and whether it is charging
 
 <p class="cmd-lead">Print the charge percentage as a bare number</p>
 
-Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos battery percent
@@ -32,7 +32,7 @@ aos battery percent    # 87
 
 <p class="cmd-lead">Exit 0 when a battery is present, 1 otherwise</p>
 
-Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos battery present
@@ -46,7 +46,7 @@ aos battery present && echo has a battery
 
 <p class="cmd-lead">Print battery charge, charging state, and health (capacity, cycles) where reported</p>
 
-Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos battery status [--json]
