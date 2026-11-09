@@ -37,7 +37,7 @@ var hostTable = map[string]bool{
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,
-	"watch file": false, "network": false, "trash": false, "battery": false, "power": false, "disk": false,
+	"watch file": false, "watch url": false, "network": false, "trash": false, "battery": false, "power": false, "disk": false,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
 	"version": false, "doctor": false, "install": false, "uninstall": false,

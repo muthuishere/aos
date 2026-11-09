@@ -11,11 +11,24 @@ aos watch window --max=1                  # wait until the focused window change
 aos watch file ./notes.md --max=1         # wait for one change to a file
 aos watch file ./src --recursive --interval=1s
 aos watch tab --id=ID --match="Done" --timeout=5m   # wait for text to appear in a browser tab
+aos watch url https://example.com/status            # plain HTTP: one line per change of the page text
+aos watch url https://example.com/release --every=5m --match="v2.0" --timeout=12h && aos open https://example.com/release
 ```
 
 - `watch tab` prints only the new lines of the page (`"added":[...]`). With
   `--match` it exits 0 when matching text appears and 3 on `--timeout`. Text
   already on the page at start does not count. See `references/tabs.md`.
+- `watch url <url>` polls over plain HTTP from this machine (no browser). It
+  compares the text of the page (tags, scripts and styles stripped), not the
+  bytes, and prints `{"event":"url","added":[...],"removed":[...]}` per change.
+  `--every` is the period (default `1m`, at least `10s`, plus up to 10%
+  jitter). `--match` exits 0 when the text is on the page (at start too),
+  `--gone` when a successful fetch no longer has it, and both exit 3 on
+  `--timeout`. A failed fetch or a non-2xx answer is warned about and
+  retried, never taken as "gone". For pages that need a login or
+  JavaScript, use `watch tab` on a real browser tab instead.
+- A watch only waits. Alerts, notifications and "then do X" are yours: chain
+  with `&&` on exit 0, branch on exit 3.
 - `--interval` is the poll period (default `500ms`).
 - Without `--max` they block forever: run them in the background and read the
   stream, or do not run them at all. They are left out of MCP for that reason.

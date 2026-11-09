@@ -112,6 +112,8 @@ aos watch tab --url=web.whatsapp.com --match="hi"              # name the tab by
   field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.
   Interval is 1 s by default and at minimum. Navigating the tab reports the new
   page as added text. If the tab closes, it exits 3.
+- A public page that needs no login and no JavaScript does not need a tab:
+  `aos watch url <url> --match=...` polls it over HTTP with no browser.
 - Chromium: aos turns on `AXEnhancedUserInterface` only when the page is
   missing, and turns it off again when the command ends.
 - macOS: Chrome family and Safari. Windows: Edge/Chrome through UI Automation
