@@ -16,6 +16,8 @@ sidebar:
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
 ```
@@ -45,6 +47,8 @@ aos tab click --title="Telegram" --find=Send --role=button
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos tab close (--id=<tab id> | --title=<substring> | --url=<substring>) [--app=<name>] [--kind=<kind>] [--exact] [--expect-title=<substring>]
 ```
@@ -71,6 +75,8 @@ aos tab close --id=safari:22718:2 --expect-title=Example
 <p class="cmd-lead">Raise a tab's window and select the tab</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos tab focus (--title=<substring> | --url=<substring> | --cwd=<substring> | --id=<tab id>) [--app=<name>] [--kind=<kind>] [--exact]
@@ -99,6 +105,8 @@ aos tab focus --cwd=aos --kind=terminal
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos tab list [--app=<name>] [--kind=browser|terminal|editor|files|other] [--window=<aos window id>] [--json]
 ```
@@ -121,6 +129,8 @@ aos tab list --app=Ghostty
 <p class="cmd-lead">Open a browser tab on a URL, or a terminal tab in a folder</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]
@@ -151,6 +161,8 @@ aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\sr
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]
 ```
@@ -176,6 +188,8 @@ aos tab read --url=web.whatsapp.com --json
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos tab send --id=<tab id> (--text=<text> | --key=<combo>) [--expect-title=<substring>]
 ```
@@ -198,6 +212,8 @@ aos tab send --id=iterm:31:1 --key=ctrl+c
 <p class="cmd-lead">Type into a field of a browser tab's page without taking focus</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]

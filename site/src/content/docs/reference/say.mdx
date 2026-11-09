@@ -16,6 +16,8 @@ sidebar:
 
 <p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos say <text...> [--voice=<name>] [--rate=<words per minute>] [--out=<file.mp3|.wav|.aiff>] [--no-subtitle] [--async] [--json] [-- <command...> [--then-wait=false]] [any `subtitle show` style flag: --position --size --color --bg --font --weight --align --max-width --margin --app/--title ...]
 ```
@@ -62,6 +64,8 @@ aos say "Saving the report now" --position=top-center --size=L --app=Notepad   #
 
 <p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos say stop
 ```
@@ -75,6 +79,8 @@ aos say stop
 <p class="cmd-lead">List the installed voices</p>
 
 <p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos say voices [--json]
@@ -94,6 +100,8 @@ aos say voices --json
 <p class="cmd-lead">Block until every queued and playing `say --async` has finished</p>
 
 <p class="cmd-badges"><span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos say wait [--timeout=<seconds>]

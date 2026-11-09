@@ -7,6 +7,7 @@ aos capture screenshot --app=Chrome --out=/tmp/c.png   # prints the captured rec
 aos capture screenshot --monitor=2 --out=/tmp/m2.png
 aos capture screenshot --region=100,100,800,600 --out=/tmp/r.png
 aos capture text --region=100,100,800,400 [--monitor=2] [--json]   # OCR an area; a window: window text --source=ocr
+aos capture qr [file.png] [--region=x,y,w,h] [--monitor=2] [--json]   # decode QR codes from a file or the screen
 aos color at 640 400 [--json]      # #1E1E1E  rgb(30, 30, 30): one pixel, global points
 aos color pick --delay=3           # the color under the pointer after 3 s
 aos mouse move 400 300 · aos mouse click 400 300 --double · aos mouse click --button=right
@@ -15,6 +16,7 @@ aos key type "hello" --app=TextEdit --verify           # focus-free + read back:
 aos key press enter --app=TextEdit                      # posted to the app, no focus change
 aos mouse click --app=Calculator --find=7 --role=button # AXPress / UIA Invoke: no pointer, no focus
 aos launch Terminal --wait                              # start an app and wait for its window
+aos launch Slack --or-focus                             # raise its open window, else launch it
 aos window desktop                                      # show desktop (toggle)
 aos app hide-others                                     # hide everything but the frontmost app
 aos app quit-all --except=Slack --yes                   # quits the person's apps: ask them first; never quits aos's own terminal
