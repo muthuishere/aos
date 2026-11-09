@@ -18,6 +18,8 @@ The Bluetooth radio and paired devices. `status` and `list` work on macOS (syste
 
 <p class="cmd-lead">Connect a paired device by name or address</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos bluetooth connect <name|address>
 ```
@@ -35,6 +37,8 @@ aos bluetooth connect D1:08:D1:0E:60:DB
 
 <p class="cmd-lead">Disconnect a paired device by name or address</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos bluetooth disconnect <name|address>
 ```
@@ -50,6 +54,8 @@ aos bluetooth disconnect AirPods
 ### aos bluetooth list
 
 <p class="cmd-lead">List paired devices and whether each is connected</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos bluetooth list [--json]
@@ -68,6 +74,8 @@ aos bluetooth list --json
 
 <p class="cmd-lead">Turn the Bluetooth radio off (Linux; drops keyboards and mice, confirm first)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos bluetooth off
 ```
@@ -80,6 +88,8 @@ aos bluetooth off
 
 <p class="cmd-lead">Turn the Bluetooth radio on (Linux)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos bluetooth on
 ```
@@ -91,6 +101,8 @@ aos bluetooth on
 ### aos bluetooth status
 
 <p class="cmd-lead">Print whether Bluetooth is present and on</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos bluetooth status [--json]

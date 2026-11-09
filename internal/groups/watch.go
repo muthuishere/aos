@@ -36,12 +36,16 @@ func init() {
 			},
 			&cli.Command{
 				Group: "watch", Name: "window",
-				Summary:  "Print a JSON line whenever the focused window changes",
+				Summary:  "Print a JSON line whenever the focused window changes, or wait for text to appear or vanish in a window",
 				Blocking: true,
-				Args:     "[--interval=<500ms>] [--max=<n>]",
+				Args:     "[--interval=<500ms>] [--max=<n>] | (--app=<name> | --title=<substring>) (--match=<text> | --gone=<text>) [--exact] [--new] [--interval=<2s>] [--timeout=<duration>] [--source=auto|accessibility|ocr] [--json]",
 				Examples: []string{
 					"aos watch window",
 					"aos watch window --max=1",
+					`aos watch window --app=Teams --match="Muthu" --timeout=1h && echo "message arrived"`,
+					`aos watch window --app=Slack --match=deploy --new --json`,
+					`aos watch window --app=Notes --gone="Syncing" --timeout=2m`,
+					"# text mode reads the window like `window text`; exit 0 when met, 3 on --timeout; never raises or moves the window",
 				},
 				Run: runWatchWindow,
 			},
@@ -101,6 +105,7 @@ type watchEvent struct {
 	// tab
 	Tab   string   `json:"tab,omitempty"`
 	Added []string `json:"added,omitempty"`
+	Gone  string   `json:"gone,omitempty"`
 }
 
 // tracker reports transitions in a sequence of observations. The first sample
@@ -215,9 +220,15 @@ func runWatchClipboard(c *cli.Ctx, args []string) error {
 }
 
 func runWatchWindow(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "interval", "max")
+	set, err := parseArgs(args, "interval", "max", "app", "title", "match", "gone", "timeout", "source")
 	if err != nil {
 		return err
+	}
+	// Any text-condition flag switches to the text watch (watch_window_text.go).
+	for _, f := range []string{"app", "title", "match", "gone", "timeout", "source", "exact", "new", "json"} {
+		if set.Has(f) {
+			return runWatchWindowText(c, set)
+		}
 	}
 	if err := set.Reject("interval", "max"); err != nil {
 		return err

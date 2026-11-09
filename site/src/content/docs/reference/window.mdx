@@ -20,6 +20,8 @@ Desktop windows on every platform: list them with geometry, focus one, move it t
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos window arrange <layout.json | ->
 ```
@@ -39,6 +41,8 @@ echo '[{"app":"Google Chrome","zone":"1A"},{"app":"Slack","zone":"1B"}]' | aos w
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos window desktop
 ```
@@ -52,6 +56,8 @@ aos window desktop
 <p class="cmd-lead">Bring a window to the front</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos window focus <app> | --app=<name> | --title=<substring> [--force]
@@ -74,6 +80,8 @@ aos window focus Chrome
 <p class="cmd-lead">List open windows</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos window list [--app=<name>] [--title=<substring>] [--kind=browser|terminal|editor|files|other] [--json]
@@ -98,6 +106,8 @@ aos window list --kind=terminal
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos window move <app> (--zone=<1A|2:1> | --at=<x,y,w,h>) [--monitor=<n>]
 ```
@@ -121,6 +131,8 @@ aos window move Slack --at=0,25,1920,1055
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos window resize <app> --w=<width> --h=<height>
 ```
@@ -140,6 +152,8 @@ aos window resize Chrome --w=900 --h=700
 <p class="cmd-lead">Save the current layout to a file `window arrange` can apply</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos window save <layout.json> [--app=<name>] [--monitor=<n>]
@@ -162,6 +176,8 @@ aos window save ~/second-screen.json --monitor=2
 <p class="cmd-lead">Print all the text of a window, in reading order (accessibility, OCR fallback)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos window text (<app> | --app=<name> | --title=<substring> | --id=<window id> | --focused) [--source=auto|accessibility|ocr] [--json] [--plain] [--max-chars=<n>] [--timeout=<ms>] [--raise]
@@ -196,6 +212,8 @@ aos window text --id=12345 --source=ocr --raise   # OCR a covered window: brings
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos window wait <app> [--timeout=<ms>]
 ```
@@ -214,6 +232,8 @@ aos window wait Chrome --timeout=5000
 <p class="cmd-lead">Show what each zone means on a real monitor</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos window zones [--monitor=<n>] [--show]

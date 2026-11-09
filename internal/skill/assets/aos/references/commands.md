@@ -299,6 +299,19 @@ aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
 ```
 
+### `aos capture qr`
+
+Decode the QR codes in an image file, a screen region or a whole monitor
+
+*display*
+
+```bash
+aos capture qr [<image>] [--region=<x,y,w,h>] [--monitor=<n>] [--json]
+aos capture qr ticket.png                    # decode a PNG, JPEG or GIF file
+aos capture qr --region=100,100,400,400      # decode what is on screen there
+aos capture qr --monitor=2 --json            # every QR code on monitor 2, with its bounds
+```
+
 ### `aos capture text`
 
 OCR a screen region or a whole monitor and print its text in reading order
@@ -613,6 +626,18 @@ aos disk eject /dev/sdb1
 aos disk eject E:
 ```
 
+### `aos disk top`
+
+Rank the biggest folders (and files) under a path, tagging caches, trash and other known space hogs
+
+```bash
+aos disk top [<path>] [--depth=<n>] [--limit=<n>] [--timeout=<dur>] [--files] [--json]
+aos disk top                      # biggest folders in your home, 5 s budget
+aos disk top ~/Library --depth=2 --limit=30
+aos disk top ~/Downloads --files --json
+aos disk top / --timeout=30s --json
+```
+
 
 ## display
 
@@ -620,15 +645,31 @@ Attached monitors
 
 ### `aos display brightness`
 
-Print or set screen brightness 0-100 (the built-in panel, else the main display)
+Print or set a monitor's brightness 0-100: built-in panel or external over DDC/CI (default: the focused window's monitor)
 
 *display*
 
 ```bash
-aos display brightness [<0-100>|+<n>|-<n>]
-aos display brightness       # 70
-aos display brightness 50
-aos display brightness -10
+aos display brightness [<monitor id>] [<0-100>|+<n>|-<n>] [--monitor=<id>] [--all] [--list] [--json]
+aos display brightness            # BenQ GW2785TC (2): 64
+aos display brightness +20        # brighter on the focused window's monitor
+aos display brightness 2 50       # monitor 2 to 50
+aos display brightness --monitor=3
+aos display brightness --all 40
+aos display brightness --list
+aos display brightness -10 --json
+```
+
+### `aos display of`
+
+Print the monitor an app's or a window's window is on: id, name and brightness
+
+*display*
+
+```bash
+aos display of --app=<name> | --window=<id> [--json]
+aos display of --app Safari          # 2  BenQ GW2785TC  brightness 64
+aos display of --window 12345 --json
 ```
 
 ### `aos display list`
@@ -1088,9 +1129,10 @@ Launch an application, optionally waiting for its window
 *display*
 
 ```bash
-aos launch <app> [args...] [--wait[=<ms>]]
+aos launch <app> [args...] [--wait[=<ms>]] [--or-focus]
 aos launch "Visual Studio Code"
 aos launch Chrome --wait
+aos launch Slack --or-focus   # raise Slack's window if it is open, else start it
 ```
 
 
@@ -1225,6 +1267,16 @@ aos mouse position     # 784 539
 
 Connectivity, addresses, and Wi-Fi
 
+### `aos network captive-portal`
+
+Check whether a captive portal (hotel, airport Wi-Fi login) is intercepting the connection
+
+```bash
+aos network captive-portal [--json]
+aos network captive-portal          # online | portal <url> | offline; exit 1 unless online
+aos network captive-portal --json   # state, portal, status, probe
+```
+
 ### `aos network public-ip`
 
 Print this machine's public IP address as the internet sees it
@@ -1334,6 +1386,18 @@ Join a Wi-Fi network; a password is read from stdin, never argv
 aos network wifi join <ssid> [--password-stdin]
 aos network wifi join HomeNet              # saved or open network
 printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
+```
+
+### `aos network wifi-qr`
+
+Show a QR code a phone can scan to join the current Wi-Fi (password only with --password)
+
+```bash
+aos network wifi-qr [--ssid=<name>] [--password] [--out=<file.png>] [--payload]
+aos network wifi-qr                       # QR in the terminal, network name only
+aos network wifi-qr --password            # include the saved password (macOS asks for authorization)
+aos network wifi-qr --password --out=wifi.png
+aos network wifi-qr --ssid=GuestNet --payload   # print the WIFI:... text instead of a QR
 ```
 
 
@@ -1724,6 +1788,20 @@ Print the MCP tool catalogue this machine would expose
 ```bash
 aos serve tools [--groups=<a,b>]
 aos serve tools --groups=window
+```
+
+### `aos serve files`
+
+Serve a directory read-only over HTTP, with listings
+
+*blocking*
+
+```bash
+aos serve files <dir> [--lan] [--port=<n>] [--for=<dur>] [--hidden] [--json]
+aos serve files ./dist
+aos serve files ~/Downloads --lan --for=10m   # phone on the same wifi; URL carries a token
+aos serve files . --port=8000 --json   # one JSON line per request
+aos service create share --now -- aos serve files ~/share --lan --port=8080   # keep it alive
 ```
 
 
@@ -2157,10 +2235,13 @@ Print a JSON line with the new text whenever a browser tab's page changes
 *display · blocking · platforms: darwin, windows*
 
 ```bash
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
-# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"
+aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h
+aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes
 ```
 
 ### `aos watch clipboard`
@@ -2177,14 +2258,18 @@ aos watch clipboard --max=1 --content
 
 ### `aos watch window`
 
-Print a JSON line whenever the focused window changes
+Print a JSON line whenever the focused window changes, or wait for text to appear or vanish in a window
 
 *display · blocking*
 
 ```bash
-aos watch window [--interval=<500ms>] [--max=<n>]
+aos watch window [--interval=<500ms>] [--max=<n>] | (--app=<name> | --title=<substring>) (--match=<text> | --gone=<text>) [--exact] [--new] [--interval=<2s>] [--timeout=<duration>] [--source=auto|accessibility|ocr] [--json]
 aos watch window
 aos watch window --max=1
+aos watch window --app=Teams --match="Muthu" --timeout=1h && echo "message arrived"
+aos watch window --app=Slack --match=deploy --new --json
+aos watch window --app=Notes --gone="Syncing" --timeout=2m
+# text mode reads the window like `window text`; exit 0 when met, 3 on --timeout; never raises or moves the window
 ```
 
 ### `aos watch file`
@@ -2212,6 +2297,65 @@ aos watch battery --below=20 && echo time to save work      # exit 0 once the ch
 aos watch battery --until=full --timeout=3h                 # exit 3 if it is not full in 3 hours
 aos watch battery --until=discharging                       # exit 0 when the charger is pulled
 aos watch battery                                           # a JSON line for plugged, unplugged, full and each % change
+```
+
+### `aos watch idle`
+
+Exit 0 once the person has been idle for a while, or as soon as they are active again
+
+*display · blocking*
+
+```bash
+aos watch idle (--for=<duration> | --active) [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch idle --for=10m && echo "away from the desk"
+aos watch idle --active --timeout=1h   # block until the next key press or mouse move
+aos watch idle --for=5m --json
+# idle time is input idle: macOS HIDIdleTime, Windows GetLastInputInfo, Linux xprintidle (X11 only)
+# exit 0 when met, 3 on --timeout, 1 when this machine cannot report idle time
+```
+
+### `aos watch camera`
+
+Report when any app starts or stops using the camera
+
+*display · blocking · platforms: darwin, windows*
+
+```bash
+aos watch camera [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch camera
+aos watch camera --until=busy --timeout=10m
+aos watch camera --until=free && echo 'call is over, start the build'
+aos watch camera --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
+### `aos watch mic`
+
+Report when any app starts or stops using the microphone
+
+*display · blocking · platforms: darwin, windows*
+
+```bash
+aos watch mic [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch mic
+aos watch mic --until=free --timeout=1h
+aos watch mic --until=busy && echo 'someone is on a call'
+aos watch mic --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
+### `aos watch process`
+
+Wait for one process to end or appear, or print a JSON line for each start and stop
+
+*display · blocking*
+
+```bash
+aos watch process --name=<name> | --pid=<n> [--exit | --start] [--interval=<1s>] [--timeout=<dur>] [--json]
+aos watch process --name=ffmpeg --exit && echo render done   # exit 0 when ffmpeg ends
+aos watch process --pid=4821 --exit --timeout=30m            # exit 3 if it is still running after 30m
+aos watch process --name=Xcode --start                       # exit 0 when Xcode appears
+aos watch process --name=node                                # a JSON line per start and stop
 ```
 
 
