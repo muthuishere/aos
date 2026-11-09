@@ -54,6 +54,19 @@ aos file delete /tmp/scratch --recursive
 aos open .                              # default handler (display); also URLs
 ```
 
+### Serving a directory
+
+```bash
+aos serve files ./dist                  # read-only, listings on, 127.0.0.1, free port; prints the URL
+aos serve files ~/share --lan --for=10m # LAN address + random token in the path; exits 0 after 10m
+aos serve files . --port=8000 --json    # one JSON line per request
+aos service create share --now -- aos serve files ~/share --lan --port=8080   # keep it alive
+```
+
+Foreground; stop with Ctrl-C or `--for`. Without the token a `--lan` request
+gets 404. Symlinks that leave the directory and dotfiles are never served
+(`--hidden` shows dotfiles). GET/HEAD only.
+
 ## Clipboard
 
 ```bash

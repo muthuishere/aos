@@ -1726,6 +1726,20 @@ aos serve tools [--groups=<a,b>]
 aos serve tools --groups=window
 ```
 
+### `aos serve files`
+
+Serve a directory read-only over HTTP, with listings
+
+*blocking*
+
+```bash
+aos serve files <dir> [--lan] [--port=<n>] [--for=<dur>] [--hidden] [--json]
+aos serve files ./dist
+aos serve files ~/Downloads --lan --for=10m   # phone on the same wifi; URL carries a token
+aos serve files . --port=8000 --json   # one JSON line per request
+aos service create share --now -- aos serve files ~/share --lan --port=8080   # keep it alive
+```
+
 
 ## service
 
