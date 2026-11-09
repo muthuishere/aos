@@ -8,17 +8,74 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-5 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+10 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
 ## Commands
+
+### aos watch battery
+
+<p class="cmd-lead">Wait for a battery level or charging state, or print a JSON line for each power change</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos watch battery [--below=<pct>] [--above=<pct>] [--until=charging|discharging|full] [--interval=<5s>] [--timeout=<dur>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--below` | `<pct>` | Optional |
+| `--above` | `<pct>` | Optional |
+| `--until` | `charging`, `discharging`, `full` | Optional |
+| `--interval` | `<5s>` | Optional. default 5s |
+| `--timeout` | `<dur>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch battery --below=20 && echo time to save work      # exit 0 once the charge is under 20%
+aos watch battery --until=full --timeout=3h                 # exit 3 if it is not full in 3 hours
+aos watch battery --until=discharging                       # exit 0 when the charger is pulled
+aos watch battery                                           # a JSON line for plugged, unplugged, full and each % change
+```
+
+### aos watch camera
+
+<p class="cmd-lead">Report when any app starts or stops using the camera</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos watch camera [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--until` | `busy`, `free` | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch camera
+aos watch camera --until=busy --timeout=10m
+aos watch camera --until=free && echo 'call is over, start the build'
+aos watch camera --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
 
 ### aos watch clipboard
 
 <p class="cmd-lead">Print a JSON line whenever the clipboard text changes</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos watch clipboard [--interval=<500ms>] [--max=<n>] [--content]
@@ -40,6 +97,8 @@ aos watch clipboard --max=1 --content
 <p class="cmd-lead">Report when a USB drive, audio device or Bluetooth device is connected or removed</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos watch device [--kind=volume|audio|bluetooth[,...]] [--until=added|removed] [--interval=<2s>] [--timeout=<duration>] [--json]
@@ -67,6 +126,8 @@ aos watch device --kind=bluetooth --until=removed && echo 'headphones dropped, p
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
 ```
@@ -84,14 +145,100 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### aos watch idle
+
+<p class="cmd-lead">Exit 0 once the person has been idle for a while, or as soon as they are active again</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos watch idle (--for=<duration> | --active) [--interval=<1s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--for` | `<duration>` | One of these is required |
+| `--active` |  | One of these is required |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch idle --for=10m && echo "away from the desk"
+aos watch idle --active --timeout=1h   # block until the next key press or mouse move
+aos watch idle --for=5m --json
+# idle time is input idle: macOS HIDIdleTime, Windows GetLastInputInfo, Linux xprintidle (X11 only)
+# exit 0 when met, 3 on --timeout, 1 when this machine cannot report idle time
+```
+
+### aos watch mic
+
+<p class="cmd-lead">Report when any app starts or stops using the microphone</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos watch mic [--until=busy|free] [--interval=<1s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--until` | `busy`, `free` | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch mic
+aos watch mic --until=free --timeout=1h
+aos watch mic --until=busy && echo 'someone is on a call'
+aos watch mic --json
+# with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
+### aos watch process
+
+<p class="cmd-lead">Wait for one process to end or appear, or print a JSON line for each start and stop</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos watch process --name=<name> | --pid=<n> [--exit | --start] [--interval=<1s>] [--timeout=<dur>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--name` | `<name>` | One of these is required |
+| `--pid` | `<n>` | One of these is required |
+| `--exit` |  | Optional |
+| `--start` |  | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<dur>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch process --name=ffmpeg --exit && echo render done   # exit 0 when ffmpeg ends
+aos watch process --pid=4821 --exit --timeout=30m            # exit 3 if it is still running after 30m
+aos watch process --name=Xcode --start                       # exit 0 when Xcode appears
+aos watch process --name=node                                # a JSON line per start and stop
+```
+
 ### aos watch tab
 
 <p class="cmd-lead">Print a JSON line with the new text whenever a browser tab's page changes</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 ```
 
 | flag | values | meaning |
@@ -101,7 +248,10 @@ aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 | `--title` | `<substring>` | One of these is required |
 | `--app` | `<name>` | Optional |
 | `--match` | `<text>` | Optional |
+| `--gone` | `<text>` | Optional |
+| `--near` | `<anchor text>` | Optional |
 | `--exact` |  | Optional |
+| `--reload` | `<duration>` | Optional |
 | `--interval` | `<1s>` | Optional. default 1s |
 | `--timeout` | `<duration>` | Optional |
 | `--max` | `<n>` | Optional |
@@ -109,25 +259,43 @@ aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 ```sh
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
-# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"
+aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h
+aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes
 ```
 
 ### aos watch window
 
-<p class="cmd-lead">Print a JSON line whenever the focused window changes</p>
+<p class="cmd-lead">Print a JSON line whenever the focused window changes, or wait for text to appear or vanish in a window</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
-aos watch window [--interval=<500ms>] [--max=<n>]
+aos watch window [--interval=<500ms>] [--max=<n>] | (--app=<name> | --title=<substring>) (--match=<text> | --gone=<text>) [--exact] [--new] [--interval=<2s>] [--timeout=<duration>] [--source=auto|accessibility|ocr] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
 | `--interval` | `<500ms>` | Optional. default 500ms |
 | `--max` | `<n>` | Optional |
+| `--app` | `<name>` | One of these is required |
+| `--title` | `<substring>` | One of these is required |
+| `--match` | `<text>` | One of these is required |
+| `--gone` | `<text>` | One of these is required |
+| `--exact` |  | Optional |
+| `--new` |  | Optional |
+| `--timeout` | `<duration>` | Optional |
+| `--source` | `auto`, `accessibility`, `ocr` | Optional |
+| `--json` |  | Optional |
 
 ```sh
 aos watch window
 aos watch window --max=1
+aos watch window --app=Teams --match="Muthu" --timeout=1h && echo "message arrived"
+aos watch window --app=Slack --match=deploy --new --json
+aos watch window --app=Notes --gone="Syncing" --timeout=2m
+# text mode reads the window like `window text`; exit 0 when met, 3 on --timeout; never raises or moves the window
 ```
