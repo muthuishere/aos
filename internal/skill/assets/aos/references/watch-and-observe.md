@@ -69,6 +69,27 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch process: a build, render or download finishes
+
+`watch process` is a gate, not an alerter: it exits 0 when its condition is
+met, 3 on `--timeout`, and the agent decides what happens next.
+
+```bash
+aos watch process --name=ffmpeg --exit && <agent acts>      # render finished
+aos watch process --pid=4821 --exit --timeout=30m --json   # {"event":"stop","pid":4821,...}
+aos watch process --name=Xcode --start                      # wait for it to appear
+aos watch process --name=node                               # JSON line per start and stop
+```
+
+- `--name` is the whole process name, case-insensitive (`sleep` does not match
+  `sleepd`); `--pid` is exact. Give one of them.
+- `--exit` exits 1 at once if nothing matches: it cannot wait for something
+  that is not running. With `--name` it waits for every process that matched
+  at the start; ones that start later do not hold it open.
+- `--start` needs `--name` and ignores processes already running.
+- `exit_code` appears in the output only on Windows; macOS and Linux give no
+  exit code for a process that is not our child.
+- Local to the machine `aos` runs on (like `process`), never forwarded.
 ### Chaining: the watch is the condition, the agent is the action
 
 aos has no `--notify` or `--then`. A watch exits 0 when its condition is met,

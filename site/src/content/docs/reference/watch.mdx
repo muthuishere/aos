@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-6 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+7 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
@@ -114,6 +114,35 @@ aos watch mic --until=free --timeout=1h
 aos watch mic --until=busy && echo 'someone is on a call'
 aos watch mic --json
 # with --until: exit 0 when the state is reached (at once if it already is), 3 on --timeout
+```
+
+### aos watch process
+
+<p class="cmd-lead">Wait for one process to end or appear, or print a JSON line for each start and stop</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos watch process --name=<name> | --pid=<n> [--exit | --start] [--interval=<1s>] [--timeout=<dur>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--name` | `<name>` | One of these is required |
+| `--pid` | `<n>` | One of these is required |
+| `--exit` |  | Optional |
+| `--start` |  | Optional |
+| `--interval` | `<1s>` | Optional. default 1s |
+| `--timeout` | `<dur>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch process --name=ffmpeg --exit && echo render done   # exit 0 when ffmpeg ends
+aos watch process --pid=4821 --exit --timeout=30m            # exit 3 if it is still running after 30m
+aos watch process --name=Xcode --start                       # exit 0 when Xcode appears
+aos watch process --name=node                                # a JSON line per start and stop
 ```
 
 ### aos watch tab
