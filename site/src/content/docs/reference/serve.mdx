@@ -42,6 +42,8 @@ aos service create share --now -- aos serve files ~/share --lan --port=8080   # 
 
 <p class="cmd-lead">Serve every command as an MCP tool over streamable HTTP</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos serve mcp [--addr=<host:port> | --socket=<path>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]
 ```
@@ -65,6 +67,8 @@ aos serve mcp --gui=off   # screenless tools only
 ### aos serve tools
 
 <p class="cmd-lead">Print the MCP tool catalogue this machine would expose</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos serve tools [--groups=<a,b>]

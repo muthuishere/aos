@@ -18,6 +18,8 @@ Running processes. `list` and `find` filter by substring and have `--json`. `kil
 
 <p class="cmd-lead">Find processes whose name contains a substring</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos process find <name> [--json]
 ```
@@ -35,6 +37,8 @@ aos process find node --json
 ### aos process kill
 
 <p class="cmd-lead">Kill a process by pid, by name when it is unambiguous, or by the port it listens on</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos process kill <pid|name> [--force] | --port=<n> [--force]
@@ -56,6 +60,8 @@ aos process kill --port=8080
 ### aos process list
 
 <p class="cmd-lead">List running processes</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos process list [--filter=<substring>] [--sort=cpu|mem|name|pid] [--top=<n>] [--json]

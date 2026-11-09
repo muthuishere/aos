@@ -18,6 +18,8 @@ Session and power state. `info` prints OS and hardware facts and works everywher
 
 <p class="cmd-lead">Print OS, host, and hardware facts</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos system info
 ```
@@ -29,6 +31,8 @@ aos system info
 ### aos system load
 
 <p class="cmd-lead">Print CPU busy % overall and per core, and load averages</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos system load [--json]
@@ -49,6 +53,8 @@ aos system load --json
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos lock</code></span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos system lock
 ```
@@ -63,6 +69,8 @@ aos system lock
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos system logout
 ```
@@ -74,6 +82,8 @@ aos system logout
 ### aos system memory
 
 <p class="cmd-lead">Print total, used, available and free RAM, and swap</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos system memory [--json]
@@ -92,6 +102,8 @@ aos system memory --json
 
 <p class="cmd-lead">Restart the machine</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos system restart
 ```
@@ -104,6 +116,8 @@ aos system restart
 
 <p class="cmd-lead">Power the machine off</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos system shutdown
 ```
@@ -115,6 +129,8 @@ aos system shutdown
 ### aos system sleep
 
 <p class="cmd-lead">Put the machine to sleep</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos system sleep
@@ -129,6 +145,8 @@ aos system sleep
 <p class="cmd-lead">Print the thermal state (throttling) and temperatures the OS exposes</p>
 
 <p class="cmd-badges"><span class="cmd-badge">darwin · linux only</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos system thermal [--json]
@@ -146,6 +164,8 @@ aos system thermal --json
 ### aos system uptime
 
 <p class="cmd-lead">Print how long the machine has been up and when it booted</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos system uptime [--json]
