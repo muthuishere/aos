@@ -8,11 +8,48 @@ sidebar:
 
 <p class="cmd-lead">Volume, mute, and output/input devices</p>
 
-5 commands. Run `aos audio --help` for the same list from the binary, or [see every group](../commands/).
+7 commands. Run `aos audio --help` for the same list from the binary, or [see every group](../commands/).
 
-Output volume and mute for the system sound device. `volume` with no argument prints the level 0 to 100; with a number it sets it, and `+n` or `-n` nudges it. `mute` prints or changes the mute state. These work without a display, so they are fine over SSH. `devices` lists every output and input device with the defaults marked; `output` and `input` print the current default, or switch it by name, a unique part of the name, or id (an ambiguous name is refused with the candidates).
+Output volume and mute for the system sound device. `volume` with no argument prints the level 0 to 100; with a number it sets it, and `+n` or `-n` nudges it. `mute` prints or changes the mute state. These work without a display, so they are fine over SSH. `devices` lists every output and input device with the defaults marked; `output` and `input` print the current default, or switch it by name, a unique part of the name, or id (an ambiguous name is refused with the candidates). `apps` lists the apps with audio streams and each one's volume and mute state; `app <name>` prints one, or sets its volume 0 to 100 or mutes and unmutes it, every stream of that app at once. Per-app volume and mute work on Windows (the Volume Mixer's audio sessions; setting a level is not available on arm64) and Linux (`pactl` sink inputs). macOS has no per-app mixer: `apps` lists what is playing (macOS 14.2 or later) with no volume, and setting exits 2 with `unsupported` rather than install a virtual audio driver.
 
 ## Commands
+
+### aos audio app
+
+<p class="cmd-lead">Print one app's volume and mute state, or set it (Windows, Linux)</p>
+
+```sh
+aos audio app <name> [<0-100>|mute|unmute]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<name>` | | Required positional argument |
+| `<0-100>` | | Optional positional argument |
+
+```sh
+aos audio app spotify
+aos audio app chrome 30
+aos audio app zoom mute
+aos audio app zoom unmute
+```
+
+### aos audio apps
+
+<p class="cmd-lead">List the apps with audio streams, with each app's volume and mute state</p>
+
+```sh
+aos audio apps [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos audio apps
+aos audio apps --json
+```
 
 ### aos audio devices
 

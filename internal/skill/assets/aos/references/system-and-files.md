@@ -162,6 +162,8 @@ aos media now --json       # track, artist, app, position; exit 1 when nothing p
 aos media play · aos media pause · aos media toggle · aos media next · aos media prev
 aos audio devices --json   # outputs and inputs, * = default
 aos audio output AirPods · aos audio input "MacBook Pro Microphone"   # switch by name/id; bare prints current
+aos audio apps [--json]    # apps with audio streams; volume/muted null on macOS (no per-app mixer)
+aos audio app chrome 30 · aos audio app zoom mute · aos audio app zoom unmute   # Windows/Linux; macOS exits 2 unsupported
 aos font list mono · aos font dirs
 ```
 

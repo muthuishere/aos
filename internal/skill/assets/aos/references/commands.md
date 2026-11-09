@@ -128,6 +128,28 @@ aos audio mute [on|off|toggle]
 aos audio mute toggle
 ```
 
+### `aos audio apps`
+
+List the apps with audio streams, with each app's volume and mute state
+
+```bash
+aos audio apps [--json]
+aos audio apps
+aos audio apps --json
+```
+
+### `aos audio app`
+
+Print one app's volume and mute state, or set it (Windows, Linux)
+
+```bash
+aos audio app <name> [<0-100>|mute|unmute]
+aos audio app spotify
+aos audio app chrome 30
+aos audio app zoom mute
+aos audio app zoom unmute
+```
+
 ### `aos audio devices`
 
 List output and input sound devices, marking the defaults
