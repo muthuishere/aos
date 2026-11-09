@@ -369,7 +369,7 @@ func (f *scriptFamily) open(ctx context.Context, req tabOpenRequest) (string, er
 	case req.Command != "" || req.CWD != "":
 		command = shellCommand(req.CWD, req.Command)
 	}
-	out, err := f.run(ctx, f.openJS, app, req.URL, req.Window, flag01(req.NewWindow), flag01(req.Background), req.CWD, command)
+	out, err := f.run(ctx, f.openJS, app, req.URL, req.Window, flag01(req.NewWindow), flag01(!req.Focus), req.CWD, command)
 	if err != nil {
 		return "", err
 	}

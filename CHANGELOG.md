@@ -2,6 +2,22 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.13.1 - 2026-11-09
+
+Fix: aos could bring Chrome to the front and change the tab you were looking at.
+
+- `tab read`, `tab type`, `tab click` and `watch tab` no longer switch tabs.
+  They used to select a background tab first, which in practice made the
+  browser come forward. Now a tab its window is not showing is refused (exit 3)
+  and the message says to run `aos tab focus` first. Add `--focus` to let that
+  one command switch to the tab.
+- `tab open` is background by default: no window raise, no app activation, your
+  current tab stays selected. `--focus` gives the old behaviour; `--background`
+  is still accepted and does nothing extra. On Windows a tab cannot be opened
+  in the background, so `tab open` there needs `--focus`.
+- Only `tab focus` brings a tab forward. `window text` and `find` already stay
+  put unless you pass `--raise`. `tab list` is read-only.
+
 ## v0.13.0 - 2026-11-09
 
 aos now waits for things as well as doing them: the `watch` set, plus a

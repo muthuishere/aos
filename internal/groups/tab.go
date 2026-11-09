@@ -52,12 +52,14 @@ func init() {
 			},
 			&cli.Command{
 				Group: "tab", Name: "open",
-				Summary: "Open a browser tab on a URL, or a terminal tab in a folder",
-				Args:    "[<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]",
+				Summary: "Open a browser tab on a URL, or a terminal tab in a folder, in the background (--focus to bring it forward)",
+				Args:    "[<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--focus] [--background]",
 				Examples: []string{
 					"aos tab open https://example.com --app=Chrome",
 					"aos tab open https://example.com --app=Safari --new-window",
 					`aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"`,
+					"aos tab open https://example.com --app=Chrome --focus   # raise the window and show the new tab",
+					"# default is background: no window raise, no app activation; --background is accepted and does nothing extra",
 					`aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window`,
 				},
 				Platforms: platforms,
@@ -144,15 +146,15 @@ type tabProvider interface {
 }
 
 type tabOpenRequest struct {
-	App        string
-	URL        string
-	Window     string // native window id, resolved from an aos id or a tab id
-	NewWindow  bool
-	CWD        string
-	Command    string
-	Title      string // terminal tab title (Windows Terminal)
-	WTWindow   string // Windows Terminal window name or id for wt -w
-	Background bool
+	App       string
+	URL       string
+	Window    string // native window id, resolved from an aos id or a tab id
+	NewWindow bool
+	CWD       string
+	Command   string
+	Title     string // terminal tab title (Windows Terminal)
+	WTWindow  string // Windows Terminal window name or id for wt -w
+	Focus     bool   // bring the new tab forward (raise, activate); false = open it in the background
 }
 
 // providerTimeout bounds each provider's list call so one hung app (a
@@ -227,6 +229,8 @@ type tabFilter struct {
 	ID                string
 	Index             int // 1-based position in its window; 0 = any
 	Exact             bool
+	// SelectOK: a page command may switch to the tab (--focus). Never set by default.
+	SelectOK bool
 }
 
 func (f tabFilter) selects(t Tab) bool {
@@ -706,17 +710,20 @@ func runTabOpen(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("app", "window", "new-window", "cwd", "command", "background", "title", "wt-window"); err != nil {
+	if err := set.Reject("app", "window", "new-window", "cwd", "command", "background", "focus", "title", "wt-window"); err != nil {
 		return err
 	}
+	if set.Has("focus") && set.Has("background") {
+		return fmt.Errorf("--focus and --background are exclusive")
+	}
 	req := tabOpenRequest{
-		App:        set.String("app", ""),
-		NewWindow:  set.Has("new-window"),
-		CWD:        expandHome(set.String("cwd", "")),
-		Command:    set.String("command", ""),
-		Title:      set.String("title", ""),
-		WTWindow:   set.String("wt-window", ""),
-		Background: set.Has("background"),
+		App:       set.String("app", ""),
+		NewWindow: set.Has("new-window"),
+		CWD:       expandHome(set.String("cwd", "")),
+		Command:   set.String("command", ""),
+		Title:     set.String("title", ""),
+		WTWindow:  set.String("wt-window", ""),
+		Focus:     set.Has("focus"), // default: background
 	}
 	if len(set.Rest) > 1 {
 		return fmt.Errorf("open takes one URL, got %d words; quote it", len(set.Rest))

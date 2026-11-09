@@ -59,11 +59,11 @@ func main() {
 	}
 	tag := h.Tag("t")
 	a1, b1, b2 := "A1-"+tag, "B1-"+tag, "B2-"+tag
-	h.Aos("tab", "open", "--app=WindowsTerminal", "--wt-window=aosA-"+tag, "--title="+a1, "--cwd="+os.TempDir())
+	h.Aos("tab", "open", "--focus", "--app=WindowsTerminal", "--wt-window=aosA-"+tag, "--title="+a1, "--cwd="+os.TempDir())
 	time.Sleep(2 * time.Second)
-	h.Aos("tab", "open", "--app=WindowsTerminal", "--wt-window=aosB-"+tag, "--title="+b1, "--cwd="+os.Getenv("USERPROFILE"))
+	h.Aos("tab", "open", "--focus", "--app=WindowsTerminal", "--wt-window=aosB-"+tag, "--title="+b1, "--cwd="+os.Getenv("USERPROFILE"))
 	time.Sleep(2 * time.Second)
-	h.Aos("tab", "open", "--app=WindowsTerminal", "--wt-window=aosB-"+tag, "--title="+b2, `--cwd=C:\Windows`)
+	h.Aos("tab", "open", "--focus", "--app=WindowsTerminal", "--wt-window=aosB-"+tag, "--title="+b2, `--cwd=C:\Windows`)
 	time.Sleep(3 * time.Second)
 	// Front: an existing Notepad window (not edited).
 	var front uintptr

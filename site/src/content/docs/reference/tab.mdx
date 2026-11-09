@@ -19,7 +19,7 @@ sidebar:
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
+aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus] [--focus]
 ```
 
 | flag | values | meaning |
@@ -34,6 +34,7 @@ aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 | `--exact` |  | Optional |
 | `--nth` | `<n>` | Optional |
 | `--allow-focus` |  | Optional |
+| `--focus` |  | Optional |
 
 ```sh
 aos tab click --id=chrome:1658108662:1658109078 --element=e8
@@ -126,14 +127,14 @@ aos tab list --app=Ghostty
 
 ### aos tab open
 
-<p class="cmd-lead">Open a browser tab on a URL, or a terminal tab in a folder</p>
+<p class="cmd-lead">Open a browser tab on a URL, or a terminal tab in a folder, in the background (--focus to bring it forward)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--focus] [--background]
 ```
 
 | flag | values | meaning |
@@ -146,12 +147,15 @@ aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [
 | `--command` | `<cmd>` | Optional |
 | `--title` | `<t>` | Optional |
 | `--wt-window` | `<name>` | Optional |
+| `--focus` |  | Optional |
 | `--background` |  | Optional |
 
 ```sh
 aos tab open https://example.com --app=Chrome
 aos tab open https://example.com --app=Safari --new-window
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
+aos tab open https://example.com --app=Chrome --focus   # raise the window and show the new tab
+# default is background: no window raise, no app activation; --background is accepted and does nothing extra
 aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window
 ```
 
@@ -164,7 +168,7 @@ aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\sr
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]
+aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json] [--focus]
 ```
 
 | flag | values | meaning |
@@ -175,10 +179,13 @@ aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<n
 | `--app` | `<name>` | Optional |
 | `--md` |  | Optional |
 | `--json` |  | Optional |
+| `--focus` |  | Optional |
 
 ```sh
 aos tab read --id=chrome:1658108662:1658109078
 aos tab read --url=web.whatsapp.com --json
+# never switches tabs or raises a window: a tab its window is not showing is refused (exit 3);
+# run `aos tab focus` on it first, or add --focus to let this command switch to it
 # [e7] Message (textarea, empty)   [e8] Send (button)
 ```
 
@@ -216,7 +223,7 @@ aos tab send --id=iterm:31:1 --key=ctrl+c
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
+aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus] [--focus]
 ```
 
 | flag | values | meaning |
@@ -233,6 +240,7 @@ aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<n
 | `--nth` | `<n>` | Optional |
 | `--allow-newline` |  | Optional |
 | `--allow-focus` |  | Optional |
+| `--focus` |  | Optional |
 
 ```sh
 aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter

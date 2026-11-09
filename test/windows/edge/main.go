@@ -77,7 +77,7 @@ func main() {
 		s.Check("window text of the edge window", h.AosStep("window", "text", "--id="+mine.ID), h.Has("sent: hello-edge"))
 	}
 	// A terminal in front instead of Notepad.
-	h.Aos("tab", "open", "--app=WindowsTerminal", "--wt-window=aosE-"+tag, "--title=E-"+tag)
+	h.Aos("tab", "open", "--focus", "--app=WindowsTerminal", "--wt-window=aosE-"+tag, "--title=E-"+tag)
 	time.Sleep(3 * time.Second)
 	term := h.Find("E-"+tag, "")
 	if len(term) > 0 {
