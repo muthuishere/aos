@@ -2258,14 +2258,18 @@ aos watch clipboard --max=1 --content
 
 ### `aos watch window`
 
-Print a JSON line whenever the focused window changes
+Print a JSON line whenever the focused window changes, or wait for text to appear or vanish in a window
 
 *display · blocking*
 
 ```bash
-aos watch window [--interval=<500ms>] [--max=<n>]
+aos watch window [--interval=<500ms>] [--max=<n>] | (--app=<name> | --title=<substring>) (--match=<text> | --gone=<text>) [--exact] [--new] [--interval=<2s>] [--timeout=<duration>] [--source=auto|accessibility|ocr] [--json]
 aos watch window
 aos watch window --max=1
+aos watch window --app=Teams --match="Muthu" --timeout=1h && echo "message arrived"
+aos watch window --app=Slack --match=deploy --new --json
+aos watch window --app=Notes --gone="Syncing" --timeout=2m
+# text mode reads the window like `window text`; exit 0 when met, 3 on --timeout; never raises or moves the window
 ```
 
 ### `aos watch file`

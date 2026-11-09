@@ -48,7 +48,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `process` |  | `list`, `find`, `kill` |
 | `remote` | `share`, `url` |  |
 | `say` | `aos say`, `voices`, `wait`, `stop` |  |
-| `serve` |  | `mcp`, `tools` |
+| `serve` |  | `mcp`, `tools`, `files` |
 | `service` |  | `create`, `remove`, `start`, `stop`, `status`, `list` |
 | `shortcuts` | `list`, `run` |  |
 | `skill` |  | `install`, `uninstall`, `show`, `path` |
@@ -57,7 +57,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `tab` | `list`, `focus`, `open`, `send`, `close`, `read`, `type`, `click` |  |
 | `trash` |  | `size`, `empty` |
 | `version` |  | `aos version` |
-| `watch` | `tab`, `clipboard`, `window` | `file` |
+| `watch` | `tab`, `clipboard`, `window`, `camera`, `mic` | `file` |
 | `webapp` | `open` |  |
 | `window` | `desktop`, `list`, `focus`, `move`, `resize`, `wait`, `zones`, `arrange`, `save`, `text` |  |
 

@@ -21,6 +21,14 @@ aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
   page at start does not count for `--match`. `--reload=<dur>` (min 10s,
   jittered) reloads the tab between reads; `--near=<anchor>` watches only the
   lines around an anchor. See `references/tabs.md`.
+- `watch window` with `--app` (or `--title`) and `--match` / `--gone` waits for
+  text in a native app window instead of reporting focus changes: exit 0 when
+  the text is in the window (`--match`) or no longer there (`--gone`), 3 on
+  `--timeout`. It reads the window like `aos window text` (accessibility, OCR
+  fallback) without raising it. `--new` makes `--match` ignore text that was
+  already there at the first read; `--exact` wants a whole line; `--interval`
+  defaults to `2s` here. No `--json` needed to chain; with it the exit prints
+  one `window-text` line naming the window and the matching line.
 - A watch only waits. Alerts, notifications and "then do X" are yours: chain
   with `&&` on exit 0, branch on exit 3.
 - `--interval` is the poll period (default `500ms`).
@@ -60,6 +68,20 @@ aos watch mic --json                   # {"event":"mic","state":"busy","apps":["
 Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
+
+### Chaining: the watch is the condition, the agent is the action
+
+aos has no `--notify` or `--then`. A watch exits 0 when its condition is met,
+so the agent chains what happens next:
+
+```bash
+# a Teams or Slack message from Muthu showed up (no notification API needed)
+aos watch window --app=Teams --match="Muthu" --new --timeout=1h && <agent reads and replies>
+aos watch window --app=Notes --gone="Syncing" --timeout=2m || echo "still syncing"
+```
+
+Exit 3 is the timeout, so `&&` runs the action only when the text arrived.
+Read the full thread afterwards with `aos window text Teams`.
 
 ## obs: what this machine was asked to do
 
