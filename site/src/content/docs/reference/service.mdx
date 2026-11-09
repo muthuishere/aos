@@ -18,6 +18,8 @@ Run any command as a managed per-user service that starts at login and survives 
 
 <p class="cmd-lead">Install a command as a service</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos service create <name> [--autostart] [--now] -- <command> [args...]
 ```
@@ -39,6 +41,8 @@ aos service create nap -- /bin/sleep 60
 
 <p class="cmd-lead">List the services aos manages</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos service list
 ```
@@ -50,6 +54,8 @@ aos service list
 ### aos service remove
 
 <p class="cmd-lead">Stop a service and delete its definition</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos service remove <name>
@@ -67,6 +73,8 @@ aos service remove mcp
 
 <p class="cmd-lead">Start an installed service</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos service start <name>
 ```
@@ -83,6 +91,8 @@ aos service start mcp
 
 <p class="cmd-lead">Report whether a service is running; exits non-zero when it is not</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos service status <name>
 ```
@@ -98,6 +108,8 @@ aos service status mcp
 ### aos service stop
 
 <p class="cmd-lead">Stop a running service</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos service stop <name>

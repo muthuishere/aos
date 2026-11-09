@@ -18,6 +18,8 @@ Read, write and inspect files with exit codes an agent can trust. `read` takes a
 
 <p class="cmd-lead">Append stdin, or the given words, to a file</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos file append <path> [text...]
 ```
@@ -33,6 +35,8 @@ aos file append log.txt "done"
 ### aos file copy
 
 <p class="cmd-lead">Copy a file</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file copy <source> <destination>
@@ -51,6 +55,8 @@ aos file copy a.txt b.txt
 
 <p class="cmd-lead">Delete a file, or a directory with --recursive</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos file delete <path> [--recursive]
 ```
@@ -67,6 +73,8 @@ aos file delete /tmp/scratch --recursive
 ### aos file list
 
 <p class="cmd-lead">List a directory</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file list [path] [--all] [--json]
@@ -86,6 +94,8 @@ aos file list ~/Downloads --json
 
 <p class="cmd-lead">Create a directory, including parents</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos file mkdir <path>
 ```
@@ -101,6 +111,8 @@ aos file mkdir ~/.config/aos/layouts
 ### aos file move
 
 <p class="cmd-lead">Move or rename a path</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file move <source> <destination>
@@ -118,6 +130,8 @@ aos file move old.txt new.txt
 ### aos file read
 
 <p class="cmd-lead">Print a file, optionally a line range</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file read <path> [--lines=<from>:<to>]
@@ -138,6 +152,8 @@ aos file read main.go --lines=10:40
 
 <p class="cmd-lead">List recently opened documents, newest first, from the OS's own recents</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos file recent [--app=<name>] [--limit=<n>] [--json]
 ```
@@ -157,6 +173,8 @@ aos file recent --json
 ### aos file search
 
 <p class="cmd-lead">Find files and folders by name, through the OS index when there is one</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file search <query> [--root=<dir>] [--kind=file|dir] [--limit=<n>] [--engine=auto|everything|index|walk] [--json]
@@ -181,6 +199,8 @@ aos file search notes --kind=dir --engine=walk
 
 <p class="cmd-lead">Print one path's size, mode, and modified time</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos file stat <path> [--json]
 ```
@@ -197,6 +217,8 @@ aos file stat go.mod --json
 ### aos file write
 
 <p class="cmd-lead">Write stdin, or the given words, to a file</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos file write <path> [text...]

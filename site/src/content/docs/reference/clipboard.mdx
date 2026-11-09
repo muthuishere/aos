@@ -18,6 +18,8 @@ Read and write the system clipboard as text. `copy` takes words or stdin, `paste
 
 <p class="cmd-lead">Copy stdin, or the given words, to the clipboard</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos clipboard copy [text...]
 ```
@@ -30,6 +32,8 @@ aos clipboard copy "some text"
 ### aos clipboard history
 
 <p class="cmd-lead">List the texts the history recorder saw, newest first</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos clipboard history [--limit=<n>] [--json]
@@ -49,6 +53,8 @@ aos clipboard history --limit=5 --json
 
 <p class="cmd-lead">Delete the recorded clipboard history</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos clipboard history clear
 ```
@@ -60,6 +66,8 @@ aos clipboard history clear
 ### aos clipboard history get
 
 <p class="cmd-lead">Print history entry \<n\> (1 is the newest)</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos clipboard history get <n>
@@ -77,6 +85,8 @@ aos clipboard history get 2
 
 <p class="cmd-lead">Put history entry \<n\> back on the clipboard (1 is the newest)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos clipboard history restore <n>
 ```
@@ -93,6 +103,8 @@ aos clipboard history restore 2
 
 <p class="cmd-lead">Start recording clipboard history in the background (opt-in; ask the person first)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos clipboard history start
 ```
@@ -104,6 +116,8 @@ aos clipboard history start
 ### aos clipboard history status
 
 <p class="cmd-lead">Say whether the history recorder is running and how much it holds</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos clipboard history status [--json]
@@ -121,6 +135,8 @@ aos clipboard history status
 
 <p class="cmd-lead">Stop the clipboard history recorder (the history is kept)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos clipboard history stop
 ```
@@ -132,6 +148,8 @@ aos clipboard history stop
 ### aos clipboard paste
 
 <p class="cmd-lead">Print the clipboard to stdout</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos clipboard paste
