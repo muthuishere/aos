@@ -8,15 +8,36 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-13 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+14 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `wifi-qr` prints the QR a phone camera scans to join the current network (`WIFI:T:WPA;S:...;;`) in the terminal, or as a PNG with `--out`; the saved password goes in only with `--password`, read from the keychain on macOS (`security find-generic-password`, which shows an authorization prompt), from `netsh wlan show profile key=clear` on Windows and from `nmcli` on Linux. macOS hides the network name from a terminal without Location access, so name it with `--ssid` there. `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`. `speed` runs a small speed test against Cloudflare (`speed.cloudflare.com`, no account): a burst of empty requests for median ping and jitter, then 100 KB, 1 MB and the rest of a 5 MB download budget, then 2 MB up; `--max-mb` raises the budget.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `wifi-qr` prints the QR a phone camera scans to join the current network (`WIFI:T:WPA;S:...;;`) in the terminal, or as a PNG with `--out`; the saved password goes in only with `--password`, read from the keychain on macOS (`security find-generic-password`, which shows an authorization prompt), from `netsh wlan show profile key=clear` on Windows and from `nmcli` on Linux. macOS hides the network name from a terminal without Location access, so name it with `--ssid` there. `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`. `captive-portal` asks `connectivitycheck.gstatic.com/generate_204` over plain http without following redirects: a 204 is `online`, any other answer is a `portal` (with the login URL from its redirect or meta refresh when it gives one), no answer is `offline`; it exits 1 unless online. `speed` runs a small speed test against Cloudflare (`speed.cloudflare.com`, no account): a burst of empty requests for median ping and jitter, then 100 KB, 1 MB and the rest of a 5 MB download budget, then 2 MB up; `--max-mb` raises the budget.
 
 ## Commands
+
+### aos network captive-portal
+
+<p class="cmd-lead">Check whether a captive portal (hotel, airport Wi-Fi login) is intercepting the connection</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos network captive-portal [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network captive-portal          # online | portal <url> | offline; exit 1 unless online
+aos network captive-portal --json   # state, portal, status, probe
+```
 
 ### aos network ip
 
 <p class="cmd-lead">Print the local address of the active interface</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network ip
@@ -29,6 +50,8 @@ aos network ip         # 192.168.1.20
 ### aos network ports
 
 <p class="cmd-lead">List listening TCP ports with the pid and process that own them</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network ports [<port>] [--json]
@@ -49,6 +72,8 @@ aos network ports --json
 
 <p class="cmd-lead">Print this machine's public IP address as the internet sees it</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network public-ip [--json]
 ```
@@ -65,6 +90,8 @@ aos network public-ip --json   # ip, country, source
 ### aos network speed
 
 <p class="cmd-lead">Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network speed [--max-mb <n>] [--json]
@@ -86,6 +113,8 @@ aos network speed --max-mb 25   # bigger budget, steadier number on fast links
 
 <p class="cmd-lead">Print the active interface, address, and Wi-Fi network</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network status
 ```
@@ -97,6 +126,8 @@ aos network status
 ### aos network vpn off
 
 <p class="cmd-lead">Disconnect a system VPN by name</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network vpn off <name>
@@ -114,6 +145,8 @@ aos network vpn off "Work VPN"
 
 <p class="cmd-lead">Connect a system VPN by name</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network vpn on <name>
 ```
@@ -129,6 +162,8 @@ aos network vpn on "Work VPN"
 ### aos network vpn status
 
 <p class="cmd-lead">List the system's VPN connections and which are connected</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network vpn status [--json]
@@ -147,6 +182,8 @@ aos network vpn status --json
 
 <p class="cmd-lead">Print the Wi-Fi network currently joined</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network wifi
 ```
@@ -158,6 +195,8 @@ aos network wifi
 ### aos network wifi join
 
 <p class="cmd-lead">Join a Wi-Fi network; a password is read from stdin, never argv</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network wifi join <ssid> [--password-stdin]
@@ -177,6 +216,8 @@ printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
 
 <p class="cmd-lead">Turn the Wi-Fi radio off (drops the connection; confirm first if you are remote)</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network wifi off
 ```
@@ -189,6 +230,8 @@ aos network wifi off
 
 <p class="cmd-lead">Turn the Wi-Fi radio on</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network wifi on
 ```
@@ -200,6 +243,8 @@ aos network wifi on
 ### aos network wifi-qr
 
 <p class="cmd-lead">Show a QR code a phone can scan to join the current Wi-Fi (password only with --password)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network wifi-qr [--ssid=<name>] [--password] [--out=<file.png>] [--payload]

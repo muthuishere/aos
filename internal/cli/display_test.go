@@ -91,7 +91,7 @@ func TestCommandsListHidesGUIWhenHeadless(t *testing.T) {
 	if code := Run(c, []string{"commands", "--all"}); code != 0 {
 		t.Fatalf("exit %d", code)
 	}
-	if !strings.Contains(out.String(), "g window list") {
+	if !strings.Contains(out.String(), "g^ window list") {
 		t.Fatalf("--all should mark the GUI command with g:\n%s", out.String())
 	}
 }

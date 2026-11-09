@@ -147,9 +147,11 @@ aos focus status --json    # Do Not Disturb on? mode, until (macOS, GNOME; Windo
 aos focus on --for=1h · aos focus off   # GNOME only; macOS and Windows have no API, exit 2
 aos disk list --json · aos disk usage [path]   # free / total per volume
 aos disk eject /Volumes/USB   # removable only; refuses / and C:
+aos disk top [path] [--depth=1] [--limit=20] [--timeout=5s] [--files] [--json]   # biggest folders; partial:true if cut short; tags trash/cache/downloads/docker/ios-backup/xcode-derived-data/node_modules with safe: yes|review|tool|no; read only
 aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos network public-ip [--json]   # as the internet sees it (Cloudflare trace)
+aos network captive-portal [--json]  # online, portal <login url> or offline; exit 1 unless online
 aos network speed [--max-mb 5] [--json]   # ping/jitter/down/up Mbps vs Cloudflare; ~5 MB down, 2 MB up
 aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos network wifi on · aos network wifi off   # confirm before off: it drops the connection

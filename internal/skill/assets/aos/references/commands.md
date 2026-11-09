@@ -299,6 +299,19 @@ aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
 ```
 
+### `aos capture qr`
+
+Decode the QR codes in an image file, a screen region or a whole monitor
+
+*display*
+
+```bash
+aos capture qr [<image>] [--region=<x,y,w,h>] [--monitor=<n>] [--json]
+aos capture qr ticket.png                    # decode a PNG, JPEG or GIF file
+aos capture qr --region=100,100,400,400      # decode what is on screen there
+aos capture qr --monitor=2 --json            # every QR code on monitor 2, with its bounds
+```
+
 ### `aos capture text`
 
 OCR a screen region or a whole monitor and print its text in reading order
@@ -613,6 +626,18 @@ aos disk eject /dev/sdb1
 aos disk eject E:
 ```
 
+### `aos disk top`
+
+Rank the biggest folders (and files) under a path, tagging caches, trash and other known space hogs
+
+```bash
+aos disk top [<path>] [--depth=<n>] [--limit=<n>] [--timeout=<dur>] [--files] [--json]
+aos disk top                      # biggest folders in your home, 5 s budget
+aos disk top ~/Library --depth=2 --limit=30
+aos disk top ~/Downloads --files --json
+aos disk top / --timeout=30s --json
+```
+
 
 ## display
 
@@ -620,15 +645,31 @@ Attached monitors
 
 ### `aos display brightness`
 
-Print or set screen brightness 0-100 (the built-in panel, else the main display)
+Print or set a monitor's brightness 0-100: built-in panel or external over DDC/CI (default: the focused window's monitor)
 
 *display*
 
 ```bash
-aos display brightness [<0-100>|+<n>|-<n>]
-aos display brightness       # 70
-aos display brightness 50
-aos display brightness -10
+aos display brightness [<monitor id>] [<0-100>|+<n>|-<n>] [--monitor=<id>] [--all] [--list] [--json]
+aos display brightness            # BenQ GW2785TC (2): 64
+aos display brightness +20        # brighter on the focused window's monitor
+aos display brightness 2 50       # monitor 2 to 50
+aos display brightness --monitor=3
+aos display brightness --all 40
+aos display brightness --list
+aos display brightness -10 --json
+```
+
+### `aos display of`
+
+Print the monitor an app's or a window's window is on: id, name and brightness
+
+*display*
+
+```bash
+aos display of --app=<name> | --window=<id> [--json]
+aos display of --app Safari          # 2  BenQ GW2785TC  brightness 64
+aos display of --window 12345 --json
 ```
 
 ### `aos display list`
@@ -1088,9 +1129,10 @@ Launch an application, optionally waiting for its window
 *display*
 
 ```bash
-aos launch <app> [args...] [--wait[=<ms>]]
+aos launch <app> [args...] [--wait[=<ms>]] [--or-focus]
 aos launch "Visual Studio Code"
 aos launch Chrome --wait
+aos launch Slack --or-focus   # raise Slack's window if it is open, else start it
 ```
 
 
@@ -1224,6 +1266,16 @@ aos mouse position     # 784 539
 ## network
 
 Connectivity, addresses, and Wi-Fi
+
+### `aos network captive-portal`
+
+Check whether a captive portal (hotel, airport Wi-Fi login) is intercepting the connection
+
+```bash
+aos network captive-portal [--json]
+aos network captive-portal          # online | portal <url> | offline; exit 1 unless online
+aos network captive-portal --json   # state, portal, status, probe
+```
 
 ### `aos network public-ip`
 
