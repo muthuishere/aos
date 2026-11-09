@@ -323,3 +323,31 @@ func foregroundWith(hwnd uintptr, unlock bool) error {
 }
 
 const vkF24 = 0x87
+
+// gaRootOwner is GetAncestor's GA_ROOTOWNER: the top of the owner chain, so a
+// focused dialog maps back to the app window that owns it.
+const gaRootOwner = 3
+
+// shellClasses are the desktop and taskbar windows that hold the foreground
+// after Win+D or a click on the taskbar. None of them is an app window.
+var shellClasses = map[string]bool{
+	"Progman": true, "WorkerW": true, "Shell_TrayWnd": true, "Shell_SecondaryTrayWnd": true,
+}
+
+// ForegroundWindowIDs reports GetForegroundWindow and its root owner as the
+// windows that count as focused, or nothing when the desktop or the shell
+// has the foreground.
+func (a *Adapter) ForegroundWindowIDs() []string {
+	fg, _, _ := procGetForegroundWnd.Call()
+	if fg == 0 || shellClasses[className(fg)] {
+		return nil
+	}
+	if shell, _, _ := procGetShellWindow.Call(); shell == fg {
+		return nil
+	}
+	ids := []string{fmt.Sprintf("%d", fg)}
+	if root, _, _ := procGetAncestor.Call(fg, gaRootOwner); root != 0 && root != fg {
+		ids = append(ids, fmt.Sprintf("%d", root))
+	}
+	return ids
+}
