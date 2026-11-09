@@ -27,6 +27,26 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch battery: save work before it dies, start when it is full
+
+`watch battery` is a gate, not an alerter: exit 0 when a condition holds, 3 on
+`--timeout`, and the agent decides what to do.
+
+```bash
+aos watch battery --below=20 && <agent saves work>     # exit 0 once under 20%
+aos watch battery --until=full --timeout=3h             # charge finished (3 if not in 3h)
+aos watch battery --until=discharging                   # the charger was pulled
+aos watch battery                                       # JSON line per plugged, unplugged, full, level
+```
+
+- Conditions are states, not edges: `--below=20` at 15% returns at once. With
+  several (`--below`, `--above`, `--until`), the first that holds ends the wait.
+  `--below`/`--above` are strict (`--below=20` means 19% or less).
+- Streaming (no condition) lines carry `percent`, `status` and `on_ac`.
+- No battery (a desktop): exit 2 with a message, before any waiting.
+- Polls every 5s by default (`--interval`). `--json` for the line on exit.
+- Follows the same side as `battery`: the machine `aos` runs on.
+
 ## obs: what this machine was asked to do
 
 Every command run, from the CLI or over MCP, is recorded locally as a span:

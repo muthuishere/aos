@@ -2200,6 +2200,20 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch battery`
+
+Wait for a battery level or charging state, or print a JSON line for each power change
+
+*display · blocking*
+
+```bash
+aos watch battery [--below=<pct>] [--above=<pct>] [--until=charging|discharging|full] [--interval=<5s>] [--timeout=<dur>] [--json]
+aos watch battery --below=20 && echo time to save work      # exit 0 once the charge is under 20%
+aos watch battery --until=full --timeout=3h                 # exit 3 if it is not full in 3 hours
+aos watch battery --until=discharging                       # exit 0 when the charger is pulled
+aos watch battery                                           # a JSON line for plugged, unplugged, full and each % change
+```
+
 
 ## webapp
 
