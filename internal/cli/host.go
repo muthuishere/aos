@@ -34,6 +34,8 @@ var hostTable = map[string]bool{
 	"system lock": true, "system sleep": true,
 	// The documents the person opened at their desktop, not the agent's box.
 	"file recent": true,
+	// The person's screen lock, and whether their machine slept.
+	"watch lock": true,
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,

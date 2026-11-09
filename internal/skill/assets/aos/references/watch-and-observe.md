@@ -27,6 +27,24 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch lock: locked, unlocked, asleep, awake
+
+```bash
+aos watch lock                                         # a JSON line per lock / unlock / sleep / wake
+aos watch lock --until=unlocked --timeout=2h && <agent resumes UI work>
+aos watch lock --until=locked && <agent starts the long job>
+aos watch lock --until=wake --timeout=8h
+```
+
+`--until=locked|unlocked` exits 0 at once if the machine is already in that
+state; `sleep` and `wake` are moments, so they wait for the next one. Lock is
+read from macOS CGSession and the Windows WTS session state (Linux: logind
+LockedHint). There is no public API to be told about sleep, so it is seen as a
+gap in the poll clock: sleep and wake are reported together on resume, the
+sleep line carrying `slept_ms`. Exit 3 on `--timeout`. Follows the host under
+WSL. While locked, window and input commands cannot see the screen: wait for
+`--until=unlocked` before UI work.
+
 ## obs: what this machine was asked to do
 
 Every command run, from the CLI or over MCP, is recorded locally as a span:
