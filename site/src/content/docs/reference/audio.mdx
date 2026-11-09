@@ -18,6 +18,8 @@ Output volume and mute for the system sound device. `volume` with no argument pr
 
 <p class="cmd-lead">List output and input sound devices, marking the defaults</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos audio devices [--json]
 ```
@@ -34,6 +36,8 @@ aos audio devices --json
 ### aos audio input
 
 <p class="cmd-lead">Print the default input device, or switch it by name or id</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos audio input [<device>]
@@ -52,6 +56,8 @@ aos audio input "MacBook Pro Microphone"
 
 <p class="cmd-lead">Print or change the output mute state</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos audio mute [on|off|toggle]
 ```
@@ -63,6 +69,8 @@ aos audio mute toggle
 ### aos audio output
 
 <p class="cmd-lead">Print the default output device, or switch it by name or id</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos audio output [<device>]
@@ -81,6 +89,8 @@ aos audio output "MacBook Pro Speakers"
 ### aos audio volume
 
 <p class="cmd-lead">Print the output volume, or set it</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos audio volume [<0-100>|+<n>|-<n>]

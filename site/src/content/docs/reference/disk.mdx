@@ -20,6 +20,8 @@ Mounted volumes and their space. `list` shows each volume with total, used and f
 
 <p class="cmd-lead">Unmount and eject a removable volume, by mount point or device</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos disk eject <mount|device>
 ```
@@ -37,6 +39,8 @@ aos disk eject E:
 ### aos disk list
 
 <p class="cmd-lead">List mounted volumes with total, used and free space</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos disk list [--json]
@@ -78,6 +82,8 @@ aos disk top / --timeout=30s --json
 ### aos disk usage
 
 <p class="cmd-lead">Print total, used and free space of the volume holding a path</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos disk usage [<path>] [--json]

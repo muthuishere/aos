@@ -8,9 +8,9 @@ sidebar:
 
 <p class="cmd-lead">Attached monitors</p>
 
-7 commands. Run `aos display --help` for the same list from the binary, or [see every group](../commands/).
+8 commands. Run `aos display --help` for the same list from the binary, or [see every group](../commands/).
 
-Attached monitors. `list` prints each monitor with its geometry and which one is primary, active (has the pointer) and focused (has the frontmost window). `active` and `focused` print just the id, for scripts that pass it to `--monitor`. Monitor numbers can change when displays are plugged in or out. `modes` lists the resolutions a monitor supports; `mode` switches to one (the exact size, the highest refresh rate unless `@Hz` is given, and anything else is refused with the list); `mirror on|off` mirrors every monitor to the main one or extends the desktop again. On macOS changes last for the login session; on Linux they go through `xrandr`. `brightness` prints or sets the screen's brightness on a 0-100 scale, with `+10` / `-10` for relative steps like `audio volume`; it drives the built-in panel when there is one (external monitors through DDC/CI on Windows) and exits 2 when the display has no software brightness.
+Attached monitors. `list` prints each monitor with its geometry and which one is primary, active (has the pointer) and focused (has the frontmost window). `active` and `focused` print just the id, for scripts that pass it to `--monitor`. Monitor numbers can change when displays are plugged in or out. `modes` lists the resolutions a monitor supports; `mode` switches to one (the exact size, the highest refresh rate unless `@Hz` is given, and anything else is refused with the list); `mirror on|off` mirrors every monitor to the main one or extends the desktop again. On macOS changes last for the login session; on Linux they go through `xrandr`. `brightness` prints or sets a monitor's brightness on a 0-100 scale, with `+10` / `-10` for relative steps like `audio volume`. With no id it acts on the monitor holding the focused window (else the one under the pointer) and prints which one changed, e.g. `BenQ GW2785TC (2): 64`. It drives the built-in panel and external monitors over DDC/CI (IOAVService on Apple Silicon Macs, dxva2 on Windows, `ddcutil` on Linux when installed); every write is read back. `--all` sets every monitor, `--list` shows each monitor's name, value and whether it can be controlled, and `--json` gives `{monitor, name, value, method}`. A monitor that cannot be controlled, or a sleeping built-in panel, exits 2 with the reason. `of --app <name>` or `of --window <id>` prints the monitor that window is on, with its name and brightness. `list` also shows each monitor's name as the OS reports it.
 
 ## Commands
 
@@ -19,6 +19,8 @@ Attached monitors. `list` prints each monitor with its geometry and which one is
 <p class="cmd-lead">Print the ID of the monitor the pointer is on</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display active
@@ -30,24 +32,35 @@ aos capture screenshot --monitor=$(aos display active)
 
 ### aos display brightness
 
-<p class="cmd-lead">Print or set screen brightness 0-100 (the built-in panel, else the main display)</p>
+<p class="cmd-lead">Print or set a monitor's brightness 0-100: built-in panel or external over DDC/CI (default: the focused window's monitor)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
-aos display brightness [<0-100>|+<n>|-<n>]
+aos display brightness [<monitor id>] [<0-100>|+<n>|-<n>] [--monitor=<id>] [--all] [--list] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
+| `<monitor id>` | | Optional positional argument |
 | `<0-100>` | | Optional positional argument |
 | `<n>` | | Optional positional argument |
 | `<n>` | | Optional positional argument |
+| `--monitor` | `<id>` | Optional |
+| `--all` |  | Optional |
+| `--list` |  | Optional |
+| `--json` |  | Optional |
 
 ```sh
-aos display brightness       # 70
-aos display brightness 50
-aos display brightness -10
+aos display brightness            # BenQ GW2785TC (2): 64
+aos display brightness +20        # brighter on the focused window's monitor
+aos display brightness 2 50       # monitor 2 to 50
+aos display brightness --monitor=3
+aos display brightness --all 40
+aos display brightness --list
+aos display brightness -10 --json
 ```
 
 ### aos display focused
@@ -55,6 +68,8 @@ aos display brightness -10
 <p class="cmd-lead">Print the ID of the monitor holding the frontmost window</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display focused
@@ -70,6 +85,8 @@ aos window move Chrome --monitor=$(aos display focused)
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos monitors</code></span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos display list
 ```
@@ -83,6 +100,8 @@ aos display list
 <p class="cmd-lead">Mirror every monitor to the main one (on) or extend the desktop (off)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display mirror on|off
@@ -98,6 +117,8 @@ aos display mirror off
 <p class="cmd-lead">Switch a monitor to a resolution (highest refresh unless @Hz is given)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos display mode <monitor id> <WxH[@Hz]>
@@ -119,6 +140,8 @@ aos display mode 1 1920x1080@60
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos display modes <monitor id> [--json]
 ```
@@ -131,4 +154,25 @@ aos display modes <monitor id> [--json]
 ```sh
 aos display modes 1
 aos display modes 2 --json
+```
+
+### aos display of
+
+<p class="cmd-lead">Print the monitor an app's or a window's window is on: id, name and brightness</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos display of --app=<name> | --window=<id> [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--app` | `<name>` | One of these is required |
+| `--window` | `<id>` | One of these is required |
+| `--json` |  | Optional |
+
+```sh
+aos display of --app Safari          # 2  BenQ GW2785TC  brightness 64
+aos display of --window 12345 --json
 ```
