@@ -69,6 +69,27 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch battery: save work before it dies, start when it is full
+
+`watch battery` is a gate, not an alerter: exit 0 when a condition holds, 3 on
+`--timeout`, and the agent decides what to do.
+
+```bash
+aos watch battery --below=20 && <agent saves work>     # exit 0 once under 20%
+aos watch battery --until=full --timeout=3h             # charge finished (3 if not in 3h)
+aos watch battery --until=discharging                   # the charger was pulled
+aos watch battery                                       # JSON line per plugged, unplugged, full, level
+```
+
+- Conditions are states, not edges: `--below=20` at 15% returns at once. With
+  several (`--below`, `--above`, `--until`), the first that holds ends the wait.
+  `--below`/`--above` are strict (`--below=20` means 19% or less).
+- Streaming (no condition) lines carry `percent`, `status` and `on_ac`.
+- No battery (a desktop): exit 2 with a message, before any waiting.
+- Polls every 5s by default (`--interval`). `--json` for the line on exit.
+- Follows `battery`: under WSL or SSH it reads the host's battery, not the
+  agent box's.
+
 ### watch idle: is the person at the desk
 
 ```bash
@@ -82,6 +103,7 @@ GetLastInputInfo, Linux needs `xprintidle` on X11). `--for` also exits at once
 when the person is already idle that long. `--active` takes the first sample as
 the baseline and exits when the idle counter drops. Exit 3 on `--timeout`, 1
 when the machine cannot report idle time. It follows the host under WSL.
+
 ### watch process: a build, render or download finishes
 
 `watch process` is a gate, not an alerter: it exits 0 when its condition is
@@ -103,6 +125,7 @@ aos watch process --name=node                               # JSON line per star
 - `exit_code` appears in the output only on Windows; macOS and Linux give no
   exit code for a process that is not our child.
 - Local to the machine `aos` runs on (like `process`), never forwarded.
+
 ### Chaining: the watch is the condition, the agent is the action
 
 aos has no `--notify` or `--then`. A watch exits 0 when its condition is met,
