@@ -40,6 +40,8 @@ var hostTable = map[string]bool{
 	"file recent": true,
 	// Input idle time is the person's, at the host's keyboard.
 	"watch idle": true, "watch battery": true,
+	// Online, offline and Wi-Fi changes of the machine the person sits at.
+	"watch network": true,
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,

@@ -2343,6 +2343,20 @@ aos watch idle --for=5m --json
 # exit 0 when met, 3 on --timeout, 1 when this machine cannot report idle time
 ```
 
+### `aos watch network`
+
+Print a JSON line when the machine goes online or offline or changes Wi-Fi network
+
+*display · blocking*
+
+```bash
+aos watch network [--until=online|offline] [--timeout=<duration>] [--max=<n>] [--interval=<5s>]
+aos watch network
+aos watch network --until=online --timeout=10m && aos exec -- git push
+aos watch network --until=offline
+# --until: exit 0 when that state is reached (at once if already there), 3 on --timeout
+```
+
 ### `aos watch camera`
 
 Report when any app starts or stops using the camera

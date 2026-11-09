@@ -11,6 +11,8 @@ aos watch window --max=1                  # wait until the focused window change
 aos watch file ./notes.md --max=1         # wait for one change to a file
 aos watch file ./src --recursive --interval=1s
 aos watch tab --id=ID --match="Done" --timeout=5m   # wait for text to appear in a browser tab
+aos watch network                                   # one line per online / offline / Wi-Fi change
+aos watch network --until=online --timeout=10m && aos exec -- git push
 aos watch url https://example.com/status            # plain HTTP: one line per change of the page text
 aos watch url https://example.com/release --every=5m --match="v2.0" --timeout=12h && aos open https://example.com/release
 aos watch tab --url=x --reload=30s --match="Book now" && aos tab click --url=x --find="Book now"
@@ -20,6 +22,14 @@ aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
 - `watch tab` prints only the new lines of the page (`"added":[...]`). With
   `--match` it exits 0 when matching text appears and 3 on `--timeout`. Text
   already on the page at start does not count. See `references/tabs.md`.
+- `watch network` prints `{"event":"network","change":"online|offline|wifi","state":...,"ssid":...}`
+  per change (a new address on the same network is not one). It wakes on the
+  OS's own notification (NWPathMonitor on macOS, NotifyIpInterfaceChange on
+  Windows) and also polls every `--interval` (default `5s`) as the fallback;
+  Linux only polls. `--until=online|offline` exits 0 when that state is
+  reached (at once if it already is) and 3 on `--timeout`. On macOS the SSID
+  reads `<redacted>` unless the app running aos has Location access, so Wi-Fi
+  changes are not seen there without it. It runs on the agent's own machine.
 - `watch url <url>` polls over plain HTTP from this machine (no browser). It
   compares the text of the page (tags, scripts and styles stripped), not the
   bytes, and prints `{"event":"url","added":[...],"removed":[...]}` per change.
