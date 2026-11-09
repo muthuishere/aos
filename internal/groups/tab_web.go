@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -70,11 +72,14 @@ func init() {
 				Group: "watch", Name: "tab",
 				Summary:  "Print a JSON line with the new text whenever a browser tab's page changes",
 				Blocking: true,
-				Args:     "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
+				Args:     "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
 				Examples: []string{
 					"aos watch tab --id=chrome:1658108662:1658109078",
 					`aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m`,
-					"# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes",
+					`aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"`,
+					`aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h`,
+					`aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m`,
+					"# with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes",
 				},
 				Platforms: platforms,
 				Run:       runWatchTab,
@@ -554,13 +559,36 @@ func runTabClick(c *cli.Ctx, args []string) error {
 // minTabWatchInterval: each read is a full accessibility walk of the page.
 const minTabWatchInterval = time.Second
 
+// minTabReload keeps --reload polite to the site: a reload is a full page
+// load on someone else's server, and a watch can run for hours.
+const minTabReload = 10 * time.Second
+
+// nearRadius is how many lines on each side of the --near anchor are watched.
+// The page reader has no regions (no selectors), so "near" is the anchor's
+// neighbourhood in reading order.
+const nearRadius = 5
+
+// reloadSettleMax bounds how long a watch waits for a reloaded page to stop
+// changing before it reads it anyway.
+const reloadSettleMax = 15 * time.Second
+
 func runWatchTab(c *cli.Ctx, args []string) error {
-	set, err := parseArgs(args, "id", "url", "title", "app", "match", "interval", "timeout", "max")
+	set, err := parseArgs(args, "id", "url", "title", "app", "match", "gone", "near", "reload", "interval", "timeout", "max")
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "match", "exact", "interval", "timeout", "max"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "match", "gone", "near", "exact", "reload", "interval", "timeout", "max"); err != nil {
 		return err
+	}
+	match, gone := set.String("match", ""), set.String("gone", "")
+	if match != "" && gone != "" {
+		return fmt.Errorf("--match and --gone are exclusive")
+	}
+	var reload time.Duration
+	if v := set.String("reload", ""); v != "" {
+		if reload, err = parseInterval(v, 0); err != nil || reload < minTabReload {
+			return fmt.Errorf("--reload must be a duration of at least %s, got %q", minTabReload, v)
+		}
 	}
 	interval, max, err := watchOptions(set)
 	if err != nil {
@@ -597,9 +625,14 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 		}
 		return watchLines(nodes), nil
 	}
+	var reloadFn func() error
+	if reload > 0 {
+		reloadFn = func() error { return tabReload(w) }
+	}
 	return watchTabLoop(c, tabWatch{
-		tab: t.ID, match: set.String("match", ""), exact: set.Has("exact"),
+		tab: t.ID, match: match, gone: gone, near: set.String("near", ""), exact: set.Has("exact"),
 		interval: interval, timeout: timeout, max: max, read: read,
+		reload: reload, reloadFn: reloadFn,
 		selected: func() (bool, error) {
 			cur, err := tabNow(id)
 			if err != nil {
@@ -612,14 +645,110 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 
 type tabWatch struct {
 	tab      string
-	match    string
+	match    string // exit 0 when a new line matches
+	gone     string // exit 0 when no line matches
+	near     string // watch only the lines around this anchor
 	exact    bool
 	interval time.Duration
 	timeout  time.Duration
 	max      int
+	reload   time.Duration // 0: never reload
+	reloadFn func() error
 	read     func() ([]string, error)
 	selected func() (bool, error) // is the tab still the one its window shows
 	now      func() time.Time
+	jitter   func(time.Duration) time.Duration
+	sleep    func(time.Duration)
+}
+
+// errSkip marks a tick with nothing to compare (the --near anchor is absent).
+var errSkip = errors.New("skip")
+
+// tabReload reloads the page shown in w by pressing the browser's own
+// Reload / Refresh toolbar button through accessibility (AXPress on macOS,
+// UIA Invoke on Windows): no key is sent and the window is not raised, so it
+// works the same in Chrome, Edge and Safari and never types into the page.
+var tabReload = func(w engine.Window) error {
+	if w.ID == "" {
+		return fmt.Errorf("the tab's window is not on screen; cannot reach its Reload button")
+	}
+	items, err := engine.WindowTexts(w.ID)
+	if err != nil {
+		return err
+	}
+	b, ok := reloadButton(items)
+	if !ok {
+		return fmt.Errorf("no Reload button in %s's toolbar", w.App)
+	}
+	return engine.PressElement(w, b.Bounds.X+b.Bounds.W/2, b.Bounds.Y+b.Bounds.H/2)
+}
+
+// reloadButton picks the browser's reload button: Chrome calls it "Reload",
+// Edge "Refresh", Safari "Reload this page".
+func reloadButton(items []engine.TextItem) (engine.TextItem, bool) {
+	for _, it := range items {
+		if it.Role != "button" {
+			continue
+		}
+		l := strings.ToLower(strings.TrimSpace(it.Text))
+		if l == "reload" || l == "refresh" || strings.HasPrefix(l, "reload this page") || strings.HasPrefix(l, "refresh (") || strings.HasPrefix(l, "reload (") {
+			return it, true
+		}
+	}
+	return engine.TextItem{}, false
+}
+
+// reloadJitter adds up to a tenth of d, so many watches started together do
+// not hit a site in lockstep.
+func reloadJitter(d time.Duration) time.Duration {
+	if d/10 <= 0 {
+		return d
+	}
+	return d + time.Duration(rand.Int64N(int64(d/10)))
+}
+
+// nearLines narrows a page to the lines around the first line matching the
+// anchor; ok is false when the anchor is not on the page.
+func nearLines(lines []string, anchor string, exact bool) ([]string, bool) {
+	for i, l := range lines {
+		if textMatches(l, anchor, exact) {
+			lo, hi := max(0, i-nearRadius), min(len(lines), i+nearRadius+1)
+			return lines[lo:hi], true
+		}
+	}
+	return nil, false
+}
+
+// anyMatches reports whether any line matches text.
+func anyMatches(lines []string, text string, exact bool) bool {
+	for _, l := range lines {
+		if textMatches(l, text, exact) {
+			return true
+		}
+	}
+	return false
+}
+
+// settle re-reads a just-reloaded page until two reads agree (or the bound
+// runs out), so a half-loaded page is not taken for the new state.
+func (o tabWatch) settle() ([]string, error) {
+	var last []string
+	var err error
+	for waited := time.Duration(0); waited < reloadSettleMax; waited += o.interval {
+		o.sleep(o.interval)
+		var cur []string
+		if cur, err = o.read(); err != nil {
+			continue
+		}
+		if len(cur) > 0 && slices.Equal(cur, last) {
+			return cur, nil
+		}
+		last = cur
+	}
+	if last == nil && err != nil {
+		return nil, err
+	}
+	return last, nil
 }
 
 // watchTabLoop re-reads the page every interval and prints the lines that
@@ -635,6 +764,17 @@ func watchTabLoop(c *cli.Ctx, o tabWatch) error {
 	if o.now == nil {
 		o.now = time.Now
 	}
+	if o.jitter == nil {
+		o.jitter = reloadJitter
+	}
+	if o.sleep == nil {
+		o.sleep = time.Sleep
+	}
+	var nextReload time.Time
+	if o.reload > 0 {
+		nextReload = o.now().Add(o.jitter(o.reload))
+	}
+	nearWarned := false
 	var deadline <-chan time.Time
 	if o.timeout > 0 {
 		timer := time.NewTimer(o.timeout)
@@ -644,13 +784,22 @@ func watchTabLoop(c *cli.Ctx, o tabWatch) error {
 	ticker := time.NewTicker(o.interval)
 	defer ticker.Stop()
 	var prev []string
-	started, warned, seq := false, false, 0
+	started, warned, seq, misses := false, false, 0, 0
 	for {
 		ok := true
 		if started && o.selected != nil {
 			sel, err := o.selected()
 			if err != nil {
-				return err
+				// A reloading tab can drop out of the tab strip's listing for a
+				// moment (Edge on Windows does); closed means missing three
+				// times in a row.
+				if misses++; misses >= 3 {
+					return err
+				}
+				sel = false
+				warned = true
+			} else {
+				misses = 0
 			}
 			if ok = sel; !ok && !warned {
 				c.Warnf("aos: %s is not the selected tab of its window any more; waiting for it to be selected again\n", o.tab)
@@ -659,9 +808,41 @@ func watchTabLoop(c *cli.Ctx, o tabWatch) error {
 		}
 		if ok {
 			warned = false
-			cur, err := o.read()
-			if err != nil {
+			var cur []string
+			var err error
+			if started && o.reloadFn != nil && !o.now().Before(nextReload) {
+				if err = o.reloadFn(); err != nil {
+					c.Warnf("aos: reload: %v\n", err)
+				}
+				nextReload = o.now().Add(o.jitter(o.reload))
+				cur, err = o.settle()
+			} else {
+				cur, err = o.read()
+			}
+			if err == nil && o.near != "" {
+				var found bool
+				if cur, found = nearLines(cur, o.near, o.exact); !found {
+					if !nearWarned {
+						c.Warnf("aos: %q is not on the page; waiting for it\n", o.near)
+						nearWarned = true
+					}
+					err = errSkip
+				} else {
+					nearWarned = false
+				}
+			}
+			if err == errSkip {
+				// nothing to compare this tick
+			} else if err != nil {
 				c.Warnf("aos: %v\n", err)
+			} else if o.gone != "" && len(cur) > 0 && !anyMatches(cur, o.gone, o.exact) {
+				// An empty read is a page between loads, not a page without the text.
+				line, err := json.Marshal(watchEvent{Event: "tab", At: o.now().Format(time.RFC3339), Seq: seq + 1, Tab: o.tab, Gone: o.gone})
+				if err != nil {
+					return err
+				}
+				c.Printf("%s\n", line)
+				return nil
 			} else if !started {
 				started, prev = true, cur
 			} else {
@@ -692,6 +873,9 @@ func watchTabLoop(c *cli.Ctx, o tabWatch) error {
 		case <-deadline:
 			if o.match != "" {
 				return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%q did not appear in %s within %s", o.match, o.tab, o.timeout)}
+			}
+			if o.gone != "" {
+				return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf("%q was still in %s after %s", o.gone, o.tab, o.timeout)}
 			}
 			return nil
 		case <-ticker.C:

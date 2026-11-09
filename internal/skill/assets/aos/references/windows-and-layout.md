@@ -8,9 +8,12 @@ engine as a library, so the behaviour is identical.
 ```bash
 aos window list --json            # every app window: App, Title, Bounds, Monitor, Focused
 aos window list --app=Chrome      # bare word = app name, falls back to the title
-aos display list                  # monitors: id, geometry, ACTIVE (pointer) / FOCUSED (frontmost window)
+aos display list                  # monitors: id, geometry, OS name, ACTIVE (pointer) / FOCUSED (frontmost window)
 aos appearance dark [on|off|toggle] · aos appearance nightlight [on|off]   # bare prints on/off
-aos display brightness [50|+10|-10]   # built-in panel (else main display); bare prints 0-100
+aos display brightness [<id>] [50|+10|-10]   # focused window's monitor (else pointer's); built-in or DDC/CI; prints "BenQ GW2785TC (2): 64"
+aos display brightness --list [--json]       # every monitor: id, OS name, value, controllable or why not
+aos display brightness --all 40              # set every monitor; exits 2 if any could not be set
+aos display of --app Safari [--json]         # monitor an app's window is on: id, name, brightness (also --window <id>)
 aos display active                # id of the monitor the pointer is on
 aos display modes 2 [--json]      # resolutions/refresh rates monitor 2 supports
 aos display mode 2 2560x1440@60   # switch it (highest refresh without @Hz); confirm first
@@ -25,7 +28,8 @@ aos display focused               # id of the monitor holding the frontmost wind
   Map "the laptop", "the external", "this screen" to an id from `display list`;
   never hardcode. A window's `Monitor` uses the same numbering (0 = off-screen).
 - "This window" / "my current screen": read `Focused` from `window list --json`
-  and FOCUSED from `display list` instead of guessing.
+  and FOCUSED from `display list` instead of guessing. No window is `Focused`
+  when the desktop or taskbar has focus (Windows, e.g. after `window desktop`).
 
 ## Zones
 
