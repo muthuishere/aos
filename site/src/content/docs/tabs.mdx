@@ -78,22 +78,22 @@ Matching is a case-insensitive substring; `--exact` wants the whole title, URL o
 
 ## 3. Open a tab
 
-The new tab's id is printed, ready for `focus`, `send` or `close`.
+The new tab's id is printed, ready for `focus`, `send` or `close`. The tab opens in the background: the window is not raised, the app is not activated and your current tab stays selected. Pass `--focus` to bring it forward.
 
 ```console
 $ aos tab open https://www.iana.org/help/example-domains --app=chrome --window=1658109204
 chrome:1658109204:1658109210
 
-$ aos tab open "data:text/html,<title>aos-bg-test</title>bg" --app=Chrome --window=1658109204 --background
+$ aos tab open "data:text/html,<title>aos-bg-test</title>bg" --app=Chrome --window=1658109204
 chrome:1658109204:1658109212
 
-$ aos tab open --app=ghostty --window=tab-group-8039faee0 --cwd=/usr --command="echo opened-by-aos-tab" --background
+$ aos tab open --app=ghostty --window=tab-group-8039faee0 --cwd=/usr --command="echo opened-by-aos-tab"
 ghostty:tab-group-8039faee0:tab-802a73a00
 ```
 
 - `--window` takes an aos window id, the app's own id, or any tab id in that window. Without it the tab goes into the front window.
 - `--new-window` opens a window instead.
-- `--background` leaves the current tab selected and the app where it was. Exception: with `--new-window`, Chrome-family browsers come to the front when the window is created, and scripting cannot prevent that.
+- Background is the default. `--focus` raises the window and shows the new tab; `--background` is still accepted and does nothing extra. On Windows a tab cannot be opened in the background, so `tab open` there needs `--focus`. Exception: with `--new-window`, Chrome-family browsers come to the front when the window is created, and scripting cannot prevent that.
 - In a terminal, `--command` runs once and the tab stays open with your normal shell after it.
 
 ## 4. Type into a terminal tab
@@ -159,7 +159,7 @@ clicked e7  Send (button)
 - Typing makes the tab's window the browser's key window (inside the browser, without bringing the browser forward). aos first checks which app is in front. If it is not the browser, typing goes ahead. If the browser is the app in front and you are in another of its windows, or aos cannot tell which of its windows has focus, `tab type` refuses: your next keystroke would land in the tab's window. Pass `--allow-focus` to type anyway.
 - A newline in `--text` is a Return key, which can submit a chat box halfway through. It is refused unless you pass `--allow-newline`. Use `--enter` to press Return once at the end. In a `textarea`, Return adds a new line unless the page handles it.
 - On Windows, an element with no Invoke pattern can only be clicked with the mouse, which raises the window. `tab click` refuses unless you pass `--allow-focus`.
-- If the tab is not the selected tab of its window, aos selects it there without raising the window. Only the selected tab of a window has a page in the accessibility tree.
+- Page commands never switch tabs or raise windows; `tab open` is background by default; only `tab focus` brings a tab forward. Only the selected tab of a window has a page in the accessibility tree, so a page command aimed at a tab its window is not showing is refused (exit 3) with a pointer to `aos tab focus`. Pass `--focus` to let that one command switch to the tab; this is the only way a page command switches tabs. `tab list` is read-only: it reads titles and URLs and never activates, selects or raises anything.
 - Chrome and other Chromium browsers show nothing below the toolbar until a client asks for it. When the page is missing, aos turns on `AXEnhancedUserInterface` for that browser process only, and turns it off again when the command ends (`watch tab`: when the watch ends, Ctrl-C included). While it is on, that browser's window animations can be slower.
 
 Every page command (`tab read`, `tab type`, `tab click`, `watch tab`) names its tab with `--id`, or with `--url=` / `--title=` (a substring, narrowed with `--app`). When several tabs match, it exits 4 and lists them with their ids. It never types into a guessed tab:

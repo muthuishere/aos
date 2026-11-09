@@ -2107,15 +2107,17 @@ aos tab focus --cwd=aos --kind=terminal
 
 ### `aos tab open`
 
-Open a browser tab on a URL, or a terminal tab in a folder
+Open a browser tab on a URL, or a terminal tab in a folder, in the background (--focus to bring it forward)
 
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--background]
+aos tab open [<url>] --app=<name> [--window=<id> | --new-window] [--cwd=<dir>] [--command=<cmd>] [--title=<t>] [--wt-window=<name>] [--focus] [--background]
 aos tab open https://example.com --app=Chrome
 aos tab open https://example.com --app=Safari --new-window
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
+aos tab open https://example.com --app=Chrome --focus   # raise the window and show the new tab
+# default is background: no window raise, no app activation; --background is accepted and does nothing extra
 aos tab open --app=WindowsTerminal --wt-window=agents --title=build --cwd=C:\\src   # Windows: named WT window
 ```
 
@@ -2153,9 +2155,11 @@ Read a browser tab's page as markdown, with refs for its buttons, links and fiel
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]
+aos tab read (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json] [--focus]
 aos tab read --id=chrome:1658108662:1658109078
 aos tab read --url=web.whatsapp.com --json
+# never switches tabs or raises a window: a tab its window is not showing is refused (exit 3);
+# run `aos tab focus` on it first, or add --focus to let this command switch to it
 # [e7] Message (textarea, empty)   [e8] Send (button)
 ```
 
@@ -2166,7 +2170,7 @@ Type into a field of a browser tab's page without taking focus
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]
+aos tab type (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus] [--focus]
 aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter
 aos tab type --url=web.whatsapp.com --into="Type a message" --text="hello" --enter
 # exit 3 when no field matches, the page changed or focus moved; 4 when several fields match
@@ -2179,7 +2183,7 @@ Press a button or link in a browser tab's page, without moving the mouse
 *display · platforms: darwin, windows*
 
 ```bash
-aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]
+aos tab click (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus] [--focus]
 aos tab click --id=chrome:1658108662:1658109078 --element=e8
 aos tab click --title="Telegram" --find=Send --role=button
 # exit 3 when nothing matches or the page changed, 4 when several elements match
@@ -2235,7 +2239,7 @@ Print a JSON line with the new text whenever a browser tab's page changes
 *display · blocking · platforms: darwin, windows*
 
 ```bash
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>] [--focus]
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
 aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"

@@ -11,8 +11,8 @@ aos tab list --window=22626                    # one window (aos window id or th
 aos tab focus --url=github.com/me/repo/pulls   # raise the window, select the tab
 aos tab focus --title=Inbox --app=Chrome --exact
 aos tab focus --cwd=aos --kind=terminal     # the terminal tab sitting in that folder
-aos tab open https://example.com --app=Chrome  # prints the new tab's id
-aos tab open https://example.com --app=Safari --new-window --background
+aos tab open https://example.com --app=Chrome  # prints the new tab's id; opens in the background
+aos tab open https://example.com --app=Safari --new-window --focus   # --focus raises it and shows the tab
 aos tab open --app=Ghostty --cwd=~/src/aos --command="task check"
 aos tab send --id=ghostty:tab-group-1:tab-2 --text="ls -la"   # no focus needed
 aos tab send --id=ghostty:tab-group-1:tab-2 --key=enter        # or ctrl+c
@@ -42,8 +42,8 @@ when you switch tabs; the native id does not.
 
 | app | via | list | focus | open | send | close |
 |---|---|---|---|---|---|---|
-| Chrome, Edge, Brave, Vivaldi, Chromium, Canary | JXA | title, url | yes | url, `--new-window`, `--background` | no | yes |
-| Safari | JXA | title, url | yes | url, `--new-window`, `--background` | no | yes |
+| Chrome, Edge, Brave, Vivaldi, Chromium, Canary | JXA | title, url | yes | url, `--new-window`, `--focus` | no | yes |
+| Safari | JXA | title, url | yes | url, `--new-window`, `--focus` | no | yes |
 | Ghostty 1.3+ | JXA | title, cwd, panes | tab and pane | `--cwd`, `--command` | `--text`, `--key` | yes |
 | iTerm2 | JXA | title, cwd, panes | tab and pane | `--cwd`, `--command` | `--text`, enter, ctrl+letter | yes |
 | Terminal.app | JXA | title | yes | new window only | `--text` (runs it as a command) | only a window's single, idle tab |
@@ -109,7 +109,7 @@ aos watch tab --url=x --near="Price" --match="Sold out"                # only th
   refused unless you pass `--allow-newline`. Use `--enter` at the end.
 - Windows click with no Invoke pattern needs `--allow-focus` (it raises the
   window and clicks with the mouse).
-- The tab is selected in its window if needed, without raising the window.
+- Page commands never switch tabs or raise windows; `tab open` is background by default; only `tab focus` brings a tab forward. A page command aimed at a tab its window is not showing is refused (exit 3): run `aos tab focus` on it first, or pass `--focus` to let that command switch to it. On Windows `tab open` needs `--focus`. `tab list` is read-only.
 - `watch tab` prints `{"event":"tab","tab":ID,"added":[...]}` for new lines
   only. Text present at start is the baseline. Reordering, live clocks and
   field contents are not news. Blocks: use `--match` + `--timeout` or `--max`.

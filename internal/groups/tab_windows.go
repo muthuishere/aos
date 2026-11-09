@@ -72,8 +72,8 @@ func openWindowsTab(ctx context.Context, ax *axTabs, req tabOpenRequest) (string
 	if req.Window != "" {
 		return "", errTabUnsupported{"--window is not supported on Windows: the browser opens the tab in its last active window"}
 	}
-	if req.Background {
-		return "", errTabUnsupported{"--background is not supported on Windows"}
+	if !req.Focus {
+		return "", errTabUnsupported{"Windows cannot open a tab in the background: the browser comes forward when it opens one. Pass --focus to open it and bring it forward"}
 	}
 	name, args, err := windowsOpenCommand(req, browserExePath)
 	if err != nil {

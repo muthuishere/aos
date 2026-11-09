@@ -22,8 +22,9 @@ import (
 )
 
 // Reading and driving the page inside a browser tab through accessibility:
-// `tab read`, `tab type`, `tab click` and `watch tab`. The tab is selected in
-// its window without raising the window. A click is an accessibility press;
+// `tab read`, `tab type`, `tab click` and `watch tab`. They only work on the
+// tab its window is showing and never switch tabs or raise the window; a
+// background tab is refused (--focus opts in to switching to it). A click is an accessibility press;
 // typing focuses the field through accessibility and posts key events to the
 // browser's process, so the frontmost app does not change (the browser's own
 // key window can: see focusGuard).
@@ -35,10 +36,12 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "read",
 				Summary: "Read a browser tab's page as markdown, with refs for its buttons, links and fields",
-				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--md | --json] [--focus]",
 				Examples: []string{
 					"aos tab read --id=chrome:1658108662:1658109078",
 					"aos tab read --url=web.whatsapp.com --json",
+					"# never switches tabs or raises a window: a tab its window is not showing is refused (exit 3);",
+					"# run `aos tab focus` on it first, or add --focus to let this command switch to it",
 					"# [e7] Message (textarea, empty)   [e8] Send (button)",
 				},
 				Platforms: platforms,
@@ -47,7 +50,7 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "type",
 				Summary: "Type into a field of a browser tab's page without taking focus",
-				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --into=<label>) --text=<text> [--enter] [--exact] [--nth=<n>] [--allow-newline] [--allow-focus] [--focus]",
 				Examples: []string{
 					`aos tab type --id=chrome:1658108662:1658109078 --element=e7 --text="hello" --enter`,
 					`aos tab type --url=web.whatsapp.com --into="Type a message" --text="hello" --enter`,
@@ -59,7 +62,7 @@ func init() {
 			&cli.Command{
 				Group: "tab", Name: "click",
 				Summary: "Press a button or link in a browser tab's page, without moving the mouse",
-				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus]",
+				Args:    "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] (--element=<ref> | --find=<label>) [--role=button|link|checkbox|radio|...] [--exact] [--nth=<n>] [--allow-focus] [--focus]",
 				Examples: []string{
 					"aos tab click --id=chrome:1658108662:1658109078 --element=e8",
 					`aos tab click --title="Telegram" --find=Send --role=button`,
@@ -72,7 +75,7 @@ func init() {
 				Group: "watch", Name: "tab",
 				Summary:  "Print a JSON line with the new text whenever a browser tab's page changes",
 				Blocking: true,
-				Args:     "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]",
+				Args:     "(--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>] [--focus]",
 				Examples: []string{
 					"aos watch tab --id=chrome:1658108662:1658109078",
 					`aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m`,
@@ -126,11 +129,22 @@ func pageFilter(set *argSet) tabFilter {
 		Title: set.String("title", ""),
 		URL:   set.String("url", ""),
 		ID:    set.String("id", ""),
+		// --focus: the person allows the tab to be switched to.
+		SelectOK: set.Has("focus"),
 	}
 }
 
-// resolvePageTab finds one browser tab, selects it in its window if it
-// is not already the selected one, and returns its window.
+// errTabNotShown is the refusal for a page command aimed at a tab its window
+// is not showing.
+func errTabNotShown(t Tab) error {
+	return &cli.ExitError{Code: exitNotFound, Message: fmt.Sprintf(
+		"%s is not the tab its window is showing, and page commands never switch tabs or raise windows. "+
+			"Run `aos tab focus --id=%s` first, or pass --focus to let this command switch to it", t.ID, t.ID)}
+}
+
+// resolvePageTab finds one browser tab and returns its window. It never
+// switches tabs: a tab its window is not showing is refused, unless
+// f.SelectOK (--focus) says the person allows it.
 func resolvePageTab(f tabFilter) (Tab, engine.Window, error) {
 	if f.ID == "" && f.URL == "" && f.Title == "" {
 		return Tab{}, engine.Window{}, fmt.Errorf("name a tab: --id (from `aos tab list --kind=browser`), --url or --title")
@@ -143,6 +157,13 @@ func resolvePageTab(f tabFilter) (Tab, engine.Window, error) {
 		return Tab{}, engine.Window{}, fmt.Errorf("%s is a %s tab; page commands work on browser tabs", t.ID, t.Kind)
 	}
 	if !t.Active {
+		// A page is read through the accessibility tree, which holds only the
+		// tab its window shows. Page commands never switch tabs (that makes
+		// the browser come to the front), so a background tab is refused
+		// unless the person says --focus.
+		if !f.SelectOK {
+			return Tab{}, engine.Window{}, errTabNotShown(t)
+		}
 		p, err := providerFor(t)
 		if err != nil {
 			return Tab{}, engine.Window{}, err
@@ -197,7 +218,7 @@ func runTabRead(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "index", "window", "md", "json"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "index", "window", "md", "json", "focus"); err != nil {
 		return err
 	}
 	if set.Has("md") && set.Has("json") {
@@ -408,7 +429,7 @@ func runTabType(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "index", "window", "enter", "exact", "allow-focus", "allow-newline", "force"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "into", "text", "nth", "index", "window", "enter", "exact", "allow-focus", "allow-newline", "force", "focus"); err != nil {
 		return err
 	}
 	if done, err := terminalType(c, set); done {
@@ -491,7 +512,7 @@ func runTabClick(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "element", "find", "role", "nth", "exact", "allow-focus"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "element", "find", "role", "nth", "exact", "allow-focus", "focus"); err != nil {
 		return err
 	}
 	ref, query, nth, err := targetFlags(set, "find")
@@ -577,7 +598,7 @@ func runWatchTab(c *cli.Ctx, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := set.Reject("id", "url", "title", "app", "match", "gone", "near", "exact", "reload", "interval", "timeout", "max"); err != nil {
+	if err := set.Reject("id", "url", "title", "app", "match", "gone", "near", "exact", "reload", "interval", "timeout", "max", "focus"); err != nil {
 		return err
 	}
 	match, gone := set.String("match", ""), set.String("gone", "")

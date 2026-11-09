@@ -318,7 +318,7 @@ aos watch process --name=node                                # a JSON line per s
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>] [--focus]
 ```
 
 | flag | values | meaning |
@@ -335,6 +335,7 @@ aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 | `--interval` | `<1s>` | Optional. default 1s |
 | `--timeout` | `<duration>` | Optional |
 | `--max` | `<n>` | Optional |
+| `--focus` |  | Optional |
 
 ```sh
 aos watch tab --id=chrome:1658108662:1658109078
