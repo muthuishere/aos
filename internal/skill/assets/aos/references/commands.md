@@ -2200,6 +2200,20 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch display`
+
+Wait for a monitor to be plugged in or removed, or print a JSON line for each
+
+*display · blocking*
+
+```bash
+aos watch display [--until=added|removed|<count>] [--interval=<2s>] [--timeout=<dur>] [--json]
+aos watch display --until=added && aos window move Chrome --monitor=2   # exit 0 when a monitor appears
+aos watch display --until=removed --timeout=10m                         # exit 3 if none is unplugged in 10m
+aos watch display --until=2                                             # exit 0 once exactly 2 monitors are attached
+aos watch display                                                       # a JSON line per monitor added or removed
+```
+
 
 ## webapp
 
