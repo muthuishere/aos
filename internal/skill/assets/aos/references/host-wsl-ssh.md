@@ -57,7 +57,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `tab` | `list`, `focus`, `open`, `send`, `close`, `read`, `type`, `click` |  |
 | `trash` |  | `size`, `empty` |
 | `version` |  | `aos version` |
-| `watch` | `tab`, `clipboard`, `window`, `battery`, `device`, `idle`, `camera`, `mic` | `file`, `process`, `url` |
+| `watch` | `tab`, `clipboard`, `window`, `battery`, `device`, `display`, `idle`, `camera`, `mic` | `file`, `process`, `url` |
 | `webapp` | `open` |  |
 | `window` | `desktop`, `list`, `focus`, `move`, `resize`, `wait`, `zones`, `arrange`, `save`, `text` |  |
 

@@ -109,6 +109,29 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch display: a monitor is plugged in or removed
+
+`watch display` is a gate, not an alerter: exit 0 when its condition is met, 3
+on `--timeout`, and the agent decides what to do. It diffs `display list` on a
+poll (`--interval`, default 2s).
+
+```bash
+aos watch display --until=added && <agent applies the dock layout>
+aos watch display --until=removed --timeout=10m
+aos watch display --until=2                  # exactly 2 monitors attached
+aos watch display                            # JSON line per monitor added or removed
+```
+
+- Each line has `change` (`added`/`removed`), `id`, `name`, geometry and the
+  `count` of monitors attached afterwards. `id` is the `display list` number:
+  the new one for `added`, the old one for `removed`.
+- `name` is the geometry (`2560x1440 at +1728+0`): the listing has no product
+  name. Monitors are told apart by geometry, since ids renumber when one is
+  unplugged; rearranging or changing resolution reads as removed plus added.
+- Monitors present at the start are the baseline, not events. `--until=<n>`
+  is a state and returns at once if `n` monitors are already attached.
+- Follows the host, like `display` and `window`.
+
 ### watch battery: save work before it dies, start when it is full
 
 `watch battery` is a gate, not an alerter: exit 0 when a condition holds, 3 on

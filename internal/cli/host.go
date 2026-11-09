@@ -26,7 +26,7 @@ var hostTable = map[string]bool{
 	// Screen, input and the person sitting at it.
 	"window": true, "display": true, "mouse": true, "key": true, "find": true,
 	"draw": true, "color": true, "subtitle": true, "say": true, "capture": true, "tab": true,
-	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
+	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true, "watch display": true,
 	// Who is using the camera or microphone of the machine the person sits at.
 	"watch camera": true, "watch mic": true,
 	"launch": true, "open": true, "webapp": true, "app": true,
