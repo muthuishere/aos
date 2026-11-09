@@ -20,6 +20,8 @@ The person's Shortcuts automations on macOS, through the system `shortcuts` comm
 
 <p class="cmd-badges"><span class="cmd-badge">darwin only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos shortcuts list [--folder=<name>] [--json]
 ```
@@ -39,6 +41,8 @@ aos shortcuts list --folder=Work --json
 <p class="cmd-lead">Run a shortcut by name or id, with optional input, and print its output</p>
 
 <p class="cmd-badges"><span class="cmd-badge">darwin only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos shortcuts run <name|id> [--input=<file>] [--text=<input text>]
