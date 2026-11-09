@@ -47,16 +47,17 @@ func wtsLocked() (locked, ok bool) {
 		return false, false
 	}
 	defer procWTSFreeMemory.Call(uintptr(unsafe.Pointer(buf)))
-	// WTSINFOEXW: Level uint32, then WTSINFOEX_LEVEL1_W starting at offset 4:
-	// SessionId, SessionState, SessionFlags (int32) ...
-	if n < 16 {
+	// WTSINFOEXW: Level uint32, then the level-1 data, which is 8-aligned (it
+	// holds 64-bit times), so it starts at offset 8: SessionId, SessionState,
+	// SessionFlags (int32) at 8, 12 and 16. Checked on Windows 11 arm64.
+	if n < 20 {
 		return false, false
 	}
 	b := unsafe.Slice(buf, int(n))
 	if binary.LittleEndian.Uint32(b[0:]) != 1 {
 		return false, false
 	}
-	switch int32(binary.LittleEndian.Uint32(b[12:])) {
+	switch int32(binary.LittleEndian.Uint32(b[16:])) {
 	case wtsStateLock:
 		return true, true
 	case wtsStateUnlock:
