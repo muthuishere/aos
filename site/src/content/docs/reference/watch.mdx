@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-4 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+5 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
@@ -33,6 +33,32 @@ aos watch clipboard [--interval=<500ms>] [--max=<n>] [--content]
 ```sh
 aos watch clipboard
 aos watch clipboard --max=1 --content
+```
+
+### aos watch device
+
+<p class="cmd-lead">Report when a USB drive, audio device or Bluetooth device is connected or removed</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos watch device [--kind=volume|audio|bluetooth[,...]] [--until=added|removed] [--interval=<2s>] [--timeout=<duration>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--kind` | `volume`, `audio`, `bluetooth[,...` | Optional. comma-separated |
+| `--until` | `added`, `removed` | Optional |
+| `--interval` | `<2s>` | Optional. default 2s |
+| `--timeout` | `<duration>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos watch device
+aos watch device --kind=volume --until=added --timeout=2m
+aos watch device --kind=audio,bluetooth --json
+aos watch device --kind=bluetooth --until=removed && echo 'headphones dropped, pause the music'
+# with --until: exit 0 on the first matching event, 3 on --timeout
 ```
 
 ### aos watch file

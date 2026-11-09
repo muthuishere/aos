@@ -2200,6 +2200,21 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch device`
+
+Report when a USB drive, audio device or Bluetooth device is connected or removed
+
+*display · blocking*
+
+```bash
+aos watch device [--kind=volume|audio|bluetooth[,...]] [--until=added|removed] [--interval=<2s>] [--timeout=<duration>] [--json]
+aos watch device
+aos watch device --kind=volume --until=added --timeout=2m
+aos watch device --kind=audio,bluetooth --json
+aos watch device --kind=bluetooth --until=removed && echo 'headphones dropped, pause the music'
+# with --until: exit 0 on the first matching event, 3 on --timeout
+```
+
 
 ## webapp
 

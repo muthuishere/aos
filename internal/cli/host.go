@@ -29,6 +29,8 @@ var hostTable = map[string]bool{
 	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
 	"launch": true, "open": true, "webapp": true, "app": true,
 	"remote": true, "audio": true, "permission": true, "font": true, "menu": true, "shortcuts": true, "bluetooth": true, "media": true, "focus": true, "appearance": true, "notify": true,
+	// Devices plugged into the machine the person sits at.
+	"watch device": true,
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are
 	// never forwarded: taking down the wrong machine is not recoverable.
 	"system lock": true, "system sleep": true,
