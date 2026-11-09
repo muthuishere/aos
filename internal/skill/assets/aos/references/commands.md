@@ -1254,6 +1254,16 @@ aos mouse position     # 784 539
 
 Connectivity, addresses, and Wi-Fi
 
+### `aos network captive-portal`
+
+Check whether a captive portal (hotel, airport Wi-Fi login) is intercepting the connection
+
+```bash
+aos network captive-portal [--json]
+aos network captive-portal          # online | portal <url> | offline; exit 1 unless online
+aos network captive-portal --json   # state, portal, status, probe
+```
+
 ### `aos network public-ip`
 
 Print this machine's public IP address as the internet sees it

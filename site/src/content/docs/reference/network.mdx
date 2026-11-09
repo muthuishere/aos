@@ -8,11 +8,28 @@ sidebar:
 
 <p class="cmd-lead">Connectivity, addresses, and Wi-Fi</p>
 
-12 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
+13 commands. Run `aos network --help` for the same list from the binary, or [see every group](../commands/).
 
-Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`. `speed` runs a small speed test against Cloudflare (`speed.cloudflare.com`, no account): a burst of empty requests for median ping and jitter, then 100 KB, 1 MB and the rest of a 5 MB download budget, then 2 MB up; `--max-mb` raises the budget.
+Connectivity facts: the active interface and its address, the joined Wi-Fi network, and the local IP on its own for scripts. No display needed. `public-ip` asks Cloudflare's trace endpoint (`1.1.1.1/cdn-cgi/trace`, no account) for the address the internet sees. `vpn status|on|off` drives the VPNs the OS itself manages (`scutil --nc` on macOS, NetworkManager on Linux, `rasdial` on Windows); VPN apps that run their own tunnel outside those settings do not show up. `wifi on`/`wifi off` switch the radio, and `wifi join <ssid>` joins a saved or open network; a password is only ever read from stdin with `--password-stdin` (Linux and Windows; macOS refuses new secured networks because its only route puts the password on the command line). `ports` lists listening TCP ports with the pid and process that own them; give a port to ask who holds it (exit 1 when nobody does), and free it with `aos process kill --port=<n>`. `captive-portal` asks `connectivitycheck.gstatic.com/generate_204` over plain http without following redirects: a 204 is `online`, any other answer is a `portal` (with the login URL from its redirect or meta refresh when it gives one), no answer is `offline`; it exits 1 unless online. `speed` runs a small speed test against Cloudflare (`speed.cloudflare.com`, no account): a burst of empty requests for median ping and jitter, then 100 KB, 1 MB and the rest of a 5 MB download budget, then 2 MB up; `--max-mb` raises the budget.
 
 ## Commands
+
+### aos network captive-portal
+
+<p class="cmd-lead">Check whether a captive portal (hotel, airport Wi-Fi login) is intercepting the connection</p>
+
+```sh
+aos network captive-portal [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos network captive-portal          # online | portal <url> | offline; exit 1 unless online
+aos network captive-portal --json   # state, portal, status, probe
+```
 
 ### aos network ip
 

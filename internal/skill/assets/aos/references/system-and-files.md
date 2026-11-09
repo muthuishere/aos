@@ -151,6 +151,7 @@ aos disk top [path] [--depth=1] [--limit=20] [--timeout=5s] [--files] [--json]  
 aos power awake --for=2h [--display]   # keep awake; `power awake off` / `power awake status`
 aos network status · aos network ip · aos network wifi   # wifi exits 1 on ethernet
 aos network public-ip [--json]   # as the internet sees it (Cloudflare trace)
+aos network captive-portal [--json]  # online, portal <login url> or offline; exit 1 unless online
 aos network speed [--max-mb 5] [--json]   # ping/jitter/down/up Mbps vs Cloudflare; ~5 MB down, 2 MB up
 aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos network wifi on · aos network wifi off   # confirm before off: it drops the connection
