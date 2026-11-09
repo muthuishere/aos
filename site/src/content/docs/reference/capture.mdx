@@ -8,17 +8,44 @@ sidebar:
 
 <p class="cmd-lead">Screenshots</p>
 
-11 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
+12 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
 
-Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them. `text` OCRs a screen area and prints its lines in reading order: `--region` (global, or relative to `--monitor`), or a whole monitor. It uses the same OCR as `window text --source=ocr`: Vision on macOS, Windows.Media.Ocr on Windows, tesseract on Linux.
+Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them. `text` OCRs a screen area and prints its lines in reading order: `--region` (global, or relative to `--monitor`), or a whole monitor. It uses the same OCR as `window text --source=ocr`: Vision on macOS, Windows.Media.Ocr on Windows, tesseract on Linux. `qr` decodes every QR code in a PNG, JPEG or GIF file, or in a screen area captured the same way as `text`, in pure Go (gozxing, MIT), so it needs no OCR engine and works the same on every OS; it exits 1 when there is none.
 
 ## Commands
+
+### aos capture qr
+
+<p class="cmd-lead">Decode the QR codes in an image file, a screen region or a whole monitor</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos capture qr [<image>] [--region=<x,y,w,h>] [--monitor=<n>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<image>` | | Optional positional argument |
+| `--region` | `<x,y,w,h>` | Optional. comma-separated |
+| `--monitor` | `<n>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos capture qr ticket.png                    # decode a PNG, JPEG or GIF file
+aos capture qr --region=100,100,400,400      # decode what is on screen there
+aos capture qr --monitor=2 --json            # every QR code on monitor 2, with its bounds
+```
 
 ### aos capture screenshot
 
 <p class="cmd-lead">Take a screenshot</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos screenshot</code></span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>]
@@ -46,6 +73,8 @@ aos capture screenshot --region=0,0,800,600
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture text [--region=<x,y,w,h>] [--monitor=<n>] [--max-chars=<n>] [--json]
 ```
@@ -70,6 +99,8 @@ aos capture text --monitor=1 --region=0,0,600,300   # region relative to monitor
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video devices [--json]
 ```
@@ -87,6 +118,8 @@ aos capture video devices
 <p class="cmd-lead">Point the camera at a place until unfocus (or --hold)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video focus (--rect=<x,y,w,h> | --at=<x,y> [--size=640x360] | --app=<name>|--title=<s> [--find=<text> [--role=<r>]]) [--hold=<duration>] [--zoom=<factor>]
@@ -116,6 +149,8 @@ aos capture video focus --app=Chrome --find="Sign in" --zoom=2
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video follow mouse|app|smart|off [--app=<name>|--title=<s>]
 ```
@@ -137,6 +172,8 @@ aos capture video follow off
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video mark <label...> [--rect=<x,y,w,h>]
 ```
@@ -156,6 +193,8 @@ aos capture video mark "the chart" --rect=200,150,800,450
 <p class="cmd-lead">Start recording the screen with ffmpeg (detached; ask the person first)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
@@ -192,6 +231,8 @@ aos capture video start region --region=0,0,1280,720 --max=2m
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video status [--json]
 ```
@@ -209,6 +250,8 @@ aos capture video status
 <p class="cmd-lead">Stop recording, finalize the mp4 and render \<out\>.final.mp4 with the auto camera</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video stop [--raw] [--json]
@@ -230,6 +273,8 @@ aos capture video stop --raw --json
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video unfocus
 ```
@@ -243,6 +288,8 @@ aos capture video unfocus
 <p class="cmd-lead">Re-render an aos recording with the auto camera, from its events file</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video zoom <in.mp4> [--events=<file>] [--out=<file>] [--pad=0.15] [--max-zoom=2.5] [--ease=0.6] [--hold-wide=1.0] [--zoom=2] [--follow=mouse|app|smart|off] [--size=1920x1080] [--json]

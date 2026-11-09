@@ -19,7 +19,8 @@ description: >
   record my screen, capture video, record a demo, screen recording with zoom,
   list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
   this folder, type into a terminal tab, watch a tab, wait for text in a tab,
-  read a page, type into a page, click a button in a tab.
+  read a page, type into a page, click a button in a tab,
+  add my own aos command, extend aos, write an aos plugin or adapter.
 ---
 
 # aos
@@ -141,7 +142,8 @@ command with usage and examples. Load the guide that matches the intent:
 | `capture video` flags, camera modes, events format | `references/capture-video.md` |
 | files, clipboard, exec, processes, services, packages, audio, battery, network, system power (which need a yes) | `references/system-and-files.md` |
 | wait for clipboard / file / window changes; audit what ran | `references/watch-and-observe.md` |
-| LAN share, headless Linux display, MCP server, adapters | `references/remote-headless-mcp.md` |
+| LAN share, headless Linux display, MCP server | `references/remote-headless-mcp.md` |
+| add your own commands (adapters, plugins) | `references/extending.md` |
 | WSL → Windows desktop, SSH → the person's laptop (the host) | `references/host-wsl-ssh.md` |
 | macOS Accessibility + Screen Recording | `references/permissions.md` |
 
@@ -242,7 +244,7 @@ Two ways, both discovered automatically and both exposed over MCP:
 - **Plugin** — any executable named `aos-<group>-<name>` on PATH, describing
   itself in `# aos:summary=` comment headers.
 
-Neither can shadow a built-in command.
+Neither can shadow a built-in command. Full guide: `references/extending.md`.
 
 ## What was asked of this machine
 

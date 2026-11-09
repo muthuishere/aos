@@ -211,7 +211,11 @@ func listWindowsWith(a Adapter, filter Filter) ([]Window, error) {
 	monitors, mErr := listMonitorsWith(a)
 	if mErr == nil {
 		stampMonitor(ws, monitors)
-		stampFocused(ws, monitors)
+		if fr, ok := a.(core.ForegroundReporter); ok {
+			stampForeground(ws, fr.ForegroundWindowIDs())
+		} else {
+			stampFocused(ws, monitors)
+		}
 	}
 	return applyFilter(ws, filter), nil
 }
@@ -250,6 +254,21 @@ func stampFocused(ws []Window, ms []Monitor) {
 		if ws[i].Monitor == focusedID {
 			ws[i].Focused = true
 			return
+		}
+	}
+}
+
+// stampForeground marks the listed window the OS says has focus, and no
+// other. When the foreground is the desktop, the shell, or any window that is
+// not listed, nothing is Focused: guessing the topmost window would report an
+// app as focused that is not receiving keys.
+func stampForeground(ws []Window, ids []string) {
+	for _, id := range ids {
+		for i := range ws {
+			if id != "" && ws[i].ID == id {
+				ws[i].Focused = true
+				return
+			}
 		}
 	}
 }

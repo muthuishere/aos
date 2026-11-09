@@ -249,6 +249,59 @@ func TestListWindowsFocusedNoOpWhenNoMonitorFocused(t *testing.T) {
 	}
 }
 
+// foregroundAdapter reports the OS foreground window, as the Windows adapter
+// does through GetForegroundWindow.
+type foregroundAdapter struct {
+	*mockAdapter
+	fg []string
+}
+
+func (f *foregroundAdapter) ForegroundWindowIDs() []string { return f.fg }
+
+// After Win+D the desktop holds the foreground: the topmost app window on the
+// focused monitor must not be reported as Focused. With a real foreground
+// window, that window (or its root owner) is the Focused one, whatever its
+// z-order.
+func TestListWindowsForegroundReporter(t *testing.T) {
+	base := func() *mockAdapter {
+		return &mockAdapter{
+			windows: []Window{
+				{ID: "edge", Title: "Edge", App: "msedge.exe", Bounds: Rect{X: 100, Y: 100, W: 800, H: 600}},
+				{ID: "note", Title: "Notepad", App: "notepad.exe", Bounds: Rect{X: 200, Y: 200, W: 800, H: 600}},
+			},
+			monitors: []Monitor{{ID: 1, X: 0, Y: 0, Width: 1920, Height: 1080, Primary: true, Focused: true}},
+		}
+	}
+	cases := []struct {
+		name string
+		fg   []string
+		want string
+	}{
+		{"desktop", nil, ""},
+		{"unlisted", []string{"9999"}, ""},
+		{"listed", []string{"note"}, "note"},
+		{"dialog owned by edge", []string{"dlg", "edge"}, "edge"},
+	}
+	for _, tc := range cases {
+		out, err := listWindowsWith(&foregroundAdapter{mockAdapter: base(), fg: tc.fg}, Filter{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := ""
+		for _, w := range out {
+			if w.Focused {
+				if got != "" {
+					t.Errorf("%s: more than one window Focused", tc.name)
+				}
+				got = w.ID
+			}
+		}
+		if got != tc.want {
+			t.Errorf("%s: Focused = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
 func TestMoveDelegatesToAdapter(t *testing.T) {
 	a := &mockAdapter{windows: sampleWindows()}
 	if err := moveWith(a, Match{Title: "chrome"}, Target{Bounds: Rect{X: 10, Y: 20, W: 100, H: 200}}); err != nil {

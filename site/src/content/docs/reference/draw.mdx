@@ -20,6 +20,8 @@ Click-through drawings on the real screen for a person to follow: an arrow, ring
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos draw (--at=<x,y> | --rect=<x,y,w,h> | <app> | --app=<name> | --title=<s> | --mouse) [--find=<text> [--role=<r>] [--source=<s>] [--exact] [--nth=<n>]] --text=<sign> [--style=arrow|ring|box] [--shape=bend|straight|zigzag|spiral] [--size=S|M|L] [--color=<name|#hex>] [--from=<side>] [--monitor=<n>] [--position=<side>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
 ```
@@ -66,6 +68,8 @@ aos draw stop
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos draw config [--init] [--force]
 ```
@@ -86,6 +90,8 @@ aos draw config --init
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos draw fonts
 ```
@@ -99,6 +105,8 @@ aos draw fonts
 <p class="cmd-lead">Remove every detached drawing</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos draw stop [--json]
@@ -117,6 +125,8 @@ aos draw stop
 <p class="cmd-lead">Show a styled text label (no arrow) inside a window, a monitor, a rect, or beside a point</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos draw text <text...> [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=bottom-center|top-center|center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--color=<text colour>] [--bg=auto|none|<colour>] [--font=<name>] [--font-scale=<k>] [--size=S|M|L|XL] [--weight=regular|bold] [--align=left|center|right] [--max-width=<px|N%>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]

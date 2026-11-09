@@ -27,6 +27,8 @@ var hostTable = map[string]bool{
 	"window": true, "display": true, "mouse": true, "key": true, "find": true,
 	"draw": true, "color": true, "subtitle": true, "say": true, "capture": true, "tab": true,
 	"clipboard": true, "watch clipboard": true, "watch window": true, "watch tab": true,
+	// Who is using the camera or microphone of the machine the person sits at.
+	"watch camera": true, "watch mic": true,
 	"launch": true, "open": true, "webapp": true, "app": true,
 	"remote": true, "audio": true, "permission": true, "font": true, "menu": true, "shortcuts": true, "bluetooth": true, "media": true, "focus": true, "appearance": true, "notify": true,
 	// lock and sleep mean "lock *my* screen". logout/restart/shutdown are
@@ -37,7 +39,7 @@ var hostTable = map[string]bool{
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,
-	"watch file": false, "watch process": false, "network": false, "trash": false, "battery": false, "power": false, "disk": false,
+	"watch file": false, "watch process": false, "network": false, "trash": false, "battery": true, "power": true, "disk": true,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
 	"version": false, "doctor": false, "install": false, "uninstall": false,
@@ -53,6 +55,17 @@ func HostSide(route string) (follows, known bool) {
 		}
 	}
 	return false, false
+}
+
+// HostOf is the side a command runs on under WSL or SSH, as `aos commands
+// --json` reports it: HostWindowsHost when it follows the person's screen,
+// HostLocal when it always runs where aos was started. External commands
+// (adapters, plugins) are never forwarded, so they are local.
+func HostOf(cmd *Command) string {
+	if cmd.FollowsHost {
+		return HostWindowsHost
+	}
+	return HostLocal
 }
 
 // Host is where a screen command is sent.
