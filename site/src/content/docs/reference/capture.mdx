@@ -8,11 +8,34 @@ sidebar:
 
 <p class="cmd-lead">Screenshots</p>
 
-11 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
+12 commands. Run `aos capture --help` for the same list from the binary, or [see every group](../commands/).
 
-Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them. `text` OCRs a screen area and prints its lines in reading order: `--region` (global, or relative to `--monitor`), or a whole monitor. It uses the same OCR as `window text --source=ocr`: Vision on macOS, Windows.Media.Ocr on Windows, tesseract on Linux.
+Screenshots and screen recordings. `screenshot` captures a monitor, a region or one app window to a file, without bringing the window to the front. The `video` commands record with ffmpeg and render a second cut where the camera follows the action; see [recording a demo](/aos/capture-video/). On macOS the terminal needs Screen Recording permission for all of them. `text` OCRs a screen area and prints its lines in reading order: `--region` (global, or relative to `--monitor`), or a whole monitor. It uses the same OCR as `window text --source=ocr`: Vision on macOS, Windows.Media.Ocr on Windows, tesseract on Linux. `qr` decodes every QR code in a PNG, JPEG or GIF file, or in a screen area captured the same way as `text`, in pure Go (gozxing, MIT), so it needs no OCR engine and works the same on every OS; it exits 1 when there is none.
 
 ## Commands
+
+### aos capture qr
+
+<p class="cmd-lead">Decode the QR codes in an image file, a screen region or a whole monitor</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos capture qr [<image>] [--region=<x,y,w,h>] [--monitor=<n>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<image>` | | Optional positional argument |
+| `--region` | `<x,y,w,h>` | Optional. comma-separated |
+| `--monitor` | `<n>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos capture qr ticket.png                    # decode a PNG, JPEG or GIF file
+aos capture qr --region=100,100,400,400      # decode what is on screen there
+aos capture qr --monitor=2 --json            # every QR code on monitor 2, with its bounds
+```
 
 ### aos capture screenshot
 

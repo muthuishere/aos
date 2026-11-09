@@ -299,6 +299,19 @@ aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
 ```
 
+### `aos capture qr`
+
+Decode the QR codes in an image file, a screen region or a whole monitor
+
+*display*
+
+```bash
+aos capture qr [<image>] [--region=<x,y,w,h>] [--monitor=<n>] [--json]
+aos capture qr ticket.png                    # decode a PNG, JPEG or GIF file
+aos capture qr --region=100,100,400,400      # decode what is on screen there
+aos capture qr --monitor=2 --json            # every QR code on monitor 2, with its bounds
+```
+
 ### `aos capture text`
 
 OCR a screen region or a whole monitor and print its text in reading order
