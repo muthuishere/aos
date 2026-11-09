@@ -18,6 +18,8 @@ What this machine has been asked to do. Every command records one span with the 
 
 <p class="cmd-lead">Every command this machine was asked to run, oldest first</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos obs audit [--since=<duration>] [--source=<cli|mcp>] [--failed] [--json]
 ```
@@ -39,6 +41,8 @@ aos obs audit --failed
 
 <p class="cmd-lead">Emit recorded spans as OTLP JSON, ready for a collector</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos obs export [--since=<duration>]
 ```
@@ -54,6 +58,8 @@ aos obs export --since=1h > spans.json
 ### aos obs focus
 
 <p class="cmd-lead">Who took (or tried to take) focus or the pointer through aos, newest last</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos obs focus [--limit=<n>] [--since=<duration>] [--json]
@@ -74,6 +80,8 @@ aos obs focus --since=1h
 
 <p class="cmd-lead">Print where telemetry is written</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos obs path
 ```
@@ -85,6 +93,8 @@ aos obs path
 ### aos obs stats
 
 <p class="cmd-lead">Summarise recorded work: calls, failures, and latency per route</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos obs stats [--since=<duration>] [--source=<cli|mcp>] [--json]
@@ -105,6 +115,8 @@ aos obs stats --since=24h --source=mcp
 
 <p class="cmd-lead">How much this machine is actually used, and by what</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos obs summary [--since=<duration>] [--json]
 ```
@@ -122,6 +134,8 @@ aos obs summary --since=7d
 ### aos obs tail
 
 <p class="cmd-lead">Print the most recent spans, newest last</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos obs tail [--limit=<n>] [--since=<duration>]

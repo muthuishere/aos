@@ -20,6 +20,8 @@ Follow changes as a stream of JSON lines: the clipboard, the focused window, or 
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos watch clipboard [--interval=<500ms>] [--max=<n>] [--content]
 ```
@@ -40,6 +42,8 @@ aos watch clipboard --max=1 --content
 <p class="cmd-lead">Print a JSON line whenever a file or directory entry changes</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
@@ -63,6 +67,8 @@ aos watch file ./src --recursive --interval=1s
 <p class="cmd-lead">Print a JSON line with the new text whenever a browser tab's page changes</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
@@ -91,6 +97,8 @@ aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
 <p class="cmd-lead">Print a JSON line whenever the focused window changes</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos watch window [--interval=<500ms>] [--max=<n>]

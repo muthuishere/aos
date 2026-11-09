@@ -18,6 +18,8 @@ Whether the machine runs on mains power or battery. For charge level, see `batte
 
 <p class="cmd-lead">Keep the machine from sleeping, for a while or until `power awake off`</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos power awake [--for=<duration>] [--display] [--json]
 ```
@@ -38,6 +40,8 @@ aos power awake            # until `aos power awake off`
 
 <p class="cmd-lead">End the keep-awake started by `power awake`</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos power awake off
 ```
@@ -49,6 +53,8 @@ aos power awake off
 ### aos power awake status
 
 <p class="cmd-lead">Print whether a keep-awake is active and until when</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos power awake status [--json]
@@ -66,6 +72,8 @@ aos power awake status --json
 ### aos power status
 
 <p class="cmd-lead">Print the current power source (ac or battery)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos power status

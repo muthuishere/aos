@@ -19,6 +19,10 @@ type commandJSON struct {
 	Hidden    bool     `json:"hidden"`
 	Source    string   `json:"source"`
 	Binary    string   `json:"binary,omitempty"`
+	// Host is where the command runs under WSL or SSH: "windows-host" follows
+	// the person's screen (aos.exe from WSL, the forwarded socket over SSH),
+	// "local" always runs where aos was started.
+	Host string `json:"host"`
 }
 
 // runCommands implements `aos commands [--all] [--json] [--check]`.
@@ -72,7 +76,8 @@ func runCommands(c *Ctx, args []string) error {
 	}
 	for _, cmd := range selected {
 		// "-" is unavailable on this platform, "g" is available but waiting on
-		// a display.
+		// a display. A second column "^" means that under WSL or SSH the
+		// command runs on the host, the machine with the screen.
 		mark := " "
 		switch {
 		case !cmd.Supports(c.GOOS):
@@ -80,7 +85,11 @@ func runCommands(c *Ctx, args []string) error {
 		case cmd.NeedsDisplay && !display:
 			mark = "g"
 		}
-		c.Printf("%s %-*s  %s\n", mark, width, cmd.Route(), cmd.Summary)
+		side := " "
+		if cmd.FollowsHost {
+			side = "^"
+		}
+		c.Printf("%s%s %-*s  %s\n", mark, side, width, cmd.Route(), cmd.Summary)
 	}
 	return nil
 }
@@ -156,5 +165,6 @@ func toJSON(cmd *Command, goos string) commandJSON {
 		Hidden:    cmd.Hidden,
 		Source:    source,
 		Binary:    cmd.Binary,
+		Host:      HostOf(cmd),
 	}
 }
