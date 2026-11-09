@@ -613,6 +613,18 @@ aos disk eject /dev/sdb1
 aos disk eject E:
 ```
 
+### `aos disk top`
+
+Rank the biggest folders (and files) under a path, tagging caches, trash and other known space hogs
+
+```bash
+aos disk top [<path>] [--depth=<n>] [--limit=<n>] [--timeout=<dur>] [--files] [--json]
+aos disk top                      # biggest folders in your home, 5 s budget
+aos disk top ~/Library --depth=2 --limit=30
+aos disk top ~/Downloads --files --json
+aos disk top / --timeout=30s --json
+```
+
 
 ## display
 
