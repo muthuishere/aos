@@ -2200,6 +2200,20 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch process`
+
+Wait for one process to end or appear, or print a JSON line for each start and stop
+
+*display · blocking*
+
+```bash
+aos watch process --name=<name> | --pid=<n> [--exit | --start] [--interval=<1s>] [--timeout=<dur>] [--json]
+aos watch process --name=ffmpeg --exit && echo render done   # exit 0 when ffmpeg ends
+aos watch process --pid=4821 --exit --timeout=30m            # exit 3 if it is still running after 30m
+aos watch process --name=Xcode --start                       # exit 0 when Xcode appears
+aos watch process --name=node                                # a JSON line per start and stop
+```
+
 
 ## webapp
 
