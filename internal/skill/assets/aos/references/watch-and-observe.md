@@ -38,6 +38,33 @@ aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
   was copied. Ask for the text only when you need it; it may be a password.
 - `watch clipboard` and `watch window` need a display.
 
+### watch device: something was plugged in or removed
+
+`watch device` reports USB drives and other volumes appearing or disappearing,
+audio devices (headphones, headsets) and connected Bluetooth devices. It polls
+the same listings as `disk list`, `audio devices` and `bluetooth list` and
+diffs them. What is already connected when it starts is not an event.
+
+```bash
+aos watch device --kind=volume --until=added --timeout=2m && ./copy-the-photos.sh
+aos watch device --kind=bluetooth --until=removed && ./pause-the-music.sh
+aos watch device                        # all kinds, one line per change
+aos watch device --kind=audio,bluetooth --json
+# {"event":"device","change":"added","kind":"audio","name":"AirPods","detail":"output","at":"...","seq":1}
+```
+
+- `--kind=volume|audio|bluetooth` (comma separated; default all three).
+  `--until=added|removed` exits 0 on the first matching event and 3 on
+  `--timeout`. Do the follow-up work yourself after `&&`; there is no `--then`.
+- `--interval` defaults to `2s` (minimum `500ms`).
+- With the default kinds, a kind this machine cannot list (no Bluetooth radio)
+  is skipped with a warning; if you name it with `--kind`, it is an error.
+- A flaky listing never reads as everything being removed: a failed poll keeps
+  the last known state.
+- Bluetooth: a device counts as present while it is connected, not merely
+  paired. Audio: a headset that plays and records appears once per direction.
+- Follows the host under WSL.
+
 ### watch camera / watch mic: is the person in a meeting?
 
 `watch camera` and `watch mic` say whether any app is using the camera or the

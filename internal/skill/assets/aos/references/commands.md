@@ -2299,6 +2299,21 @@ aos watch battery --until=discharging                       # exit 0 when the ch
 aos watch battery                                           # a JSON line for plugged, unplugged, full and each % change
 ```
 
+### `aos watch device`
+
+Report when a USB drive, audio device or Bluetooth device is connected or removed
+
+*display · blocking*
+
+```bash
+aos watch device [--kind=volume|audio|bluetooth[,...]] [--until=added|removed] [--interval=<2s>] [--timeout=<duration>] [--json]
+aos watch device
+aos watch device --kind=volume --until=added --timeout=2m
+aos watch device --kind=audio,bluetooth --json
+aos watch device --kind=bluetooth --until=removed && echo 'headphones dropped, pause the music'
+# with --until: exit 0 on the first matching event, 3 on --timeout
+```
+
 ### `aos watch idle`
 
 Exit 0 once the person has been idle for a while, or as soon as they are active again
