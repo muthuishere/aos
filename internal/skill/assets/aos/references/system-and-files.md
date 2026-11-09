@@ -154,6 +154,7 @@ aos network speed [--max-mb 5] [--json]   # ping/jitter/down/up Mbps vs Cloudfla
 aos network vpn status · aos network vpn on "Work VPN" · aos network vpn off "Work VPN"   # system VPNs; confirm before on/off
 aos network wifi on · aos network wifi off   # confirm before off: it drops the connection
 printf '%s' "$PW" | aos network wifi join <ssid> --password-stdin   # never put a password on argv
+aos network wifi-qr [--ssid=<name>] [--password] [--out=wifi.png] [--payload]   # join-by-camera QR; --password reads the saved key (macOS prompts: ask first)
 aos network ports [3000] [--json]   # listening TCP ports → pid, process; exit 1 if the port is free
 aos audio volume · aos audio volume 40 · aos audio volume +5
 aos notify "Build finished" "all 212 tests green" [--sound]   # native notification to the person
