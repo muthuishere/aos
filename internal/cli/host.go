@@ -37,7 +37,7 @@ var hostTable = map[string]bool{
 
 	// The agent's own machine.
 	"exec": false, "batch": false, "process": false, "file": false, "pkg": false, "service": false,
-	"watch file": false, "network": false, "trash": false, "battery": false, "power": false, "disk": false,
+	"watch file": false, "network": false, "trash": false, "battery": true, "power": true, "disk": true,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
 	"version": false, "doctor": false, "install": false, "uninstall": false,
@@ -53,6 +53,17 @@ func HostSide(route string) (follows, known bool) {
 		}
 	}
 	return false, false
+}
+
+// HostOf is the side a command runs on under WSL or SSH, as `aos commands
+// --json` reports it: HostWindowsHost when it follows the person's screen,
+// HostLocal when it always runs where aos was started. External commands
+// (adapters, plugins) are never forwarded, so they are local.
+func HostOf(cmd *Command) string {
+	if cmd.FollowsHost {
+		return HostWindowsHost
+	}
+	return HostLocal
 }
 
 // Host is where a screen command is sent.

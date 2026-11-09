@@ -20,6 +20,8 @@ An app's menu bar as a searchable list of commands, read through macOS accessibi
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin only</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos menu list [--app=<name>] [--filter=<substring>] [--json]
 ```
@@ -41,6 +43,8 @@ aos menu list --app=Safari --json
 <p class="cmd-lead">Run a menu command by path; exact path wins, else a unique substring</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin only</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos menu run <path> [--app=<name>]
