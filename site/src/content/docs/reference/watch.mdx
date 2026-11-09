@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Follow what changes on this machine, one JSON line per event</p>
 
-4 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
+5 commands. Run `aos watch --help` for the same list from the binary, or [see every group](../commands/).
 
 Follow changes as a stream of JSON lines: the clipboard, the focused window, or a file or directory. The first sample is a baseline, so `--max=1` means the next change. `watch clipboard` hides the text unless `--content` is passed. These run until interrupted and are not MCP tools.
 
@@ -56,6 +56,30 @@ aos watch file <path> [--interval=<500ms>] [--max=<n>] [--recursive]
 aos watch file ~/Downloads
 aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
+```
+
+### aos watch network
+
+<p class="cmd-lead">Print a JSON line when the machine goes online or offline or changes Wi-Fi network</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+```sh
+aos watch network [--until=online|offline] [--timeout=<duration>] [--max=<n>] [--interval=<5s>]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--until` | `online`, `offline` | Optional |
+| `--timeout` | `<duration>` | Optional |
+| `--max` | `<n>` | Optional |
+| `--interval` | `<5s>` | Optional. default 5s |
+
+```sh
+aos watch network
+aos watch network --until=online --timeout=10m && aos exec -- git push
+aos watch network --until=offline
+# --until: exit 0 when that state is reached (at once if already there), 3 on --timeout
 ```
 
 ### aos watch tab
