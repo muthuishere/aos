@@ -20,6 +20,8 @@ Read the color of one pixel on screen as hex and RGB. `at` takes global screen p
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos color at <x> <y> [--json]
 ```
@@ -40,6 +42,8 @@ aos color at -1200 300 --json
 <p class="cmd-lead">Print the color under the mouse pointer, after an optional delay to point</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos color pick [--delay=<seconds>] [--json]

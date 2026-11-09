@@ -11,11 +11,18 @@ aos watch window --max=1                  # wait until the focused window change
 aos watch file ./notes.md --max=1         # wait for one change to a file
 aos watch file ./src --recursive --interval=1s
 aos watch tab --id=ID --match="Done" --timeout=5m   # wait for text to appear in a browser tab
+aos watch tab --url=x --reload=30s --match="Book now" && aos tab click --url=x --find="Book now"
+aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
 ```
 
 - `watch tab` prints only the new lines of the page (`"added":[...]`). With
-  `--match` it exits 0 when matching text appears and 3 on `--timeout`. Text
-  already on the page at start does not count. See `references/tabs.md`.
+  `--match` it exits 0 when matching text appears, with `--gone` when the text
+  disappears, and 3 on `--timeout` or when the tab closes. Text already on the
+  page at start does not count for `--match`. `--reload=<dur>` (min 10s,
+  jittered) reloads the tab between reads; `--near=<anchor>` watches only the
+  lines around an anchor. See `references/tabs.md`.
+- A watch only waits. Alerts, notifications and "then do X" are yours: chain
+  with `&&` on exit 0, branch on exit 3.
 - `--interval` is the poll period (default `500ms`).
 - Without `--max` they block forever: run them in the background and read the
   stream, or do not run them at all. They are left out of MCP for that reason.

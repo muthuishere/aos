@@ -101,6 +101,7 @@ type watchEvent struct {
 	// tab
 	Tab   string   `json:"tab,omitempty"`
 	Added []string `json:"added,omitempty"`
+	Gone  string   `json:"gone,omitempty"`
 }
 
 // tracker reports transitions in a sequence of observations. The first sample

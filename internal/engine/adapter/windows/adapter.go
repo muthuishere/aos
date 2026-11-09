@@ -61,6 +61,8 @@ type Adapter struct{}
 
 func New() *Adapter { return &Adapter{} }
 
+var _ core.ForegroundReporter = (*Adapter)(nil)
+
 func (a *Adapter) ListWindows() ([]core.Window, error) {
 	var out []core.Window
 	cb := syscall.NewCallback(func(hwnd uintptr, _ uintptr) uintptr {

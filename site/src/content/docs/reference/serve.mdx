@@ -8,15 +8,41 @@ sidebar:
 
 <p class="cmd-lead">Expose this machine's commands to other agents</p>
 
-2 commands. Run `aos serve --help` for the same list from the binary, or [see every group](../commands/).
+3 commands. Run `aos serve --help` for the same list from the binary, or [see every group](../commands/).
 
 Expose the commands to an MCP client. `mcp` serves every available non-blocking command as a typed tool over HTTP on loopback, guarded by a per-run or pinned token. `tools` previews the catalogue without starting a server. See [using it from an agent (MCP)](/aos/mcp/).
 
 ## Commands
 
+### aos serve files
+
+<p class="cmd-lead">Serve a directory read-only over HTTP, with listings</p>
+
+```sh
+aos serve files <dir> [--lan] [--port=<n>] [--for=<dur>] [--hidden] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<dir>` | | Required positional argument |
+| `--lan` |  | Optional |
+| `--port` | `<n>` | Optional |
+| `--for` | `<dur>` | Optional |
+| `--hidden` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos serve files ./dist
+aos serve files ~/Downloads --lan --for=10m   # phone on the same wifi; URL carries a token
+aos serve files . --port=8000 --json   # one JSON line per request
+aos service create share --now -- aos serve files ~/share --lan --port=8080   # keep it alive
+```
+
 ### aos serve mcp
 
 <p class="cmd-lead">Serve every command as an MCP tool over streamable HTTP</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos serve mcp [--addr=<host:port> | --socket=<path>] [--token=<k>] [--groups=<a,b>] [--gui=on|off|auto] [--quiet]
@@ -41,6 +67,8 @@ aos serve mcp --gui=off   # screenless tools only
 ### aos serve tools
 
 <p class="cmd-lead">Print the MCP tool catalogue this machine would expose</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos serve tools [--groups=<a,b>]
