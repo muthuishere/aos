@@ -81,6 +81,9 @@ aos tab click --id=ID --element=e8
 aos tab click --id=ID --find=Send --role=button
 aos watch tab --id=ID --match="Build finished" --timeout=5m   # exit 0 when it appears, 3 on timeout
 aos watch tab --url=web.whatsapp.com --match="hi"              # name the tab by --url / --title (+ --app) instead of --id
+aos watch tab --url=x --reload=30s --match="Book now" && aos tab click --url=x --find="Book now"
+aos watch tab --url=x --reload=1m --gone="Out of stock" --timeout=2h   # exit 0 when the text is gone
+aos watch tab --url=x --near="Price" --match="Sold out"                # only the 5 lines on each side of "Price"
 ```
 
 - Read first, then act by ref. A ref is an identity (role + label + HTML id
@@ -114,6 +117,22 @@ aos watch tab --url=web.whatsapp.com --match="hi"              # name the tab by
   page as added text. If the tab closes, it exits 3.
 - A public page that needs no login and no JavaScript does not need a tab:
   `aos watch url <url> --match=...` polls it over HTTP with no browser.
+- `watch tab` exits 0 when its condition is met and 3 on `--timeout` or when
+  the tab closes. The command never alerts or acts: chain the next step with
+  `&&` (the agent decides what "then" means).
+- `--reload=<dur>` (at least 10s, plus up to 10% random jitter) presses the
+  browser's own Reload / Refresh toolbar button through accessibility, waits
+  for the page to stop changing, then compares. No key is sent and the window
+  is not raised. Only the selected tab is reloaded; if the user switched tabs
+  the reload waits.
+- `--gone=<text>` exits 0 (printing `{"gone":...}`) when no line matches; if
+  the text is not there at start it exits at once. An empty page (mid-load)
+  does not count as gone.
+- `--near=<anchor>` narrows the comparison to the anchor line and the 5 lines
+  on each side, in reading order (the page reader has no selectors). While the
+  anchor is missing, ticks are skipped.
+- There is no `--enabled`: the page reader does not report disabled state.
+  Wait for the button's text instead, or for a "disabled" hint to be `--gone`.
 - Chromium: aos turns on `AXEnhancedUserInterface` only when the page is
   missing, and turns it off again when the command ends.
 - macOS: Chrome family and Safari. Windows: Edge/Chrome through UI Automation

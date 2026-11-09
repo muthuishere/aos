@@ -29,10 +29,11 @@ func init() {
 		r.Add(&cli.Command{
 			Group:   "launch",
 			Summary: "Launch an application, optionally waiting for its window",
-			Args:    "<app> [args...] [--wait[=<ms>]]",
+			Args:    "<app> [args...] [--wait[=<ms>]] [--or-focus]",
 			Examples: []string{
 				`aos launch "Visual Studio Code"`,
 				"aos launch Chrome --wait",
+				"aos launch Slack --or-focus   # raise Slack's window if it is open, else start it",
 			},
 			Run: runLaunch,
 		})
@@ -53,7 +54,8 @@ func runLaunch(c *cli.Ctx, args []string) error {
 	// included: `launch Chrome --new-window` must reach Chrome. Parsing the
 	// whole line would claim those flags for us and reject them as unknown, so
 	// only --wait is lifted out and the rest is passed through untouched.
-	rest, timeout, wait, err := takeWaitFlag(args)
+	rest, orFocus := takeOrFocusFlag(args)
+	rest, timeout, wait, err := takeWaitFlag(rest)
 	if err != nil {
 		return err
 	}
@@ -62,6 +64,16 @@ func runLaunch(c *cli.Ctx, args []string) error {
 	}
 
 	app := rest[0]
+	if orFocus {
+		// A window of the app is already open: raise it instead of starting
+		// a second copy (or a new window) of the app.
+		if focused, ok, err := focusOpenApp(app); ok || err != nil {
+			if err == nil {
+				c.Println(describeWindow(focused))
+			}
+			return err
+		}
+	}
 	var before map[string]bool
 	if wait {
 		before = appWindowIDs(app)
@@ -83,6 +95,36 @@ func runLaunch(c *cli.Ctx, args []string) error {
 	}
 	c.Println(describeWindow(window))
 	return nil
+}
+
+// takeOrFocusFlag removes `--or-focus` from args. Like --wait it is lifted
+// out so every other flag still reaches the application.
+func takeOrFocusFlag(args []string) (rest []string, orFocus bool) {
+	for _, arg := range args {
+		if arg == "--or-focus" {
+			orFocus = true
+			continue
+		}
+		rest = append(rest, arg)
+	}
+	return rest, orFocus
+}
+
+// focusOpenApp raises the first open window of app. ok is false when the app
+// has no window, so the caller launches it instead.
+func focusOpenApp(app string) (engine.Window, bool, error) {
+	match, err := resolveMatch(engine.Match{App: app})
+	if err != nil {
+		return engine.Window{}, false, nil
+	}
+	windows, _ := engine.ListWindows(engine.Filter(match))
+	if len(windows) == 0 {
+		return engine.Window{}, false, nil
+	}
+	if err := engine.FocusWindowID(windows[0].ID); err != nil {
+		return engine.Window{}, true, err
+	}
+	return windows[0], true, nil
 }
 
 // takeWaitFlag removes `--wait` or `--wait=<ms>` from args, returning what is

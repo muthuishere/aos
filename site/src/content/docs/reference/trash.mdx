@@ -18,6 +18,8 @@ The Trash (macOS), the Recycle Bin on every drive (Windows) and the freedesktop 
 
 <p class="cmd-lead">Permanently delete everything in the Trash (asks first unless --yes)</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos trash empty [--yes]
 ```
@@ -34,6 +36,8 @@ aos trash empty --yes    # no question; required when not at a terminal
 ### aos trash size
 
 <p class="cmd-lead">Print how many items the Trash holds and how much space they take</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos trash size [--json]
