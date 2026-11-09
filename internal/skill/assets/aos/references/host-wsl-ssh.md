@@ -18,13 +18,13 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `batch` |  | `aos batch`, `verbs` |
 | `battery` | `status`, `present`, `percent` |  |
 | `bluetooth` | `status`, `list`, `on`, `off`, `connect`, `disconnect` |  |
-| `capture` | `screenshot`, `text`, `video start`, `video stop`, `video status`, `video mark`, `video focus`, `video unfocus`, `video follow`, `video devices`, `video zoom` |  |
+| `capture` | `screenshot`, `qr`, `text`, `video start`, `video stop`, `video status`, `video mark`, `video focus`, `video unfocus`, `video follow`, `video devices`, `video zoom` |  |
 | `clipboard` | `copy`, `paste`, `history`, `history start`, `history stop`, `history status`, `history get`, `history restore`, `history clear` |  |
 | `color` | `at`, `pick` |  |
 | `completion` |  | `aos completion` |
 | `debug` |  | `aos debug`, `tools` |
-| `disk` | `list`, `usage`, `eject` |  |
-| `display` | `brightness`, `list`, `active`, `focused`, `modes`, `mode`, `mirror` |  |
+| `disk` | `list`, `usage`, `eject`, `top` |  |
+| `display` | `brightness`, `of`, `list`, `active`, `focused`, `modes`, `mode`, `mirror` |  |
 | `doctor` |  | `aos doctor` |
 | `draw` | `aos draw`, `text`, `stop`, `config`, `fonts` |  |
 | `exec` |  | `run`, `capture`, `shell` |
@@ -38,7 +38,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `media` | `now`, `play`, `pause`, `toggle`, `next`, `prev` |  |
 | `menu` | `list`, `run` |  |
 | `mouse` | `move`, `click`, `position` |  |
-| `network` |  | `public-ip`, `vpn status`, `vpn on`, `vpn off`, `speed`, `status`, `ip`, `wifi`, `ports`, `wifi on`, `wifi off`, `wifi join` |
+| `network` |  | `captive-portal`, `public-ip`, `vpn status`, `vpn on`, `vpn off`, `speed`, `status`, `ip`, `wifi`, `ports`, `wifi on`, `wifi off`, `wifi join`, `wifi-qr` |
 | `notify` | `aos notify` |  |
 | `obs` |  | `stats`, `tail`, `export`, `audit`, `summary`, `focus`, `path` |
 | `open` | `aos open` |  |

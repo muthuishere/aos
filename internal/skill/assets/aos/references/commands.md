@@ -1388,6 +1388,18 @@ aos network wifi join HomeNet              # saved or open network
 printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
 ```
 
+### `aos network wifi-qr`
+
+Show a QR code a phone can scan to join the current Wi-Fi (password only with --password)
+
+```bash
+aos network wifi-qr [--ssid=<name>] [--password] [--out=<file.png>] [--payload]
+aos network wifi-qr                       # QR in the terminal, network name only
+aos network wifi-qr --password            # include the saved password (macOS asks for authorization)
+aos network wifi-qr --password --out=wifi.png
+aos network wifi-qr --ssid=GuestNet --payload   # print the WIFI:... text instead of a QR
+```
+
 
 ## notify
 
