@@ -1,0 +1,37 @@
+---
+title: Serving files
+description: aos serve files shares a folder read-only over HTTP, on loopback or to a phone on the same Wi-Fi. aos network wifi-qr gets the phone onto that Wi-Fi.
+---
+
+`aos serve files <dir>` is a read-only static file server with directory listings. It runs until you stop it, so it is not an MCP tool.
+
+```sh
+aos serve files ./dist                         # 127.0.0.1, a free port; prints the URL
+aos serve files ~/Downloads --lan --for=10m    # a phone on the same Wi-Fi; stops after 10 minutes
+aos serve files . --port=8000 --json           # one JSON line per request
+```
+
+## What it will and will not do
+
+- **Read-only.** It serves files. It cannot upload, change or delete.
+- **Loopback by default.** `--lan` binds the LAN address and puts a random token in the URL path, so only someone with the link can browse.
+- **Dotfiles are hidden** unless you pass `--hidden`.
+- **`--for=<dur>`** makes it exit 0 on its own. Otherwise stop it with Ctrl-C.
+
+To keep it up after the terminal closes, make it a [service](/aos/reference/service/):
+
+```sh
+aos service create share --now -- aos serve files ~/share --lan --port=8080
+```
+
+## Getting a phone onto the Wi-Fi first
+
+```sh
+aos network wifi-qr                  # a QR in the terminal: network name only
+aos network wifi-qr --password       # include the saved password (macOS asks you to authorize)
+aos network captive-portal           # online, portal <url>, or offline
+```
+
+The phone scans the code to join. The password is opt-in. `captive-portal` tells you when a hotel or airport login page is in the way, and exits 1 unless the connection is truly online.
+
+To read a QR code instead, `aos capture qr ticket.png` decodes a file, and `aos capture qr --monitor=2` decodes what is on screen.

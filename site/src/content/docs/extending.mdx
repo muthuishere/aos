@@ -6,6 +6,8 @@ import Shot from '../../components/Shot.astro';
 
 You can add commands to aos without changing the binary. There are two ways. Both appear in `aos commands`, in `--help`, and as MCP tools.
 
+An agent can do this for you. The aos skill carries `references/extending.md`, a guide for adding a command through an adapter or a plugin, so ask the agent for the command you want.
+
 ## Adapters: wrap a command line you already run
 
 Drop a JSON file in the adapters directory and it becomes a group.
@@ -57,13 +59,13 @@ aos notes today
 | `commands[].run` | the shell line to run |
 | `commands[].platforms` | which platforms it runs on. Omit for all |
 
-### Notifications belong here
+### Other kinds of notification belong here
 
-aos has no built-in notification command, because every setup is different. An adapter that posts to a Slack webhook:
+`aos notify` posts a native desktop notification to the person at the screen. It does not know about Slack, email or your phone, because every setup is different. An adapter that posts to a Slack webhook:
 
 ```json
 {
-  "group": "notify",
+  "group": "slack",
   "description": "Tell me things",
   "commands": [
     {
@@ -77,7 +79,7 @@ aos has no built-in notification command, because every setup is different. An a
 ```
 
 ```sh
-aos notify send "build passed"
+aos slack send "build passed"
 ```
 
 Keep the secret in the environment. The `run` line is a shell command, so `$SLACK_WEBHOOK_URL` expands when it runs and never has to be written in the file.

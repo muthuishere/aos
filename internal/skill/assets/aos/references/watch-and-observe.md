@@ -39,11 +39,11 @@ aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
   `--timeout`. A failed fetch or a non-2xx answer is warned about and
   retried, never taken as "gone". For pages that need a login or
   JavaScript, use `watch tab` on a real browser tab instead.
-  `--match` it exits 0 when matching text appears, with `--gone` when the text
-  disappears, and 3 on `--timeout` or when the tab closes. Text already on the
-  page at start does not count for `--match`. `--reload=<dur>` (min 10s,
-  jittered) reloads the tab between reads; `--near=<anchor>` watches only the
-  lines around an anchor. See `references/tabs.md`.
+- `watch tab` also takes `--gone=<text>` (exit 0 when the text disappears; 3 on
+  `--timeout` or when the tab closes), `--reload=<dur>` (min 10s, jittered;
+  reloads the tab between reads) and `--near=<anchor>` (watch only the lines
+  around an anchor). Text already on the page at start does not count for
+  `--match`. See `references/tabs.md`.
 - `watch window` with `--app` (or `--title`) and `--match` / `--gone` waits for
   text in a native app window instead of reporting focus changes: exit 0 when
   the text is in the window (`--match`) or no longer there (`--gone`), 3 on
@@ -59,7 +59,14 @@ aos watch tab --url=x --reload=1m --gone="Sold out" --timeout=2h
   stream, or do not run them at all. They are left out of MCP for that reason.
 - `watch clipboard` without `--content` reports *that* it changed, not what
   was copied. Ask for the text only when you need it; it may be a password.
-- `watch clipboard` and `watch window` need a display.
+- `watch clipboard`, `watch window`, `watch tab` and the other watches that
+  read the screen need a display; `aos watch --help` and `commands --json`
+  say which.
+- Every watch with a condition follows one contract: **exit 0 when met, 3 on
+  `--timeout`**. aos does the waiting; you do the alerting and the next step.
+- For mail, Teams, WhatsApp or calendar events use apl, not aos
+  (https://github.com/deemwar-products/apl/issues/20). aos watches the
+  machine, not the accounts.
 
 ### watch device: something was plugged in or removed
 
