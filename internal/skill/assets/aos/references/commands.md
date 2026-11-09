@@ -1088,9 +1088,10 @@ Launch an application, optionally waiting for its window
 *display*
 
 ```bash
-aos launch <app> [args...] [--wait[=<ms>]]
+aos launch <app> [args...] [--wait[=<ms>]] [--or-focus]
 aos launch "Visual Studio Code"
 aos launch Chrome --wait
+aos launch Slack --or-focus   # raise Slack's window if it is open, else start it
 ```
 
 
