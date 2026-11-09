@@ -27,6 +27,20 @@ Typical uses: "tell me when the download lands" (`watch file ~/Downloads
 --max=1`), "do X after I copy the link" (`watch clipboard --max=1 --content`),
 "wait until I switch to the browser" (`watch window --max=1`).
 
+### watch idle: is the person at the desk
+
+```bash
+aos watch idle --for=10m && <agent does the noisy work>   # exit 0 once idle that long
+aos watch idle --active --timeout=1h && <agent stops>     # exit 0 on the next key or mouse move
+aos watch idle --for=5m --json                            # {"event":"idle","state":"idle","idle_ms":...}
+```
+
+Idle time is keyboard and mouse input idle (macOS HIDIdleTime, Windows
+GetLastInputInfo, Linux needs `xprintidle` on X11). `--for` also exits at once
+when the person is already idle that long. `--active` takes the first sample as
+the baseline and exits when the idle counter drops. Exit 3 on `--timeout`, 1
+when the machine cannot report idle time. It follows the host under WSL.
+
 ## obs: what this machine was asked to do
 
 Every command run, from the CLI or over MCP, is recorded locally as a span:

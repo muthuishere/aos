@@ -2200,6 +2200,21 @@ aos watch file ./notes.md --max=1
 aos watch file ./src --recursive --interval=1s
 ```
 
+### `aos watch idle`
+
+Exit 0 once the person has been idle for a while, or as soon as they are active again
+
+*display · blocking*
+
+```bash
+aos watch idle (--for=<duration> | --active) [--interval=<1s>] [--timeout=<duration>] [--json]
+aos watch idle --for=10m && echo "away from the desk"
+aos watch idle --active --timeout=1h   # block until the next key press or mouse move
+aos watch idle --for=5m --json
+# idle time is input idle: macOS HIDIdleTime, Windows GetLastInputInfo, Linux xprintidle (X11 only)
+# exit 0 when met, 3 on --timeout, 1 when this machine cannot report idle time
+```
+
 
 ## webapp
 
