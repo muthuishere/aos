@@ -65,7 +65,7 @@ aos watch file ./src --recursive --interval=1s
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">darwin · windows only</span></p>
 
 ```sh
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 ```
 
 | flag | values | meaning |
@@ -75,7 +75,10 @@ aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 | `--title` | `<substring>` | One of these is required |
 | `--app` | `<name>` | Optional |
 | `--match` | `<text>` | Optional |
+| `--gone` | `<text>` | Optional |
+| `--near` | `<anchor text>` | Optional |
 | `--exact` |  | Optional |
+| `--reload` | `<duration>` | Optional |
 | `--interval` | `<1s>` | Optional. default 1s |
 | `--timeout` | `<duration>` | Optional |
 | `--max` | `<n>` | Optional |
@@ -83,7 +86,10 @@ aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<
 ```sh
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
-# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"
+aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h
+aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes
 ```
 
 ### aos watch window

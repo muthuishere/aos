@@ -2157,10 +2157,13 @@ Print a JSON line with the new text whenever a browser tab's page changes
 *display · blocking · platforms: darwin, windows*
 
 ```bash
-aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text>] [--exact] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch tab (--id=<tab id> | --url=<substring> | --title=<substring>) [--app=<name>] [--match=<text> | --gone=<text>] [--near=<anchor text>] [--exact] [--reload=<duration>] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
 aos watch tab --id=chrome:1658108662:1658109078
 aos watch tab --url=web.whatsapp.com --match="Build finished" --timeout=5m
-# with --match: exit 0 when the text appears, 3 on --timeout or when the tab closes
+aos watch tab --url=example.com/slots --reload=30s --match="Book now" && aos tab click --url=example.com/slots --find="Book now"
+aos watch tab --url=example.com/order --reload=1m --gone="Out of stock" --timeout=2h
+aos watch tab --url=example.com/item --near="Price" --match="$" --reload=5m
+# with --match / --gone: exit 0 when the condition is met, 3 on --timeout or when the tab closes
 ```
 
 ### `aos watch clipboard`
