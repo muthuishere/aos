@@ -16,6 +16,7 @@ aos key type "hello" --app=TextEdit --verify           # focus-free + read back:
 aos key press enter --app=TextEdit                      # posted to the app, no focus change
 aos mouse click --app=Calculator --find=7 --role=button # AXPress / UIA Invoke: no pointer, no focus
 aos launch Terminal --wait                              # start an app and wait for its window
+aos launch Slack --or-focus                             # raise its open window, else launch it
 aos window desktop                                      # show desktop (toggle)
 aos app hide-others                                     # hide everything but the frontmost app
 aos app quit-all --except=Slack --yes                   # quits the person's apps: ask them first; never quits aos's own terminal
