@@ -31,3 +31,17 @@ unwanted software after it started a hidden PowerShell, and the owner forbids
 it. Naming PowerShell as a terminal app to *detect* (e.g. in
 `internal/engine/input_target.go`) is fine. Live Windows checks live in
 `test/windows/` as Go programs with `.cmd` runners.
+
+## Design checklist: where does it run?
+
+Every ADR and design doc answers these (template: `docs/adr/TEMPLATE.md`):
+
+1. **macOS and Windows.** How it works on both. If either is unsupported,
+   the feature does not ship. Linux is optional.
+2. **Host side.** `windows-host` (follows the screen: under WSL it acts on the
+   Windows desktop through `aos.exe`, over SSH on the person's laptop) or
+   `local` (runs inside WSL / on the server).
+3. **From WSL.** How it is exercised from inside WSL.
+
+Every new group gets a `hostTable` entry in `internal/cli/host.go`;
+`TestEveryCommandIsClassifiedForTheHost` fails without one.
