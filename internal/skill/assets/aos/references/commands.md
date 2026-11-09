@@ -620,15 +620,31 @@ Attached monitors
 
 ### `aos display brightness`
 
-Print or set screen brightness 0-100 (the built-in panel, else the main display)
+Print or set a monitor's brightness 0-100: built-in panel or external over DDC/CI (default: the focused window's monitor)
 
 *display*
 
 ```bash
-aos display brightness [<0-100>|+<n>|-<n>]
-aos display brightness       # 70
-aos display brightness 50
-aos display brightness -10
+aos display brightness [<monitor id>] [<0-100>|+<n>|-<n>] [--monitor=<id>] [--all] [--list] [--json]
+aos display brightness            # BenQ GW2785TC (2): 64
+aos display brightness +20        # brighter on the focused window's monitor
+aos display brightness 2 50       # monitor 2 to 50
+aos display brightness --monitor=3
+aos display brightness --all 40
+aos display brightness --list
+aos display brightness -10 --json
+```
+
+### `aos display of`
+
+Print the monitor an app's or a window's window is on: id, name and brightness
+
+*display*
+
+```bash
+aos display of --app=<name> | --window=<id> [--json]
+aos display of --app Safari          # 2  BenQ GW2785TC  brightness 64
+aos display of --window 12345 --json
 ```
 
 ### `aos display list`
