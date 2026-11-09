@@ -38,6 +38,8 @@ var hostTable = map[string]bool{
 	"system lock": true, "system sleep": true,
 	// The documents the person opened at their desktop, not the agent's box.
 	"file recent": true,
+	// The person's screen lock, and whether their machine slept.
+	"watch lock": true,
 	// Input idle time is the person's, at the host's keyboard.
 	"watch idle": true, "watch battery": true,
 	// Online, offline and Wi-Fi changes of the machine the person sits at.

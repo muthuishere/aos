@@ -2343,6 +2343,22 @@ aos watch idle --for=5m --json
 # exit 0 when met, 3 on --timeout, 1 when this machine cannot report idle time
 ```
 
+### `aos watch lock`
+
+Print a JSON line when the screen locks or unlocks and when the machine sleeps or wakes
+
+*display · blocking*
+
+```bash
+aos watch lock [--until=locked|unlocked|sleep|wake] [--interval=<1s>] [--timeout=<duration>] [--max=<n>]
+aos watch lock
+aos watch lock --until=unlocked --timeout=2h && echo "the person is back"
+aos watch lock --until=locked
+aos watch lock --until=wake --timeout=8h
+# lock: macOS CGSession, Windows WTS session state. sleep: seen as a gap in the poll clock, so sleep and wake are reported together on resume (sleep carries slept_ms)
+# --until exits 0 when that state is reached (at once if already locked/unlocked), 3 on --timeout
+```
+
 ### `aos watch network`
 
 Print a JSON line when the machine goes online or offline or changes Wi-Fi network
