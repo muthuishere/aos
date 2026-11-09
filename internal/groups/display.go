@@ -49,8 +49,8 @@ func runDisplayList(c *cli.Ctx, _ []string) error {
 		return nil
 	}
 	for _, m := range monitors {
-		c.Printf("%d  %dx%d%s%s%s\n",
-			m.ID, m.Width, m.Height, signed(m.X), signed(m.Y), monitorTags(m))
+		c.Printf("%d  %dx%d%s%s  %s%s\n",
+			m.ID, m.Width, m.Height, signed(m.X), signed(m.Y), monitorName(m), monitorTags(m))
 	}
 	return nil
 }

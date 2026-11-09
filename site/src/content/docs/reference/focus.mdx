@@ -18,6 +18,8 @@ Do Not Disturb, called Focus on macOS and Windows. `status` reads it on macOS (a
 
 <p class="cmd-lead">Turn Do Not Disturb off (GNOME)</p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos focus off
 ```
@@ -29,6 +31,8 @@ aos focus off
 ### aos focus on
 
 <p class="cmd-lead">Turn Do Not Disturb on, optionally for a while (GNOME)</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos focus on [--for=<duration>]
@@ -46,6 +50,8 @@ aos focus on --for=1h
 ### aos focus status
 
 <p class="cmd-lead">Print whether Do Not Disturb (Focus) is on, which mode, and until when</p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos focus status [--json]
