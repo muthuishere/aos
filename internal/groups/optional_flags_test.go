@@ -161,3 +161,13 @@ func TestTakeWaitFlagPassesApplicationFlagsThrough(t *testing.T) {
 		t.Error("a non-numeric --wait must be rejected")
 	}
 }
+
+func TestTakeOrFocusFlag(t *testing.T) {
+	rest, on := takeOrFocusFlag([]string{"Chrome", "--or-focus", "--new-window"})
+	if !on || len(rest) != 2 || rest[0] != "Chrome" || rest[1] != "--new-window" {
+		t.Fatalf("got %v %v", rest, on)
+	}
+	if _, on := takeOrFocusFlag([]string{"Chrome"}); on {
+		t.Fatal("--or-focus not given")
+	}
+}

@@ -23,7 +23,7 @@ Start an application by name. `--wait` blocks until its window exists, so the ne
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos launch <app> [args...] [--wait[=<ms>]]
+aos launch <app> [args...] [--wait[=<ms>]] [--or-focus]
 ```
 
 | flag | values | meaning |
@@ -31,8 +31,10 @@ aos launch <app> [args...] [--wait[=<ms>]]
 | `<app>` | | Required positional argument |
 | `<ms>` | | Optional positional argument |
 | `--wait` |  | Optional |
+| `--or-focus` |  | Optional |
 
 ```sh
 aos launch "Visual Studio Code"
 aos launch Chrome --wait
+aos launch Slack --or-focus   # raise Slack's window if it is open, else start it
 ```
