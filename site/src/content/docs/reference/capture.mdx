@@ -20,6 +20,8 @@ Screenshots and screen recordings. `screenshot` captures a monitor, a region or 
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span> <span class="cmd-badge">alias: <code>aos screenshot</code></span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>]
 ```
@@ -46,6 +48,8 @@ aos capture screenshot --region=0,0,800,600
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture text [--region=<x,y,w,h>] [--monitor=<n>] [--max-chars=<n>] [--json]
 ```
@@ -70,6 +74,8 @@ aos capture text --monitor=1 --region=0,0,600,300   # region relative to monitor
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video devices [--json]
 ```
@@ -87,6 +93,8 @@ aos capture video devices
 <p class="cmd-lead">Point the camera at a place until unfocus (or --hold)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video focus (--rect=<x,y,w,h> | --at=<x,y> [--size=640x360] | --app=<name>|--title=<s> [--find=<text> [--role=<r>]]) [--hold=<duration>] [--zoom=<factor>]
@@ -116,6 +124,8 @@ aos capture video focus --app=Chrome --find="Sign in" --zoom=2
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video follow mouse|app|smart|off [--app=<name>|--title=<s>]
 ```
@@ -137,6 +147,8 @@ aos capture video follow off
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video mark <label...> [--rect=<x,y,w,h>]
 ```
@@ -156,6 +168,8 @@ aos capture video mark "the chart" --rect=200,150,800,450
 <p class="cmd-lead">Start recording the screen with ffmpeg (detached; ask the person first)</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video start [smart|monitor|window|region|app|mouse] [--monitor=<n>] [--app=<name>|--title=<s>] [--region=<x,y,w,h>] [--fps=30] [--audio=none|mic|system|both] [--mic=<name|index>] [--zoom=2] [--out=<path.mp4>] [--max=10m] [--indicator=false] [--json]
@@ -192,6 +206,8 @@ aos capture video start region --region=0,0,1280,720 --max=2m
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video status [--json]
 ```
@@ -209,6 +225,8 @@ aos capture video status
 <p class="cmd-lead">Stop recording, finalize the mp4 and render \<out\>.final.mp4 with the auto camera</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video stop [--raw] [--json]
@@ -230,6 +248,8 @@ aos capture video stop --raw --json
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
 
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
 ```sh
 aos capture video unfocus
 ```
@@ -243,6 +263,8 @@ aos capture video unfocus
 <p class="cmd-lead">Re-render an aos recording with the auto camera, from its events file</p>
 
 <p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
 aos capture video zoom <in.mp4> [--events=<file>] [--out=<file>] [--pad=0.15] [--max-zoom=2.5] [--ease=0.6] [--hold-wide=1.0] [--zoom=2] [--follow=mouse|app|smart|off] [--size=1920x1080] [--json]

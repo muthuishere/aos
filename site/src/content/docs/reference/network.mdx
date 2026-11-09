@@ -35,6 +35,8 @@ aos network captive-portal --json   # state, portal, status, probe
 
 <p class="cmd-lead">Print the local address of the active interface</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network ip
 ```
@@ -46,6 +48,8 @@ aos network ip         # 192.168.1.20
 ### aos network ports
 
 <p class="cmd-lead">List listening TCP ports with the pid and process that own them</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network ports [<port>] [--json]
@@ -66,6 +70,8 @@ aos network ports --json
 
 <p class="cmd-lead">Print this machine's public IP address as the internet sees it</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network public-ip [--json]
 ```
@@ -82,6 +88,8 @@ aos network public-ip --json   # ip, country, source
 ### aos network speed
 
 <p class="cmd-lead">Measure ping, jitter, download and upload speed against Cloudflare (~5 MB down, 2 MB up)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network speed [--max-mb <n>] [--json]
@@ -103,6 +111,8 @@ aos network speed --max-mb 25   # bigger budget, steadier number on fast links
 
 <p class="cmd-lead">Print the active interface, address, and Wi-Fi network</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network status
 ```
@@ -114,6 +124,8 @@ aos network status
 ### aos network vpn off
 
 <p class="cmd-lead">Disconnect a system VPN by name</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network vpn off <name>
@@ -131,6 +143,8 @@ aos network vpn off "Work VPN"
 
 <p class="cmd-lead">Connect a system VPN by name</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network vpn on <name>
 ```
@@ -146,6 +160,8 @@ aos network vpn on "Work VPN"
 ### aos network vpn status
 
 <p class="cmd-lead">List the system's VPN connections and which are connected</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network vpn status [--json]
@@ -164,6 +180,8 @@ aos network vpn status --json
 
 <p class="cmd-lead">Print the Wi-Fi network currently joined</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network wifi
 ```
@@ -175,6 +193,8 @@ aos network wifi
 ### aos network wifi join
 
 <p class="cmd-lead">Join a Wi-Fi network; a password is read from stdin, never argv</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network wifi join <ssid> [--password-stdin]
@@ -194,6 +214,8 @@ printf '%s' "$PW" | aos network wifi join HomeNet --password-stdin
 
 <p class="cmd-lead">Turn the Wi-Fi radio off (drops the connection; confirm first if you are remote)</p>
 
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
 ```sh
 aos network wifi off
 ```
@@ -205,6 +227,8 @@ aos network wifi off
 ### aos network wifi on
 
 <p class="cmd-lead">Turn the Wi-Fi radio on</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
 
 ```sh
 aos network wifi on

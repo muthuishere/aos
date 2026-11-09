@@ -3,6 +3,7 @@ package groups
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
 	"os"
@@ -32,6 +33,48 @@ func TestEveryCommandIsClassifiedForTheHost(t *testing.T) {
 		if follows, _ := cli.HostSide(route); follows {
 			t.Errorf("%s must never be forwarded", route)
 		}
+	}
+}
+
+// `aos commands --json --all` states a host side for every command, and it
+// agrees with hostTable.
+func TestCommandsJSONHasHostSide(t *testing.T) {
+	r := cli.NewRegistry()
+	Register(r)
+	var out bytes.Buffer
+	ctx := &cli.Ctx{Registry: r, Stdout: &out, Stderr: &out, Env: func(string) string { return "" }, GOOS: "linux"}
+	if code := cli.Run(ctx, []string{"commands", "--json", "--all"}); code != 0 {
+		t.Fatalf("exit %d: %s", code, out.String())
+	}
+	var payload struct {
+		Commands []struct {
+			Route string `json:"route"`
+			Host  string `json:"host"`
+		} `json:"commands"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Commands) != len(r.Commands()) {
+		t.Fatalf("%d commands in JSON, %d registered", len(payload.Commands), len(r.Commands()))
+	}
+	for _, c := range payload.Commands {
+		route := strings.TrimPrefix(c.Route, "aos ")
+		follows, _ := cli.HostSide(route)
+		want := cli.HostLocal
+		if follows {
+			want = cli.HostWindowsHost
+		}
+		if c.Host != want {
+			t.Errorf("%s: host %q, want %q", route, c.Host, want)
+		}
+	}
+	sides := map[string]string{}
+	for _, c := range payload.Commands {
+		sides[c.Route] = c.Host
+	}
+	if sides["aos system lock"] != cli.HostWindowsHost || sides["aos system shutdown"] != cli.HostLocal {
+		t.Errorf("system lock %q, system shutdown %q", sides["aos system lock"], sides["aos system shutdown"])
 	}
 }
 
