@@ -36,6 +36,9 @@ type ScreenshotOptions struct {
 	Region  *Rect
 	Match   *Match
 	OutPath string
+	// Covers are painted into the file's pixels (ScreenshotCovered);
+	// fail closed: if one cannot be placed, nothing is written.
+	Covers []ScreenCover
 }
 
 // Screenshot captures the selected target to opts.OutPath as a PNG and
@@ -45,7 +48,8 @@ type ScreenshotOptions struct {
 // is normalized to point dimensions (1 pixel == 1 point) even on
 // HiDPI displays, so that translation needs no scale factor.
 func Screenshot(opts ScreenshotOptions) (Rect, error) {
-	return screenshotWith(defaultAdapter, opts)
+	res, err := screenshotCoveredWith(defaultAdapter, opts)
+	return res.Rect, err
 }
 
 func screenshotWith(a Adapter, opts ScreenshotOptions) (Rect, error) {

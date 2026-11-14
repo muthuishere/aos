@@ -25,6 +25,7 @@ type mockAdapter struct {
 	capturedRect Rect
 	capturedPath string
 	captureErr   error
+	captureImg   image.Image // written to the capture path when set
 	cursorX      int
 	cursorY      int
 	movedMouseTo *[2]int
@@ -75,6 +76,9 @@ func (m *mockAdapter) CaptureRect(bounds Rect, outPath string) error {
 	}
 	m.capturedRect = bounds
 	m.capturedPath = outPath
+	if m.captureImg != nil {
+		return writePNG(outPath, m.captureImg)
+	}
 	return nil
 }
 func (m *mockAdapter) MouseMove(x, y int) error {
