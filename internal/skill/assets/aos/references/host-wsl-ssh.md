@@ -26,7 +26,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `disk` | `list`, `usage`, `eject`, `top` |  |
 | `display` | `brightness`, `of`, `list`, `active`, `focused`, `modes`, `mode`, `mirror` |  |
 | `doctor` |  | `aos doctor` |
-| `draw` | `aos draw`, `text`, `stop`, `config`, `fonts` |  |
+| `draw` | `aos draw`, `text`, `stop`, `config`, `fonts`, `cover`, `cover list`, `cover stop`, `cover update` |  |
 | `exec` |  | `run`, `capture`, `shell` |
 | `file` | `recent` | `read`, `write`, `append`, `list`, `stat`, `mkdir`, `copy`, `move`, `delete`, `search` |
 | `find` | `aos find` |  |

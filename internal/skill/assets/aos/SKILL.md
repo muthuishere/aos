@@ -14,7 +14,8 @@ description: >
   snap a window to a half / quarter / third, N-way split, put an app on monitor 2,
   apply / save a window layout, which monitor is active, read all the text of a window, find a button / menu /
   text on screen, where is the Allow button, point at it, draw an arrow, show me
-  where to click, highlight / circle / box this, open a terminal and run a command,
+  where to click, highlight / circle / box this, hide / black out / cover something
+  private on screen, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP,
   record my screen, capture video, record a demo, screen recording with zoom,
   list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
@@ -128,6 +129,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | read all text of a window | `window text Chrome` · `window text --focused --max-chars=4000` · `--json` (role, value, bounds) · `--source=ocr` (AX/UIA/AT-SPI first, OCR fallback) |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
 | point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
+| hide something on screen | `draw cover --app=Preview --detach --id=scan` (whole window, follows it) · `--rect=0,0,40%,100%` inside it · `--find=ghp_` · `--color=#1e40af --text="Hidden"` · `--preset=private` · `--block-input` · `draw cover list` / `update --id` / `stop --id` |
 | click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=TextEdit --verify` (focus-free; `--focus` to force focus) · `key press enter --app=TextEdit` · `mouse click --app=Calculator --find=7` |
 | files | `file read P --lines=10:40` · `file write P text` · `file list D --json` · `file stat P` · `file delete P --recursive` |
 | run something | `exec capture -- <cmd>` (JSON: stdout, stderr, exit) · `exec run` (streams) · `exec shell "a \| b"` |
@@ -160,7 +162,7 @@ command with usage and examples. Load the guide that matches the intent:
 | visual loop, terminals, screen sharing rules | `references/automation.md` |
 | find a control by its text; read all text of a window | `references/find.md` |
 | browser and terminal tabs: list, switch, open, type into, close; read, type into and click a page, wait for text | `references/tabs.md` |
-| point at / label things on screen | `references/draw.md` |
+| point at / label things on screen, hide private things | `references/draw.md` |
 | speak, with a subtitle in step | `references/speech.md` |
 | run many steps from YAML (batch) | `references/batch.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
