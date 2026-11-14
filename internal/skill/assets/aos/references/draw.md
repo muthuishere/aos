@@ -127,6 +127,18 @@ aos draw cover stop --id=scan                                # or `aos draw stop
   its own); without `--detach` it shows for `--duration` (8 s).
 - Alpha below 1 is a *tint*: it does not hide anything; never use it to hide.
 
+For a one-off shot, redact inside the file instead (no overlay needed):
+
+```
+aos screenshot --app=Terminal --cover-app=Terminal --cover-find=ghp_ --out=/tmp/t.png
+aos screenshot --cover="10,10,300,40;400,10,200,40" --cover-preset=private --out=/tmp/s.png
+```
+
+The covers are painted into the pixels and read back before the file is
+written; live `draw cover` covers are painted in too. Fail closed: text not
+found (exit 3), a tint, a missing window or no Screen Recording permission
+(exit 1) write no file at all.
+
 ## Rules
 
 - Say what to do in the sign, in the human's words ("Click Allow so Terminal

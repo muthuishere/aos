@@ -291,12 +291,17 @@ Take a screenshot
 *display · alias: screenshot*
 
 ```bash
-aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>]
+aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>] [--cover=<x,y,w,h[;x,y,w,h...]>] [--cover-app=<name> | --cover-title=<s>] [--cover-find=<text>] [--cover-pad=<px>] [--cover-color=<c>] [--cover-text=<s>] [--cover-text-color=<c>] [--cover-preset=<name>]
 aos screenshot
 aos capture screenshot region --copy
 aos capture screenshot --monitor=2
 aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
+aos screenshot --cover-app=Preview --out=/tmp/s.png
+aos screenshot --app=Terminal --cover-app=Terminal --cover-find=ghp_ --out=/tmp/t.png
+aos screenshot --cover=10,10,300,40 --cover-text="Private" --out=/tmp/s.png
+# --cover* paints the covers into the file's pixels; live `draw cover` covers are painted in too
+# fail closed: a cover that cannot be placed (exit 3), a tint, or no permission writes no file
 ```
 
 ### `aos capture qr`
