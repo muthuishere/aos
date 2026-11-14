@@ -152,6 +152,38 @@ static void wctl_overlay_close(void *p) {
     objc_autoreleasePoolPop(pool);
     wctl_overlay_pump(0); // let the window server drop it before we return
 }
+
+// ---- covers: a panel that can move, resize, hide and swallow input ----
+
+static void wctl_cover_set_block(void *p, int block) {
+    void *pool = objc_autoreleasePoolPush();
+    MSG(void, signed char)((objid)p, S("setIgnoresMouseEvents:"), block ? 0 : 1);
+    objc_autoreleasePoolPop(pool);
+}
+
+// Moves the panel and swaps its picture in one CATransaction, so the
+// window server never shows the new place with the old picture.
+static void wctl_cover_update(void *p, double x, double y, double w, double h,
+                              const unsigned char *rgba, int pw, int ph) {
+    void *pool = objc_autoreleasePoolPush();
+    objid panel = (objid)p;
+    objid tx = C("CATransaction");
+    MSG(void)(tx, S("begin"));
+    MSG(void, signed char)(tx, S("setDisableActions:"), 1);
+    double primaryH = CGDisplayBounds(CGMainDisplayID()).size.height;
+    CGRect frame = CGRectMake(x, primaryH - (y + h), w, h);
+    MSG(void, CGRect, signed char)(panel, S("setFrame:display:"), frame, (signed char)0);
+    wctl_overlay_set_image(panel, rgba, pw, ph, w);
+    MSG(void)(tx, S("commit"));
+    objc_autoreleasePoolPop(pool);
+}
+
+static void wctl_cover_set_visible(void *p, int visible) {
+    void *pool = objc_autoreleasePoolPush();
+    if (visible) MSG(void)((objid)p, S("orderFrontRegardless"));
+    else MSG(void, objid)((objid)p, S("orderOut:"), (objid)0);
+    objc_autoreleasePoolPop(pool);
+}
 */
 import "C"
 
@@ -251,3 +283,54 @@ func (a *Adapter) PumpOverlays(d time.Duration) {
 }
 
 func (a *Adapter) ReduceMotion() bool { return C.wctl_reduce_motion() != 0 }
+
+// ---- covers (core.CoverOverlayer) ----
+
+var _ core.CoverOverlayer = (*Adapter)(nil)
+
+type cover struct{ panel unsafe.Pointer }
+
+func (a *Adapter) OpenCover(b core.Rect, img *image.RGBA, blockInput bool) (core.CoverWindow, error) {
+	if C.wctl_is_main_thread() == 0 {
+		return nil, errors.New("draw cover: on macOS the cover must be shown from the main goroutine (AppKit owns the main thread)")
+	}
+	w, h := img.Rect.Dx(), img.Rect.Dy()
+	if w == 0 || h == 0 {
+		return nil, errors.New("draw cover: empty cover image")
+	}
+	panel := C.wctl_overlay_show(C.double(b.X), C.double(b.Y), C.double(b.W), C.double(b.H),
+		(*C.uchar)(unsafe.Pointer(&img.Pix[0])), C.int(w), C.int(h), 1)
+	if panel == nil {
+		return nil, errors.New("draw cover: could not create the cover window")
+	}
+	if blockInput {
+		C.wctl_cover_set_block(panel, 1)
+	}
+	C.wctl_overlay_pump(0) // on screen before the caller goes on
+	return &cover{panel: panel}, nil
+}
+
+func (c *cover) Update(b core.Rect, img *image.RGBA) error {
+	w, h := img.Rect.Dx(), img.Rect.Dy()
+	if w == 0 || h == 0 || img.Stride != w*4 {
+		return errors.New("draw cover: bad cover image")
+	}
+	C.wctl_cover_update(c.panel, C.double(b.X), C.double(b.Y), C.double(b.W), C.double(b.H),
+		(*C.uchar)(unsafe.Pointer(&img.Pix[0])), C.int(w), C.int(h))
+	return nil
+}
+
+func (c *cover) SetVisible(v bool) {
+	n := 0
+	if v {
+		n = 1
+	}
+	C.wctl_cover_set_visible(c.panel, C.int(n))
+}
+
+func (c *cover) Close() {
+	if c.panel != nil {
+		C.wctl_overlay_close(c.panel)
+		c.panel = nil
+	}
+}

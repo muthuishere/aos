@@ -31,3 +31,29 @@ type Overlay interface {
 	SetOpacity(a float64)
 	Close()
 }
+
+// CoverOverlayer is the optional adapter capability behind `draw cover`:
+// a window that blocks a part of the screen and can follow another
+// window, i.e. move, resize, hide and show while it is up. Every call
+// must come from the goroutine that opened it (the main thread on macOS).
+type CoverOverlayer interface {
+	// OpenCover shows img over bounds (global units; img is bounds x
+	// pixel scale, premultiplied) in a never-focused window above every
+	// normal window and absent from the Dock and app switcher. It is
+	// click-through unless blockInput, in which case the opaque pixels
+	// swallow clicks and scrolls.
+	OpenCover(bounds Rect, img *image.RGBA, blockInput bool) (CoverWindow, error)
+	// PumpOverlays runs the platform event loop for about d.
+	PumpOverlays(d time.Duration)
+}
+
+// CoverWindow is one window opened by OpenCover.
+type CoverWindow interface {
+	// Update moves the window to bounds and shows img (any size: bounds
+	// x pixel scale) in one step, so no frame shows the old picture at
+	// the new place or the new picture at the old one.
+	Update(bounds Rect, img *image.RGBA) error
+	// SetVisible hides or shows the window without closing it.
+	SetVisible(visible bool)
+	Close()
+}
