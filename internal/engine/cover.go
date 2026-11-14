@@ -583,15 +583,6 @@ func (p *coverPlan) result(a Adapter, hidden bool) CoverResult {
 
 func (p *coverPlan) follows() bool { return p.win != nil && !p.opts.NoFollow }
 
-// PlanCover resolves where a cover goes without showing it.
-func PlanCover(o CoverOptions) (CoverResult, error) {
-	p, err := planCoverWith(defaultAdapter, o)
-	if err != nil {
-		return CoverResult{}, err
-	}
-	return p.result(defaultAdapter, false), nil
-}
-
 // RenderCover renders the cover exactly as it is shown, into a PNG the
 // size of the cover, without showing anything.
 func RenderCover(o CoverOptions, outPath string) (CoverResult, error) {
