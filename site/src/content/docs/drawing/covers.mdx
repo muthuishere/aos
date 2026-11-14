@@ -1,0 +1,75 @@
+---
+title: Covers
+description: aos draw cover blacks out a window, part of it, or text found in it, and follows the window. aos screenshot --cover paints covers into the file and writes nothing if it cannot.
+---
+import Shot from '../../../components/Shot.astro';
+
+`aos draw cover` puts an opaque box over part of the screen. Use it to hide a tax scan, a token or a chat list before a screenshot, a recording or a [LAN screen-share](/aos/remote-share/). It shows there exactly as it does on screen.
+
+macOS for now. On Windows and Linux `draw cover` reports that it is not implemented yet.
+
+## Example
+
+```sh
+aos draw cover --app=Preview --detach --id=scan
+```
+
+The whole Preview window is covered until you stop it. The cover moves and resizes with the window, follows it to another monitor, hides while the window is minimised, and leaves out windows in front of it.
+
+More targets:
+
+```sh
+aos draw cover --app=Mail --rect=0,0,30%,100% --preset=private --detach   # part of a window
+aos draw cover --app=Terminal --find=ghp_ --pad=6 --detach --id=token     # text found in it
+aos draw cover --rect=100,100,400,200 --block-input --detach --id=form    # a screen rect, clicks blocked
+aos draw cover --monitor=2 --preset=brb --detach                          # a whole monitor
+```
+
+`--rect` with `--app` or `--title` is relative to the window's top-left corner, in points or `N%` of the window.
+
+## Look
+
+Any colour, including `#rrggbbaa`. `black` is true `#000`. Text shrinks to fit and never spills out of the box.
+
+<div class="shot-grid">
+<Shot name="cover-private" alt="A black cover reading Private" caption="--preset=private" />
+<Shot name="cover-redacted" alt="A black cover reading REDACTED" caption="--preset=redacted" />
+<Shot name="cover-brb" alt="A blue cover reading Be right back" caption="--preset=brb" />
+<Shot name="cover-custom" alt="A blue cover with a white border reading Hidden by request" caption='--color=#1e40af --text="Hidden by request" --border=4 --border-color=white' />
+</div>
+
+Add your own presets under `presets` in `aos draw config`.
+
+## Change, list, stop
+
+```sh
+aos draw cover update --id=scan --preset=brb --text="Back in 5"   # new look, nothing shows in between
+aos draw cover list                                                # grouped by window
+aos draw cover stop --id=scan                                      # one cover
+aos draw cover stop                                                # every cover
+```
+
+`aos draw stop` also removes every cover. Without `--detach` a cover stays for `--duration` seconds (8 by default). With `--detach` it stays until stopped. Clicks pass through a cover unless you add `--block-input`. A click or Esc on a cover does not close it, so it cannot be uncovered by accident.
+
+## Screenshots with covers painted in
+
+```sh
+aos screenshot --app=Mail --cover-app=Preview --out=mail.png
+aos screenshot --cover=0,0,400,120 --cover-find=ghp_ --cover-pad=6 --out=screen.png
+aos screenshot --cover-title="Tax 2026" --cover-preset=redacted --out=desk.png
+```
+
+Every cover is placed before the capture. It is then painted into the file's pixels, and every covered pixel is read back before the file appears. Covers that are live from `draw cover` are painted in too.
+
+It fails closed. If a cover cannot be placed, nothing is written:
+
+| case | exit |
+|---|---|
+| the window or text to cover is not found | 3 |
+| a tint (alpha below 1), a bad colour, a failed capture or a failed read-back | 1 |
+
+## Limits
+
+- A window cover checks the window's position every 16 ms, so during a fast drag it can trail by one frame. Screenshots are not affected, because their covers are painted into the pixels.
+- In a screenshot, a live cover is painted as its full box. A window partly in front of a covered window is blacked out in the file too.
+- A cover is not restored if the process drawing it is killed.

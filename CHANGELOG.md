@@ -2,6 +2,26 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.14.0 - 2026-11-14
+
+New: hide private things on screen before an agent screenshots, records or shares it.
+
+### Covers (#118, macOS)
+
+- `aos draw cover` blacks out a rect, a window, part of a window (`--rect` in
+  points or `N%`) or text found in it (`--find`). Any colour, text that
+  shrinks to fit, border, presets (`private`, `redacted`, `brb`, or your own
+  under `presets` in the draw config). A window cover follows the window
+  (move, resize, other monitor), hides while it is minimised and leaves out
+  windows in front of it. Click-through unless `--block-input`. `--detach
+  --id` keeps it up until `draw cover stop` / `draw stop`; `cover update`
+  changes colour or text in one frame; `cover list` groups them by window.
+- `aos screenshot --cover=x,y,w,h | --cover-app | --cover-find` paints the
+  covers into the file's pixels and reads them back; live covers are painted
+  in too. Fail closed: if a cover cannot be placed, is a tint (alpha < 1) or
+  the capture fails, no file is written (exit 3 for not found, else 1).
+- Windows and Linux: `draw cover` reports not implemented yet.
+
 ## v0.13.1 - 2026-11-09
 
 Fix: aos could bring Chrome to the front and change the tab you were looking at.

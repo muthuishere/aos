@@ -26,10 +26,14 @@ const DrawChildEnv = "AOS_DRAW_CHILD"
 const DrawTagEnv = "AOS_DRAW_TAG"
 
 type drawEntry struct {
-	PID    int        `json:"PID"`
-	Result DrawResult `json:"Result"`
-	Tag    string     `json:"Tag,omitempty"`
+	PID    int          `json:"PID"`
+	Result DrawResult   `json:"Result"`
+	Tag    string       `json:"Tag,omitempty"`
+	Cover  *CoverResult `json:"Cover,omitempty"`
 }
+
+// CoverTag is the registry tag of a detached cover.
+const CoverTag = "cover"
 
 func drawRegistryDir() string {
 	base, err := os.UserCacheDir()
@@ -93,7 +97,9 @@ func liveDrawings() []drawEntry {
 func LiveDrawingSigns() []Rect {
 	var out []Rect
 	for _, e := range liveDrawings() {
-		out = append(out, e.Result.Sign)
+		if e.Cover == nil {
+			out = append(out, e.Result.Sign)
+		}
 	}
 	return out
 }
@@ -128,23 +134,41 @@ func SpawnDetachedDraw(args []string) (DrawResult, error) {
 // SpawnDetachedDrawTagged is SpawnDetachedDraw with a tag recorded in the
 // registry, so StopDrawingsTagged can end just that kind of drawing.
 func SpawnDetachedDrawTagged(args []string, tag string) (DrawResult, error) {
+	e, err := spawnDetached(args, tag)
+	return e.Result, err
+}
+
+// SpawnDetachedCover is SpawnDetachedDraw for `draw cover`: the child
+// calls RegisterCover, and its first placement comes back.
+func SpawnDetachedCover(args []string) (CoverResult, int, error) {
+	e, err := spawnDetached(args, CoverTag)
+	if err != nil {
+		return CoverResult{}, 0, err
+	}
+	if e.Cover == nil {
+		return CoverResult{}, e.PID, errors.New("cover: the drawing registered without a cover")
+	}
+	return *e.Cover, e.PID, nil
+}
+
+func spawnDetached(args []string, tag string) (drawEntry, error) {
 	exe, err := os.Executable()
 	if err != nil {
-		return DrawResult{}, err
+		return drawEntry{}, err
 	}
 	cmd := exec.Command(exe, args...)
 	cmd.Env = append(os.Environ(), DrawChildEnv+"=1", DrawTagEnv+"="+tag)
 	errPath := filepath.Join(os.TempDir(), fmt.Sprintf("aos-draw-%d.err", time.Now().UnixNano()))
 	errFile, err := os.Create(errPath)
 	if err != nil {
-		return DrawResult{}, err
+		return drawEntry{}, err
 	}
 	defer os.Remove(errPath)
 	cmd.Stderr = errFile
 	detachProcess(cmd)
 	if err := cmd.Start(); err != nil {
 		errFile.Close()
-		return DrawResult{}, err
+		return drawEntry{}, err
 	}
 	errFile.Close()
 	exited := make(chan error, 1)
@@ -154,16 +178,126 @@ func SpawnDetachedDrawTagged(args []string, tag string) (DrawResult, error) {
 		if b, err := os.ReadFile(drawEntryPath(cmd.Process.Pid)); err == nil {
 			var e drawEntry
 			if json.Unmarshal(b, &e) == nil {
-				return e.Result, nil
+				return e, nil
 			}
 		}
 		select {
 		case <-exited:
 			msg, _ := os.ReadFile(errPath)
-			return DrawResult{}, fmt.Errorf("drawing failed: %s", strings.TrimSpace(string(msg)))
+			return drawEntry{}, fmt.Errorf("drawing failed: %s", strings.TrimSpace(string(msg)))
 		case <-deadline:
-			return DrawResult{}, errors.New("drawing did not start within 10s")
+			return drawEntry{}, errors.New("drawing did not start within 10s")
 		case <-time.After(50 * time.Millisecond):
 		}
 	}
 }
+
+// RegisterCover records this process (a detached cover) and where its
+// cover is now; it is called again whenever the cover moves.
+func RegisterCover(res CoverResult) {
+	_ = os.MkdirAll(drawRegistryDir(), 0o755)
+	b, _ := json.Marshal(drawEntry{PID: os.Getpid(), Tag: CoverTag, Cover: &res})
+	tmp := drawEntryPath(os.Getpid()) + ".tmp"
+	if os.WriteFile(tmp, b, 0o644) == nil {
+		_ = os.Rename(tmp, drawEntryPath(os.Getpid()))
+	}
+}
+
+// LiveCover is a detached cover on screen.
+type LiveCover struct {
+	PID   int         `json:"PID"`
+	Cover CoverResult `json:"Cover"`
+}
+
+// LiveCovers lists every detached cover.
+func LiveCovers() []LiveCover {
+	var out []LiveCover
+	for _, e := range liveDrawings() {
+		if e.Cover != nil {
+			out = append(out, LiveCover{PID: e.PID, Cover: *e.Cover})
+		}
+	}
+	return out
+}
+
+// StopCovers ends the detached covers with this id ("" = every cover),
+// except the process skip (0 = none), and returns how many it stopped.
+func StopCovers(id string, skip int) int {
+	n := 0
+	for _, c := range LiveCovers() {
+		if (id != "" && c.Cover.ID != id) || c.PID == skip {
+			continue
+		}
+		if stopProcess(c.PID) == nil {
+			n++
+		}
+		_ = os.Remove(drawEntryPath(c.PID))
+	}
+	return n
+}
+
+func coverUpdatePath(pid int) string {
+	return filepath.Join(drawRegistryDir(), strconv.Itoa(pid)+".update")
+}
+
+// SendCoverUpdate asks the live covers with this id to merge patch into
+// their style, and waits until each has taken it. A cover swaps its
+// picture in one frame, so the area under it never shows.
+func SendCoverUpdate(id string, patch CoverStyle) (int, error) {
+	if _, err := patch.look(); err != nil {
+		return 0, err
+	}
+	var pids []int
+	for _, c := range LiveCovers() {
+		if c.Cover.ID == id {
+			pids = append(pids, c.PID)
+		}
+	}
+	if len(pids) == 0 {
+		return 0, fmt.Errorf("cover: no live cover with --id=%s (see `aos draw cover list`): %w", id, ErrNoMatch)
+	}
+	b, _ := json.Marshal(patch)
+	for _, pid := range pids {
+		tmp := coverUpdatePath(pid) + ".tmp"
+		if err := os.WriteFile(tmp, b, 0o644); err != nil {
+			return 0, err
+		}
+		if err := os.Rename(tmp, coverUpdatePath(pid)); err != nil {
+			return 0, err
+		}
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for _, pid := range pids {
+		for {
+			if _, err := os.Stat(coverUpdatePath(pid)); os.IsNotExist(err) {
+				break
+			}
+			if time.Now().After(deadline) {
+				_ = os.Remove(coverUpdatePath(pid))
+				return 0, fmt.Errorf("cover %s (pid %d) did not take the update within 3s", id, pid)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	return len(pids), nil
+}
+
+// TakeCoverUpdate returns (and consumes) an update sent to this process
+// by SendCoverUpdate, or nil.
+func TakeCoverUpdate() *CoverStyle {
+	p := coverUpdatePath(os.Getpid())
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var s CoverStyle
+	if json.Unmarshal(b, &s) != nil {
+		_ = os.Remove(p)
+		return nil
+	}
+	// Removed after it is shown: SendCoverUpdate returns once it is gone.
+	return &s
+}
+
+// AckCoverUpdate tells SendCoverUpdate the update is on screen.
+func AckCoverUpdate() { _ = os.Remove(coverUpdatePath(os.Getpid())) }

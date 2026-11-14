@@ -49,6 +49,9 @@ type DrawConfig struct {
 	// box only (and font / fontScale to all, unless set here).
 	Text     *TextConfig `json:"text,omitempty"`
 	Subtitle *TextConfig `json:"subtitle,omitempty"`
+
+	// Presets are named cover styles: `draw cover --preset=private`.
+	Presets map[string]CoverStyle `json:"presets,omitempty"`
 }
 
 // TextConfig is the defaults block of a text drawing or subtitle.
@@ -95,6 +98,17 @@ func DefaultDrawConfig() DrawConfig {
 		Shape: "bend", Border: "shadow", Corners: "round", From: "auto", Animate: "on",
 		Text:     &TextConfig{Color: "white", Bg: "auto", Size: "M", Position: "bottom-center"},
 		Subtitle: &TextConfig{Color: "white", Bg: "auto", Position: "bottom-center"},
+		Presets:  BuiltinCoverPresets(),
+	}
+}
+
+// BuiltinCoverPresets are the cover presets that work with no config
+// file; the config's presets add to them and override them by name.
+func BuiltinCoverPresets() map[string]CoverStyle {
+	return map[string]CoverStyle{
+		"private":  {Color: "#000000", Text: "Private", TextColor: "#FFFFFF"},
+		"redacted": {Color: "#000000", Text: "REDACTED", TextColor: "#FFFFFF"},
+		"brb":      {Color: "#1E40AF", Text: "Be right back", TextColor: "#FFFFFF"},
 	}
 }
 

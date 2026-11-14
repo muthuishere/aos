@@ -96,6 +96,49 @@ ends every detached drawing. Nothing else needs to be installed.
 3. Optionally screenshot again to see what the human sees.
 4. When they have done it: `aos draw stop`.
 
+## Recipe: hide something before a screenshot or recording
+
+A cover is an opaque box over the screen; it shows in `screenshot`, `record`
+and the LAN screen-share exactly like on screen.
+
+```
+aos draw cover --app=Preview --detach --id=scan              # the whole window, follows it
+aos draw cover --app=Mail --rect=0,0,30%,100% --preset=private --detach
+aos draw cover --app=Terminal --find=ghp_ --pad=6 --detach --id=token
+aos draw cover --rect=100,100,400,200 --color=#1e40af --text="Hidden by request" --detach
+aos draw cover update --id=scan --preset=brb                 # swap look in one frame
+aos draw cover list                                          # grouped by window
+aos draw cover stop --id=scan                                # or `aos draw stop`
+```
+
+- Targets: `--rect=x,y,w,h` (global; with `--monitor` relative to it), or a
+  window (`--app` / `--title`) — whole, `--rect` inside it in points or `N%`,
+  or `--find=<text>` (`--role`, `--nth`, `--pad`, default 4).
+- Look: `--color` (name, `#hex`, `#rrggbbaa`; default black), `--text`
+  (`\n` for lines; shrinks to fit, never spills), `--text-color`, `--font`,
+  `--font-scale`, `--size` (largest), `--weight`, `--align`, `--position`,
+  `--margin`, `--border` / `--border-color` / `--radius`. `--preset=` private,
+  redacted, brb, or your own under `"presets"` in the draw config.
+- A window cover follows the window (move, resize, another monitor), hides
+  while it is minimised or hidden, and leaves out windows in front of it.
+  `--no-follow` pins it. If the window list cannot be read it stays put.
+- Click-through by default; `--block-input` swallows clicks and scrolls.
+- `--detach` keeps it up until `cover stop` / `draw stop` (it never lapses on
+  its own); without `--detach` it shows for `--duration` (8 s).
+- Alpha below 1 is a *tint*: it does not hide anything; never use it to hide.
+
+For a one-off shot, redact inside the file instead (no overlay needed):
+
+```
+aos screenshot --app=Terminal --cover-app=Terminal --cover-find=ghp_ --out=/tmp/t.png
+aos screenshot --cover="10,10,300,40;400,10,200,40" --cover-preset=private --out=/tmp/s.png
+```
+
+The covers are painted into the pixels and read back before the file is
+written; live `draw cover` covers are painted in too. Fail closed: text not
+found (exit 3), a tint, a missing window or no Screen Recording permission
+(exit 1) write no file at all.
+
 ## Rules
 
 - Say what to do in the sign, in the human's words ("Click Allow so Terminal

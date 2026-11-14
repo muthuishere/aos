@@ -291,12 +291,17 @@ Take a screenshot
 *display · alias: screenshot*
 
 ```bash
-aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>]
+aos capture screenshot [fullscreen|region|window] [--monitor=<n>] [--region=<x,y,w,h>] [--app=<name>] [--copy] [--out=<path>] [--cover=<x,y,w,h[;x,y,w,h...]>] [--cover-app=<name> | --cover-title=<s>] [--cover-find=<text>] [--cover-pad=<px>] [--cover-color=<c>] [--cover-text=<s>] [--cover-text-color=<c>] [--cover-preset=<name>]
 aos screenshot
 aos capture screenshot region --copy
 aos capture screenshot --monitor=2
 aos capture screenshot --app=Chrome --out=/tmp/term.png
 aos capture screenshot --region=0,0,800,600
+aos screenshot --cover-app=Preview --out=/tmp/s.png
+aos screenshot --app=Terminal --cover-app=Terminal --cover-find=ghp_ --out=/tmp/t.png
+aos screenshot --cover=10,10,300,40 --cover-text="Private" --out=/tmp/s.png
+# --cover* paints the covers into the file's pixels; live `draw cover` covers are painted in too
+# fail closed: a cover that cannot be placed (exit 3), a tint, or no permission writes no file
 ```
 
 ### `aos capture qr`
@@ -821,6 +826,60 @@ List the font names --font accepts
 
 ```bash
 aos draw fonts
+```
+
+### `aos draw cover`
+
+Black out part of the screen: a rect, a window, part of a window, or text found in it; follows its window
+
+*display*
+
+```bash
+aos draw cover (--rect=<x,y,w,h> | --monitor=<n> | <app> | --app=<name> | --title=<s> [--rect=<x,y,w,h|N%>] [--find=<text> [--role=<r>] [--nth=<n>] [--pad=<px>]]) [--color=<name|#hex|#rrggbbaa>] [--text=<s>] [--text-color=<c>] [--font=<name>] [--font-scale=<k>] [--size=S|M|L|XL] [--weight=regular|bold] [--align=left|center|right] [--position=center|top-left|...] [--margin=<px|N%>] [--border=<px>] [--border-color=<c>] [--radius=<px>] [--preset=<name>] [--block-input] [--no-follow] [--id=<name>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]
+aos draw cover --app=Preview --detach --id=scan
+aos draw cover --app=Mail --rect=0,0,30%,100% --preset=private --detach
+aos draw cover --app=Terminal --find=ghp_ --pad=6 --color=#1e40af --text="Hidden by request" --detach
+aos draw cover --rect=100,100,400,200 --block-input --detach --id=form
+aos draw cover update --id=scan --preset=brb --text="Back in 5"
+aos draw cover list
+aos draw cover stop --id=scan
+# window covers follow the window: move, resize, other monitor, hidden while minimised
+# --detach keeps the cover until `draw cover stop` / `draw stop`; without it the cover shows for --duration (8s)
+# presets: private, redacted, brb, plus "presets" in `aos draw config`
+```
+
+### `aos draw cover list`
+
+List the detached covers, grouped by window
+
+*display*
+
+```bash
+aos draw cover list [--json]
+aos draw cover list
+```
+
+### `aos draw cover stop`
+
+Remove detached covers (all, or one --id)
+
+*display*
+
+```bash
+aos draw cover stop [--id=<name>] [--json]
+aos draw cover stop --id=scan
+aos draw cover stop
+```
+
+### `aos draw cover update`
+
+Change a live cover's colour or text in place; the area underneath never shows
+
+*display*
+
+```bash
+aos draw cover update --id=<name> [--color=<c>] [--text=<s>] [--text-color=<c>] [--size=S|M|L|XL] [--font=<name>] [--weight=<w>] [--align=<a>] [--position=<p>] [--margin=<m>] [--border=<px>] [--border-color=<c>] [--radius=<px>] [--preset=<name>] [--json]
+aos draw cover update --id=scan --text="Private" --color=#000
 ```
 
 
