@@ -11,7 +11,8 @@ it did, on macOS, Windows, and Linux.
 - **Works beside you, not instead of you.** `aos key type --app=TextEdit --verify "…"`
   sends input to the named app while you keep working elsewhere, and reads it back.
   When a person should act, `aos draw`, `aos draw text` and `aos subtitle show` put
-  click-through arrows, labels and captions on the real screen.
+  click-through arrows, labels and captions on the real screen, and `aos draw cover`
+  hides a window or a token before a screenshot, recording or screen-share.
 - **One binary, every OS, every agent.** The skill installs itself on first run;
   `aos capture video start smart` … `stop` records what happened with an automatic
   zoom camera. Demo: https://muthuishere.github.io/aos/
@@ -252,15 +253,15 @@ not offering it — it will try, fail, and try again.
 
 ## Command groups
 
-215 public commands in 49 groups (`aos commands --all`; 222 in 51 groups counting
-hidden ones). `aos doctor` reports how many this machine can run: 218 of 222 on
+219 public commands in 49 groups (`aos commands --all`; 226 in 51 groups counting
+hidden ones). `aos doctor` reports how many this machine can run: 222 of 226 on
 macOS, where `headless start` and `stop` are Linux-only and `notify hold` and
 `power awake-hold` are Windows-only.
 
 | | |
 |---|---|
 | **Desktop** | `window` (list · focus · move to zone/split/coords · resize · wait · text · save a layout · arrange it back), `tab` (list · focus · open · send · close · read · type · click browser and terminal tabs), `display` (list · brightness · modes · mirror · `of` a window), `mouse`, `key`, `permission`, `app`, `focus` (Do Not Disturb), `menu`, `shortcuts` |
-| **Point** | `find` locates a button, menu or text by its label · `draw` puts a click-through arrow, ring or box with a sign on screen · `color` reads a pixel |
+| **Point** | `find` locates a button, menu or text by its label · `draw` puts a click-through arrow, ring or box with a sign on screen · `draw cover` blacks out a window, part of it or a token, and follows the window · `color` reads a pixel |
 | **Machine** | `system` (lock · sleep · info · load · memory · thermal · uptime · restart · shutdown · logout), `process`, `power`, `battery`, `network` (status · wifi · captive-portal · wifi-qr · speed · ports · vpn · public-ip), `audio`, `bluetooth`, `media`, `appearance`, `disk` (list · usage · top · eject), `trash`, `font`, `pkg`, `debug` |
 | **Content** | `capture` (screenshot · video · text · qr), `clipboard`, `file`, `exec`, `open`, `launch` (`--or-focus`), `webapp`, `subtitle`, `say`, `notify`, `batch` |
 | **Remote** | `remote` — hand this screen and its input to a browser on the LAN, for as long as the command runs |

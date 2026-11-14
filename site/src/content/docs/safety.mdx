@@ -63,6 +63,19 @@ $ aos watch clipboard
 
 You get the length and a digest. Add `--content` to include the text.
 
+## Covered screenshots fail closed
+
+`aos screenshot --cover…` paints each cover into the file and reads every covered pixel back. If a cover cannot be placed, is see-through, or the capture fails, no file is written:
+
+```console
+$ aos screenshot --cover-app=Preview --out=shot.png
+aos: screenshot --cover #1: no window matched the filter (no file written)
+$ echo $?
+3
+```
+
+Live covers from `aos draw cover` are painted into every screenshot. See [covers](/aos/drawing/covers/).
+
 ## What is not protected
 
 `exec run`, `exec shell` and `exec capture` run whatever you give them. There is no sandbox and no allowlist. If an agent should not run arbitrary commands on a machine, do not expose the `exec` group:

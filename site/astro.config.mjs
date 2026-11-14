@@ -98,6 +98,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Arrows & pointers', slug: 'drawing/arrows' },
 						{ label: 'Text labels', slug: 'drawing/text' },
+						{ label: 'Covers', slug: 'drawing/covers' },
 						{ label: 'Subtitles', slug: 'drawing/subtitles' },
 					],
 				},

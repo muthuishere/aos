@@ -2,9 +2,11 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
-## Unreleased
+## v0.14.0 - 2026-11-14
 
-### New: covers (#118, macOS)
+New: hide private things on screen before an agent screenshots, records or shares it.
+
+### Covers (#118, macOS)
 
 - `aos draw cover` blacks out a rect, a window, part of a window (`--rect` in
   points or `N%`) or text found in it (`--find`). Any colour, text that
