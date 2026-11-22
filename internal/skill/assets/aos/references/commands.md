@@ -529,6 +529,23 @@ aos clipboard history clear
 ```
 
 
+## code
+
+Run one small program that calls many aos commands (opt-in Code Mode)
+
+### `aos code`
+
+Discover operations and run JavaScript programs that call them in parallel; one process, only the final result returned
+
+```bash
+aos code operations | describe <op> | capabilities --json | docs | check <prog.js> | run <prog.js|-> | eval '<expr>' | skill
+aos code operations
+aos code describe capture-screenshot
+aos code eval 'await ops["window-list"]({ args: ["--json"] })'
+aos code run prog.js
+```
+
+
 ## color
 
 Read the color of a pixel on screen
