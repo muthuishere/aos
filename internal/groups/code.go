@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -83,12 +84,11 @@ func codeOperations(c *cli.Ctx) []codemode.Operation {
 	for _, n := range names {
 		v := verbs[n]
 		ops = append(ops, codemode.Operation{
-			Name:         n,
-			Description:  codeDescription(v),
-			InputSchema:  codeSchema(v),
-			OutputSchema: codeOutputSchema,
-			SideEffects:  codemode.SideEffectLocal,
-			Handler:      codeHandler(c, v),
+			Name:        n,
+			Description: codeDescription(v),
+			InputSchema: codeSchema(v),
+			SideEffects: codemode.SideEffectLocal,
+			Handler:     codeHandler(c, v),
 		})
 	}
 	return ops
@@ -97,8 +97,6 @@ func codeOperations(c *cli.Ctx) []codemode.Operation {
 func codeDescription(v *batchVerb) string {
 	return v.Summary + "  [" + v.Usage + "]"
 }
-
-var codeOutputSchema = json.RawMessage(`{"type":"object","properties":{"ok":{"type":"boolean"},"exit":{"type":"integer"},"stdout":{"type":"string"},"stderr":{"type":"string"},"json":{"description":"stdout parsed as JSON, when it is valid JSON"}},"required":["ok","exit","stdout","stderr"]}`)
 
 // codeSchema: `args` are the positional words; every flag the command
 // documents is an optional property. A command that documents no flags is not
@@ -220,7 +218,15 @@ func codeShortArgv(name string, words, fl []string) ([]string, error) {
 	return nil, fmt.Errorf("unknown verb %s", name)
 }
 
+// codeJSONFlag matches a documented --json flag in a command's usage line.
+var codeJSONFlag = regexp.MustCompile(`--json\b`)
+
+// codeHandler is JSON-first: when the verb documents --json it is added
+// (unless the program set it), and a call returns the parsed JSON value itself,
+// or the trimmed stdout when there is no JSON. A non-zero exit rejects with
+// "exit N: <stderr tail>", so a program uses try/catch instead of checking ok.
 func codeHandler(c *cli.Ctx, v *batchVerb) codemode.Handler {
+	hasJSON := v.cmd != nil && codeJSONFlag.MatchString(v.cmd.Args)
 	return func(ctx context.Context, in map[string]any) (any, error) {
 		if v.Name == "wait" {
 			return codeWait(ctx, in)
@@ -229,14 +235,32 @@ func codeHandler(c *cli.Ctx, v *batchVerb) codemode.Handler {
 		if err != nil {
 			return nil, err
 		}
-		out := cli.Invoke(c, argv, "")
-		res := map[string]any{"ok": out.Exit == 0, "exit": out.Exit, "stdout": out.Stdout, "stderr": out.Stderr}
-		var j any
-		if json.Unmarshal([]byte(out.Stdout), &j) == nil {
-			res["json"] = j
+		if _, set := in["json"]; hasJSON && !set {
+			argv = append(argv, "--json")
 		}
-		return res, nil
+		out := cli.Invoke(c, argv, "")
+		if out.Exit != 0 {
+			return nil, fmt.Errorf("exit %d: %s", out.Exit, codeTail(out.Stderr, out.Stdout))
+		}
+		var j any
+		if json.Unmarshal([]byte(out.Stdout), &j) == nil && strings.TrimSpace(out.Stdout) != "" {
+			return j, nil
+		}
+		return strings.TrimSpace(out.Stdout), nil
 	}
+}
+
+// codeTail is the end of the first non-empty text, capped, for an error message.
+func codeTail(texts ...string) string {
+	for _, t := range texts {
+		if t = strings.TrimSpace(t); t != "" {
+			if len(t) > 500 {
+				t = "..." + t[len(t)-500:]
+			}
+			return t
+		}
+	}
+	return "no output"
 }
 
 // codeWait pauses for a duration, as batch's wait: does (500 ms, 2s, 1m); the
@@ -256,5 +280,5 @@ func codeWait(ctx context.Context, in map[string]any) (any, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	return map[string]any{"ok": true, "exit": 0, "stdout": "", "stderr": ""}, nil
+	return "", nil
 }
