@@ -1,0 +1,36 @@
+---
+title: aos code
+description: Run one small program that calls many aos commands (opt-in Code Mode)
+sidebar:
+  label: code
+  order: 1
+---
+
+<p class="cmd-lead">Run one small program that calls many aos commands (opt-in Code Mode)</p>
+
+1 command. Run `aos code --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos code
+
+<p class="cmd-lead">Discover operations and run JavaScript programs that call them in parallel; one process, only the final result returned</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos code operations | describe <op> | capabilities --json | docs | check <prog.js> | run <prog.js|-> | eval '<expr>' | skill
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<op>` | | One of these is required |
+| `<prog.js>` | | One of these is required |
+| `<prog.js\|->` | | One of these is required |
+| `<expr>` | | Required positional argument |
+| `--json` |  | One of these is required |
+
+```sh
+aos code operations
+aos code describe capture-screenshot
+aos code eval 'await ops["window-list"]({ args: ["--json"] })'
+aos code run prog.js
+```
