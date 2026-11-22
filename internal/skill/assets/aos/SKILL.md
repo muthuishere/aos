@@ -139,6 +139,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | tell the human | `subtitle show "what I am doing" --seconds=10 [--app=Safari]` — a film-style caption that never steals focus; `draw text "..." --position=top` for a label |
 | speak | `say "build finished"` speaks AND shows it as a subtitle while it plays (`--no-subtitle` for voice only; macOS `say`, Windows SAPI/OneCore voices over COM) · `say "text" -- key type --app=Notepad "hi"` speaks AND acts, waits for both (exit = the command's) · `say "..." --async` then `say wait` / `say stop` · `say voices` · `say "..." --out=x.mp3` · `subtitle show "..." --say` (caption that speaks) |
 | many steps at once | `batch demo.yaml` (or inline: `batch '[launch: calc, parallel: [say: seven, click: Calculator Seven]]'`) — YAML steps in order, `parallel:` runs together; the whole file is checked first (`batch --check`); verbs: `batch verbs` |
+| many steps with logic, results feeding the next call, or parallel reads | `code run prog.js` / `code eval '<js>'` — ONE JavaScript program calls many aos commands as `ops["window-list"]({json: true})` (same verb names as batch), `Promise.all` for parallel; only the final value returns; check first with `code check`; no exec/shell; `references/code.md` |
 | let them watch | `remote share --monitor=2` — prints a LAN URL; the person opens it on a phone |
 | record a demo | ASK FIRST (monitor, audio), then `capture video start smart --monitor=N --audio=mic` … `capture video stop` → `<out>.final.mp4`; follow `references/recording-a-demo.md` |
 | wait for a condition | `watch process --name=X --exit` · `watch network --until=online` · `watch tab --url=U --match=T --reload=30s` · `watch window --app=A --match=T` · `watch url U --match=T` · `watch idle --for=10m` · `watch lock --until=unlocked` · `watch battery --below=20` · `watch display --until=added` · `watch device --until=added` · `watch camera --until=free` (all exit 0 when met, 3 on `--timeout`; chain with `&&`; `references/watch-and-observe.md`) |
@@ -165,6 +166,7 @@ command with usage and examples. Load the guide that matches the intent:
 | point at / label things on screen, hide private things | `references/draw.md` |
 | speak, with a subtitle in step | `references/speech.md` |
 | run many steps from YAML (batch) | `references/batch.md` |
+| one program that calls many aos commands, in parallel, with logic (code mode) | `references/code.md` |
 | record a demo (the full playbook) | `references/recording-a-demo.md` |
 | `capture video` flags, camera modes, events format | `references/capture-video.md` |
 | files, clipboard, exec, processes, services, packages, audio, battery, network, system power (which need a yes) | `references/system-and-files.md` |

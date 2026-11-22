@@ -20,6 +20,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `bluetooth` | `status`, `list`, `on`, `off`, `connect`, `disconnect` |  |
 | `capture` | `screenshot`, `qr`, `text`, `video start`, `video stop`, `video status`, `video mark`, `video focus`, `video unfocus`, `video follow`, `video devices`, `video zoom` |  |
 | `clipboard` | `copy`, `paste`, `history`, `history start`, `history stop`, `history status`, `history get`, `history restore`, `history clear` |  |
+| `code` |  | `aos code` |
 | `color` | `at`, `pick` |  |
 | `completion` |  | `aos completion` |
 | `debug` |  | `aos debug`, `tools` |
