@@ -6,7 +6,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/makiuchi-d/gozxing v0.1.1
 	github.com/mark3labs/mcp-go v0.48.0
-	github.com/muthuishere/clicodemode v0.5.0
+	github.com/muthuishere/clicodemode v0.5.1
 	github.com/muthuishere/toolnexus/golang v0.16.0
 	golang.org/x/image v0.24.0
 	golang.org/x/sys v0.27.0
