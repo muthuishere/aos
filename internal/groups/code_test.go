@@ -76,6 +76,7 @@ func TestCodeArgvMatchesBatch(t *testing.T) {
 		yaml  string
 	}{
 		{"window-list", nil, map[string]any{"json": true}, `[window-list: --json]`},
+		{"window-list", nil, map[string]any{"json": false}, `[window-list: --json=false]`},
 		{"window-focus", []string{"Notepad"}, nil, `[window-focus: Notepad]`},
 		{"capture-screenshot", []string{"window"}, map[string]any{"app": "Calculator", "out": "a.png"}, `[capture-screenshot: window --app=Calculator --out=a.png]`},
 		{"click", []string{"Calculator", "Seven"}, map[string]any{"double": true}, `[click: Calculator Seven --double]`},

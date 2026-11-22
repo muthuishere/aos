@@ -147,6 +147,8 @@ func codeArgv(v *batchVerb, in map[string]any) ([]string, error) {
 		case bool:
 			if x {
 				fl = append(fl, "--"+k)
+			} else {
+				fl = append(fl, "--"+k+"=false") // as batch emits it
 			}
 		case string:
 			fl = append(fl, "--"+k+"="+x)
