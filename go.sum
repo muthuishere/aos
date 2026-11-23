@@ -18,8 +18,8 @@ github.com/makiuchi-d/gozxing v0.1.1 h1:xxqijhoedi+/lZlhINteGbywIrewVdVv2wl9r5O9
 github.com/makiuchi-d/gozxing v0.1.1/go.mod h1:eRIHbOjX7QWxLIDJoQuMLhuXg9LAuw6znsUtRkNw9DU=
 github.com/mark3labs/mcp-go v0.48.0 h1:o+MXuGW/HCeR2ny5LcAcZQn2bo6I2xaZMEHnpRG+dtw=
 github.com/mark3labs/mcp-go v0.48.0/go.mod h1:JKTC7R2LLVagkEWK7Kwu7DbmA6iIvnNAod6yrHiQMag=
-github.com/muthuishere/clicodemode v0.5.1 h1:7xnKgiA+y24NAfWxC0IzdKIQ/vvMo03M0rLzGMRNLgc=
-github.com/muthuishere/clicodemode v0.5.1/go.mod h1:YCA6KXqK+B/AxlMKLUbyInwYIqdG01hoO/B+fvgk+/E=
+github.com/muthuishere/clicodemode v0.5.2 h1:dyOMOpU4BS2eWIItk/yRScKOoN3KIexLSgbu3pW013E=
+github.com/muthuishere/clicodemode v0.5.2/go.mod h1:YCA6KXqK+B/AxlMKLUbyInwYIqdG01hoO/B+fvgk+/E=
 github.com/muthuishere/toolnexus/golang v0.16.0 h1:Mrl/9RiYgaWkzZai/PY/XZ9pCqJJC06DmWnvtkShNIA=
 github.com/muthuishere/toolnexus/golang v0.16.0/go.mod h1:pZkMvKsq6vVF2UjUpZTeudgLjxavoPE9QRDHNt4hJQw=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
