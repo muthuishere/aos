@@ -2,6 +2,10 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.15.1 - 2026-11-23
+
+- `aos code` results are JSON-first: `--json` is added when a command documents it, a call returns the parsed JSON value (or the trimmed stdout text), and a non-zero exit rejects with `<op>: exit N: <stderr tail>` so programs use try/catch. `code run` and `code eval` take `--input JSON` (the program's global `input`). `code check` flags unknown operations written as `ops["x"]`. Skill reference rewritten for this. clicodemode v0.5.2.
+
 ## v0.15.0 - 2026-11-22
 
 - `aos code`: opt-in Code Mode. One small JavaScript program calls many aos commands in parallel in a single process, and only the final result comes back. Operations are the `aos batch verbs` names (`window-list`, `capture-screenshot`, `click`, ...), run through the same path as a batch step. System groups (power, system, pkg, service, network) and `do` are not exposed; programs cannot exec or shell out. `aos batch` is unchanged. Backed by github.com/muthuishere/clicodemode v0.4.0.

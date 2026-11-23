@@ -3,11 +3,14 @@ package groups
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/muthuishere/clicodemode/codemode"
+
+	"github.com/muthuishere/aos/internal/cli"
 )
 
 func codeTestEngine(t *testing.T) (*codemode.Engine, *codemode.Registry) {
@@ -123,7 +126,7 @@ func TestCodeRunsAProgramAndNeverExecs(t *testing.T) {
 	eng, _ := codeTestEngine(t)
 	r := eng.Run(context.Background(), `
 const [a, b] = await Promise.all([ops["wait"]({args: ["10"]}), ops["wait"]({args: ["1ms"]})])
-;({ a: a.ok, b: b.ok })`, "<t>")
+;({ a: a === "", b: b === "" })`, "<t>")
 	if !r.OK {
 		t.Fatalf("run: %s %v", r.Error, r.Diagnostics)
 	}
@@ -150,5 +153,55 @@ func TestCodeRejectsUnknownFlags(t *testing.T) {
 	r := eng.Run(context.Background(), `await ops["window-list"]({bogus: 1})`, "<t>")
 	if r.OK {
 		t.Fatal("unknown flag must be rejected before anything runs")
+	}
+}
+
+// JSON-first: --json is appended when documented, the parsed value comes back,
+// text comes back trimmed, and a failing command rejects with "exit N: ...".
+func TestCodeResultsAreJSONFirst(t *testing.T) {
+	c, _ := registeredCtx("linux", nil)
+	var seen []string
+	c.Registry.Add(
+		&cli.Command{Group: "zz", Name: "js", Summary: "json", Args: "[--json]", Run: func(c *cli.Ctx, args []string) error {
+			seen = args
+			fmt.Fprint(c.Stdout, `[{"App":"a"},{"App":"b"}]`)
+			return nil
+		}},
+		&cli.Command{Group: "zz", Name: "txt", Summary: "text", Args: "<x>", Run: func(c *cli.Ctx, args []string) error {
+			fmt.Fprint(c.Stdout, "  hello \n")
+			return nil
+		}},
+		&cli.Command{Group: "zz", Name: "bad", Summary: "fails", Args: "", Run: func(c *cli.Ctx, args []string) error {
+			fmt.Fprint(c.Stderr, "boom happened")
+			return &cli.ExitError{Code: 3}
+		}},
+	)
+	eng := newCodeEngine(c)
+	r := eng.Run(context.Background(), `
+const j = await ops["zz-js"]({})
+const t = await ops["zz-txt"]({args: ["x"]})
+let err = ""
+try { await ops["zz-bad"]({}) } catch (e) { err = e.message }
+;({ n: j.length, app: j[1].App, t, err })`, "<t>")
+	if !r.OK {
+		t.Fatalf("run: %s %v", r.Error, r.Diagnostics)
+	}
+	b, _ := json.Marshal(r.Value)
+	var m map[string]any
+	_ = json.Unmarshal(b, &m)
+	if m["n"] != 2.0 || m["app"] != "b" || m["t"] != "hello" {
+		t.Fatalf("got %v", m)
+	}
+	if e, _ := m["err"].(string); !strings.Contains(e, "exit 3: ") || !strings.Contains(e, "boom happened") {
+		t.Fatalf("err = %q", m["err"])
+	}
+	if len(seen) == 0 || seen[len(seen)-1] != "--json" {
+		t.Fatalf("--json not appended: %v", seen)
+	}
+	// the program's own json:false wins
+	seen = nil
+	eng.Run(context.Background(), `await ops["zz-js"]({json: false})`, "<t>")
+	if len(seen) == 0 || seen[len(seen)-1] != "--json=false" {
+		t.Fatalf("json:false not honoured: %v", seen)
 	}
 }
