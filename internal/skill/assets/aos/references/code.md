@@ -22,6 +22,29 @@ aos code eval '<expression>' --json
 
 Exit codes: 0 ok, 1 the program ran and failed, 2 errors (nothing ran).
 
+## Modules first
+
+aos ships ready-made recipes as importable modules. Import one before composing
+raw operations: they are tested, take plain values and return plain JSON.
+`aos code modules` lists them, `aos code describe aos:<name>` shows the exports
+and their docs.
+
+| module | exports |
+|---|---|
+| `aos:layout` | `tile(apps, monitor)` 1-4 apps as full / halves / thirds / quarters; `sideBySide(left, right, monitor)` |
+| `aos:ui` | `openApp(app, timeoutMs)` launch or focus, wait for the window, return it (or null); `waitForText(app, text, timeoutSec)` true/false; `clickThenExpect(app, text, expect, timeoutSec)` click a control by its text then confirm what appears |
+| `aos:snapshot` | `snapshot(top)` windows, focused window, pointer, busiest processes in one parallel read; `shotEach(apps, dir)` one screenshot per app, in parallel |
+
+```js
+import { snapshot } from "aos:snapshot"
+import { sideBySide } from "aos:layout"
+await sideBySide("Code", "Safari", 2)
+const s = await snapshot(3)
+;({ windows: s.windows.length, focused: s.focused && s.focused.App, busiest: s.busiest.map(p => p.name) })
+```
+
+Only go to raw `ops["..."]` for what no module covers.
+
 ## Operations are JSON-first
 
 Operations are `ops["<verb>"]`, the batch verb names (`window-list`,

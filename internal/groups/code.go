@@ -2,6 +2,7 @@ package groups
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -49,6 +50,12 @@ func init() {
 	})
 }
 
+// jsFiles are aos's own Code Mode modules, baked in at build time: js/layout.js
+// is "aos:layout". They call only the operations below, so they add no privilege.
+//
+//go:embed js
+var jsFiles embed.FS
+
 func runCode(c *cli.Ctx, args []string) error {
 	eng := newCodeEngine(c)
 	cm := codemode.NewCLI(eng, "aos code")
@@ -64,6 +71,7 @@ func newCodeEngine(c *cli.Ctx) *codemode.Engine {
 	for _, op := range codeOperations(c) {
 		reg.MustRegister(op)
 	}
+	reg.MustRegisterModules("aos", jsFiles, "js")
 	eng := codemode.NewEngine(reg)
 	eng.Stdout = c.Stderr // print() and console.log go to stderr, never into the result
 	return eng
