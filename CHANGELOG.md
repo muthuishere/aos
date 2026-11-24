@@ -2,6 +2,10 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.16.0 - 2026-11-25
+
+- `aos code` ships its own JavaScript modules, baked into the binary, so an agent imports a tested recipe instead of composing raw operations: `aos:layout` (`tile`, `sideBySide`), `aos:ui` (`openApp`, `waitForText`, `clickThenExpect`), `aos:snapshot` (`snapshot`, `shotEach`). `aos code modules` lists them and `aos code describe aos:layout` shows the exports and docs; the agent skill lists them first. Modules can only call aos operations, so they add no privilege. clicodemode v0.8.0.
+
 ## v0.15.2 - 2026-11-23
 
 - `aos code`: clicodemode v0.6.2. Security fix: a symlink inside the module root could make an import read files outside it. New hard limits on string size and array length; `code check` now rejects literal arguments that break an operation's input schema.
