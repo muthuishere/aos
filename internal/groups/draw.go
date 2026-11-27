@@ -20,7 +20,7 @@ var drawValueFlags = []string{
 	"at", "rect", "app", "title", "monitor", "find", "source", "role", "nth", "text",
 	"style", "shape", "size", "color", "text-color", "border", "corners", "from", "font",
 	"duration", "preview", "position", "margin", "offset", "bg", "align", "max-width", "weight",
-	"font-scale", "animate", "width", "height", "opacity",
+	"font-scale", "animate", "width", "height", "opacity", "show", "hide", "recolor",
 }
 
 var drawBoolFlags = []string{"mouse", "exact", "detach", "json", "no-config"}
@@ -320,6 +320,18 @@ func runDrawImage(c *cli.Ctx, args []string) error {
 			return fmt.Errorf("--opacity must be above 0 and at most 1, got %q", raw)
 		}
 	}
+	opts.Parts.Show = splitList(set.String("show", ""))
+	opts.Parts.Hide = splitList(set.String("hide", ""))
+	for _, kv := range splitList(set.String("recolor", "")) {
+		part, colour, ok := strings.Cut(kv, "=")
+		if !ok {
+			return fmt.Errorf("--recolor wants part=#hex[,part=#hex], got %q", kv)
+		}
+		if opts.Parts.Recolor == nil {
+			opts.Parts.Recolor = map[string]string{}
+		}
+		opts.Parts.Recolor[part] = colour
+	}
 	opts.Style = engine.DrawImage
 	return showDraw(c, []string{"draw", "image"}, args, opts, set)
 }
@@ -494,6 +506,17 @@ func withoutDetach(args []string) []string {
 			continue
 		}
 		out = append(out, a)
+	}
+	return out
+}
+
+// splitList splits a comma list, dropping blanks.
+func splitList(s string) []string {
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
 	}
 	return out
 }
