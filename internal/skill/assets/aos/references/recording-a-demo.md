@@ -5,6 +5,28 @@ The playbook for "record a demo of X". It strings together `capture video`,
 person's own work is not disturbed. Flag details: `references/capture-video.md`,
 `references/draw.md`.
 
+## The explainer recipe (captions, pointers, zoom: the order that works)
+
+For "make a demo video that explains X", one pass combines three aos tools.
+Do not build your own recorder, caption renderer or overlay.
+
+1. **Ask and stage** (sections 1-2 below): one monitor, minimal windows.
+2. **Start** `aos capture video start smart --monitor=N`; `smart` follows the
+   action and zooms on its own.
+3. **For each beat**, in this order:
+   - `aos say "what you are about to show"` (or `subtitle show "..." --seconds=4`)
+     speaks and captions it; add `--async` and act while it plays;
+   - point at the thing: `aos draw --app=App --find="Label" --text="Click here" --detach`
+     (arrow, `--style=ring|box` to circle it) or `aos draw text "..." --detach` for a plain label;
+   - do the step with focus-free input (`aos mouse click --app=App --find=...`);
+   - `aos draw stop` before the next beat so pointers do not pile up.
+4. **Mark chapters** with `aos capture video mark "chapter name"`.
+5. **Stop** with `capture video stop`, then add zoom with `capture video zoom`
+   if the take was not recorded with `smart`.
+
+Overlays (captions, pointers, bubbles, images) are real screen windows, so
+`capture video` records them exactly as the person would see them.
+
 ## 1. Ask, and agree the details
 
 Never start a recording on your own initiative. Ask, in one message:

@@ -18,6 +18,8 @@ description: >
   private on screen, open a terminal and run a command,
   is this machine set up correctly, expose this machine to an agent over MCP,
   record my screen, capture video, record a demo, screen recording with zoom,
+  product demo / explainer video with captions, bubbles, callouts, pointers and zoom,
+  annotate the screen, speech bubble, callout, overlay a label on the screen,
   list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
   this folder, type into a terminal tab, watch a tab, wait for text in a tab,
   read a page, type into a page, click a button in a tab,
