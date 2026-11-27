@@ -89,6 +89,11 @@ type textScene struct {
 	radius  float64
 	shadow  bool
 	ui      float64
+	// pic, when set, makes this a picture: box holds it (premultiplied,
+	// box x PixelScale pixels) and the text fields are unused.
+	pic *image.RGBA
+	// tail, for a speech bubble, is the triangle from the card to its target.
+	tail []vec
 }
 
 // parseLength reads "32" (units) or "8%" (of ref).
@@ -201,11 +206,21 @@ func loadTextFont(name, weight string) (*opentype.Font, error) {
 	return f, nil
 }
 
-// planTextScene places a text drawing on its monitor.
-func planTextScene(a Adapter, opts DrawOptions, sizeGiven bool) (*drawScene, error) {
-	if err := opts.textDefaults(); err != nil {
-		return nil, err
-	}
+// drawPlace is where a flat drawing (text, image) goes: its container on a
+// monitor, in surface-local units, plus the monitor's scale.
+type drawPlace struct {
+	mon     Monitor
+	surface Rect
+	ui, px  float64
+	bounds  frect // the whole monitor
+	c       frect // the container, clipped to the monitor
+	isPoint bool  // the container is a point (--at, --mouse)
+	ref     frect // what percentages refer to
+}
+
+// planPlace resolves the place a flat drawing goes: --app/--title, --rect,
+// --at, --mouse, or a monitor. what names it in the "at most one place" error.
+func planPlace(a Adapter, opts DrawOptions, what string) (*drawPlace, error) {
 	n := 0
 	for _, set := range []bool{opts.Point != nil, opts.Region != nil, opts.Match != nil, opts.Mouse} {
 		if set {
@@ -237,7 +252,7 @@ func planTextScene(a Adapter, opts DrawOptions, sizeGiven bool) (*drawScene, err
 			return nil, err
 		}
 	default:
-		return nil, errors.New("draw: give at most one place for the text: --app/--title, --rect, --at, --mouse, or just --monitor")
+		return nil, fmt.Errorf("draw: give at most one place for the %s: --app/--title, --rect, --at, --mouse, or just --monitor", what)
 	}
 	surface := Rect{X: mon.X, Y: mon.Y, W: mon.Width, H: mon.Height}
 	ui, px := a.OverlayScale(surface)
@@ -261,26 +276,79 @@ func planTextScene(a Adapter, opts DrawOptions, sizeGiven bool) (*drawScene, err
 	if isPoint {
 		ref = bounds
 	}
+	return &drawPlace{mon: mon, surface: surface, ui: ui, px: px, bounds: bounds, c: c, isPoint: isPoint, ref: ref}, nil
+}
 
-	// Margins: px or %, default the subtitle safe area.
-	mx, my := ref.W*textMarginH, ref.H*textMarginV
-	if isPoint {
-		mx, my = textPointMargin*ui, textPointMargin*ui
+// margins reads --margin (px or N%); the default is the subtitle safe area.
+func (pl *drawPlace) margins(opts DrawOptions) (mx, my float64, err error) {
+	mx, my = pl.ref.W*textMarginH, pl.ref.H*textMarginV
+	if pl.isPoint {
+		mx, my = textPointMargin*pl.ui, textPointMargin*pl.ui
 	}
 	if opts.Margin != "" {
-		var err error
 		raw := strings.TrimSpace(opts.Margin)
 		if strings.HasSuffix(raw, "%") {
-			if mx, err = parseLength(raw, ref.W); err == nil {
-				my, err = parseLength(raw, ref.H)
+			if mx, err = parseLength(raw, pl.ref.W); err == nil {
+				my, err = parseLength(raw, pl.ref.H)
 			}
 		} else if mx, err = parseLength(raw, 0); err == nil {
-			mx *= ui
+			mx *= pl.ui
 			my = mx
 		}
 		if err != nil {
-			return nil, fmt.Errorf("draw: --margin %w", err)
+			return 0, 0, fmt.Errorf("draw: --margin %w", err)
 		}
+	}
+	return mx, my, nil
+}
+
+// placeBox puts a w x h box in the container at position (or beside the point),
+// inside margins mx, my, nudged by offset, clamped to the monitor.
+func (pl *drawPlace) placeBox(position DrawPosition, w, h, mx, my float64, offset *Point) frect {
+	pos := textPositions[position]
+	var box frect
+	if pl.isPoint {
+		ax, ay := pl.c.X, pl.c.Y
+		box.X = ax - w/2 + float64(pos[0])*(w/2+mx)
+		box.Y = ay - h/2 + float64(pos[1])*(h/2+my)
+	} else {
+		in := frect{pl.c.X + mx, pl.c.Y + my, pl.c.W - 2*mx, pl.c.H - 2*my}
+		place := func(lo, span, size float64, cell int) float64 {
+			switch {
+			case size > span || cell == 0:
+				return lo + (span-size)/2
+			case cell < 0:
+				return lo
+			}
+			return lo + span - size
+		}
+		box.X = place(in.X, in.W, w, pos[0])
+		box.Y = place(in.Y, in.H, h, pos[1])
+	}
+	box.W, box.H = w, h
+	if offset != nil {
+		box.X += float64(offset.X)
+		box.Y += float64(offset.Y)
+	}
+	box = box.clampedInto(pl.bounds)
+	box.X, box.Y = math.Round(box.X), math.Round(box.Y)
+	return box
+}
+
+// planTextScene places a text drawing on its monitor.
+func planTextScene(a Adapter, opts DrawOptions, sizeGiven bool) (*drawScene, error) {
+	if err := opts.textDefaults(); err != nil {
+		return nil, err
+	}
+	pl, err := planPlace(a, opts, "text")
+	if err != nil {
+		return nil, err
+	}
+	mon, surface, ui, px, bounds, c, isPoint, ref := pl.mon, pl.surface, pl.ui, pl.px, pl.bounds, pl.c, pl.isPoint, pl.ref
+
+	mx, my, err := pl.margins(opts)
+	if err != nil {
+		return nil, err
 	}
 	maxW := ref.W * textMaxWidth
 	if opts.MaxWidth != "" {
@@ -333,33 +401,7 @@ func planTextScene(a Adapter, opts DrawOptions, sizeGiven bool) (*drawScene, err
 	w := math.Ceil(st.w/px + 2*padX)
 	h := math.Ceil(st.h/px + 2*padY)
 
-	pos := textPositions[opts.Position]
-	var box frect
-	if isPoint {
-		ax, ay := c.X, c.Y
-		box.X = ax - w/2 + float64(pos[0])*(w/2+mx)
-		box.Y = ay - h/2 + float64(pos[1])*(h/2+my)
-	} else {
-		in := frect{c.X + mx, c.Y + my, c.W - 2*mx, c.H - 2*my}
-		place := func(lo, span, size float64, cell int) float64 {
-			switch {
-			case size > span || cell == 0:
-				return lo + (span-size)/2
-			case cell < 0:
-				return lo
-			}
-			return lo + span - size
-		}
-		box.X = place(in.X, in.W, w, pos[0])
-		box.Y = place(in.Y, in.H, h, pos[1])
-	}
-	box.W, box.H = w, h
-	if opts.Offset != nil {
-		box.X += float64(opts.Offset.X)
-		box.Y += float64(opts.Offset.Y)
-	}
-	box = box.clampedInto(bounds)
-	box.X, box.Y = math.Round(box.X), math.Round(box.Y)
+	box := pl.placeBox(opts.Position, w, h, mx, my, opts.Offset)
 
 	radius := math.Min(h/2, 0.55*size)
 	if opts.Corners == CornersSharp {
@@ -398,8 +440,19 @@ func renderTextPose(cv *canvas, t *textScene, pose drawPose) {
 	box, content := t.box, t.content
 	box.Y += pose.signDY
 	content.Y += pose.signDY
+	if t.pic != nil {
+		art.paintPicture(t.pic, box.X, box.Y)
+		a := clamp01(pose.signAlpha)
+		draw.DrawMask(cv.img, cv.img.Rect, art.img, cv.img.Rect.Min,
+			image.NewUniform(color.Alpha{uint8(math.Round(a * 255))}), image.Point{}, draw.Over)
+		return
+	}
 	if t.bg != nil {
 		art.fillAlpha(roundRect(box, t.radius), *t.bg, t.bgAlpha)
+		if len(t.tail) == 3 {
+			dy := vec{0, pose.signDY}
+			art.fillAlpha([]vec{t.tail[0].add(dy), t.tail[1].add(dy), t.tail[2].add(dy)}, *t.bg, t.bgAlpha)
+		}
 	} else {
 		// No card: a thin contrasting halo keeps the text readable.
 		halo := t.fg.contrast()

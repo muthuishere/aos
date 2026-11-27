@@ -343,7 +343,7 @@ func (c *Ctx) findWindowsAOS() (string, error) {
 // are translated for aos.exe, and moved across for a socket host.
 var (
 	pathFlags  = map[string]bool{"out": true, "preview": true, "events": true, "file": true}
-	pathRoutes = map[string]bool{"window arrange": true, "window save": true, "open": true, "capture video zoom": true}
+	pathRoutes = map[string]bool{"window arrange": true, "window save": true, "open": true, "capture video zoom": true, "draw image": true}
 	// routePathFlags are path flags only on one route: --cwd is a folder for
 	// `tab open`, but other commands may use the name differently.
 	routePathFlags = map[string]map[string]bool{"tab open": {"cwd": true}}

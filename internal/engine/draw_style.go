@@ -216,7 +216,7 @@ func (o *DrawOptions) validate() error {
 	}
 	var err error
 	var s string
-	if s, err = pick("style", string(o.Style), "arrow", "arrow", "ring", "box", "text"); err != nil {
+	if s, err = pick("style", string(o.Style), "arrow", "arrow", "ring", "box", "text", "image", "bubble"); err != nil {
 		return err
 	}
 	o.Style = DrawStyle(s)
@@ -241,7 +241,7 @@ func (o *DrawOptions) validate() error {
 	}
 	o.Animate = DrawAnimate(s)
 	// --position is the sign's side for arrow / ring / box (alias of From).
-	if o.Style != DrawText && o.Position != "" && o.From == "" {
+	if o.Style != DrawText && o.Style != DrawImage && o.Position != "" && o.From == "" {
 		switch p := DrawFrom(strings.ToLower(string(o.Position))); p {
 		case "center":
 			return fmt.Errorf("draw: position center only applies to --style text; for an arrow give the sign's side (top-left, top, right, ...)")
@@ -266,7 +266,7 @@ func (o *DrawOptions) validate() error {
 		}
 		o.From = DrawFrom(strings.ToLower(string(o.From)))
 	}
-	if o.Color == nil && o.Style != DrawText {
+	if o.Color == nil && o.Style != DrawText && o.Style != DrawImage && o.Style != DrawBubble {
 		c, _ := ParseColor("red")
 		o.Color = &c
 	}

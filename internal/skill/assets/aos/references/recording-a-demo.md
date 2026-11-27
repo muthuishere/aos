@@ -17,7 +17,10 @@ Do not build your own recorder, caption renderer or overlay.
    - `aos say "what you are about to show"` (or `subtitle show "..." --seconds=4`)
      speaks and captions it; add `--async` and act while it plays;
    - point at the thing: `aos draw --app=App --find="Label" --text="Click here" --detach`
-     (arrow, `--style=ring|box` to circle it) or `aos draw text "..." --detach` for a plain label;
+     (arrow, `--style=ring|box` to circle it); explain it in a speech bubble:
+     `aos draw bubble "This saves your work" --app=App --find="Save" --detach`;
+     show a logo, diagram or screenshot: `aos draw image diagram.svg --position=top-right --width=30% --detach`;
+     or `aos draw text "..." --detach` for a plain label;
    - do the step with focus-free input (`aos mouse click --app=App --find=...`);
    - `aos draw stop` before the next beat so pointers do not pile up.
 4. **Mark chapters** with `aos capture video mark "chapter name"`.

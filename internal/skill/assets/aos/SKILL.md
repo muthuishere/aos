@@ -19,7 +19,7 @@ description: >
   is this machine set up correctly, expose this machine to an agent over MCP,
   record my screen, capture video, record a demo, screen recording with zoom,
   product demo / explainer video with captions, bubbles, callouts, pointers and zoom,
-  annotate the screen, speech bubble, callout, overlay a label on the screen,
+  annotate the screen, speech bubble, callout, overlay a label, an image or an SVG on the screen,
   list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
   this folder, type into a terminal tab, watch a tab, wait for text in a tab,
   read a page, type into a page, click a button in a tab,
@@ -131,6 +131,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 | read all text of a window | `window text Chrome` · `window text --focused --max-chars=4000` · `--json` (role, value, bounds) · `--source=ocr` (AX/UIA/AT-SPI first, OCR fallback) |
 | find a control by name | `find --app=X --text=Allow --role=button --json` → Bounds + Center (exit 3 = not there) |
 | point the human at it | `draw --app=X --find=Allow --text="Click Allow"` · `draw --at=x,y` · `--rect` · `--mouse` · `--detach` + `draw stop` · `--preview=out.png` |
+| explain on screen | `draw bubble "Click Save" --app=Notepad --find=Save --detach` — a speech bubble with a tail pointing at a window, found text, a point or a rect (`--position=top\|bottom\|left\|right`); `draw image logo.svg --position=top-right --width=160` shows a PNG / JPEG / GIF / WebP / SVG anywhere on screen (SVG: shapes and paths, no text; `-` reads stdin); both click-through, recorded by `capture video`; `draw stop` removes them |
 | hide something on screen | `draw cover --app=Preview --detach --id=scan` (whole window, follows it) · `--rect=0,0,40%,100%` inside it · `--find=ghp_` · `--color=#1e40af --text="Hidden"` · `--preset=private` · `--block-input` · `draw cover list` / `update --id` / `stop --id` |
 | click and type | `mouse move X Y` · `mouse click X Y --double` · `key type "text" --app=TextEdit --verify` (focus-free; `--focus` to force focus) · `key press enter --app=TextEdit` · `mouse click --app=Calculator --find=7` |
 | files | `file read P --lines=10:40` · `file write P text` · `file list D --json` · `file stat P` · `file delete P --recursive` |

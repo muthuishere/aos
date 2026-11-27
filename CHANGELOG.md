@@ -2,6 +2,13 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.17.0 - 2026-11-27
+
+- `aos draw bubble <text>`: a speech bubble with a tail that points at a window, text found in it (`--find`), a point or a rect. It sits on the side with room, or the side you ask for.
+- `aos draw image <file | ->`: show a PNG, JPEG, GIF, WebP or SVG anywhere on screen, click-through, sized with `--width` / `--height`, with `--opacity`, placed like `draw text`. SVG is rendered from shapes, paths, gradients and strokes; an SVG with text, filters, masks, patterns or rounded `<rect rx>` is refused with a message instead of being drawn half. Under WSL the path is translated for the Windows host.
+- Both are recorded by `capture video` and appear in `capture screenshot` like every drawing.
+- Agent skill: speech bubbles and pictures documented, an explainer-video recipe added to `references/recording-a-demo.md`, and trigger words for bubble / callout / annotate / overlay an image.
+
 ## v0.16.0 - 2026-11-25
 
 - `aos code` ships its own JavaScript modules, baked into the binary, so an agent imports a tested recipe instead of composing raw operations: `aos:layout` (`tile`, `sideBySide`), `aos:ui` (`openApp`, `waitForText`, `clickThenExpect`), `aos:snapshot` (`snapshot`, `shotEach`). `aos code modules` lists them and `aos code describe aos:layout` shows the exports and docs; the agent skill lists them first. Modules can only call aos operations, so they add no privilege. clicodemode v0.8.0.

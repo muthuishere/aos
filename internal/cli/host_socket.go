@@ -121,8 +121,8 @@ func socketPlan(cmd *Command, rest []string, env func(string) string, exists fun
 				fallthrough
 			default:
 				hint := ""
-				if route == "window arrange" {
-					hint = " Pipe it instead: aos window arrange - < " + arg
+				if route == "window arrange" || route == "draw image" {
+					hint = " Pipe it instead: aos " + route + " - < " + arg
 				}
 				return nil, nil, fmt.Errorf("%s is a file on this machine, which the host cannot read over the socket.%s", arg, hint)
 			}
