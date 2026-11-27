@@ -322,6 +322,13 @@ func TestSocketPlan(t *testing.T) {
 	if _, _, err := socketPlan(&Command{Group: "window", Name: "arrange"}, []string{"/home/me/l.json"}, env, exists); err == nil || !strings.Contains(err.Error(), "window arrange -") {
 		t.Fatalf("input file: %v", err)
 	}
+	// a picture is a file on this machine: refused over a socket, with the pipe form
+	if _, _, err := socketPlan(&Command{Group: "draw", Name: "image"}, []string{"/home/me/logo.svg", "--width=100"}, env, exists); err == nil || !strings.Contains(err.Error(), "draw image -") {
+		t.Errorf("draw image file over a socket must be refused with the pipe hint, got %v", err)
+	}
+	if out, _, err := socketPlan(&Command{Group: "draw", Name: "image"}, []string{"-", "--width=100"}, env, exists); err != nil || len(out) != 2 || out[0] != "-" {
+		t.Errorf("draw image - (stdin) must pass through, got %v %v", out, err)
+	}
 	if _, _, err := socketPlan(&Command{Group: "watch", Name: "clipboard"}, nil, env, exists); err == nil {
 		t.Fatal("streams must be refused")
 	}

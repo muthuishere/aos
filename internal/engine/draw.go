@@ -30,6 +30,13 @@ type Point struct {
 type DrawOptions struct {
 	Text string
 
+	// Image is the picture for Style image: PNG, JPEG, GIF, WebP or SVG,
+	// sniffed from content. Width / Height size it (px or "N%" of the
+	// container; one alone keeps the aspect); Opacity 0..1 (0 = opaque).
+	Image         []byte
+	Width, Height string
+	Opacity       float64
+
 	Point   *Point
 	Region  *Rect
 	Match   *Match
@@ -287,6 +294,9 @@ func planDrawWith(a Adapter, opts DrawOptions) (*drawScene, error) {
 	if err := opts.validate(); err != nil {
 		return nil, err
 	}
+	if opts.Style == DrawImage {
+		return planImageScene(a, opts)
+	}
 	if opts.Text == "" {
 		return nil, errors.New("draw: --text is required: the sign says what to do")
 	}
@@ -311,6 +321,9 @@ func planDrawWith(a Adapter, opts DrawOptions) (*drawScene, error) {
 		found = &hits[i]
 		r := found.Bounds
 		opts.Match, opts.Monitor, opts.Region = nil, nil, &r
+	}
+	if opts.Style == DrawBubble {
+		return planBubbleScene(a, opts, found)
 	}
 	target, isPoint, mon, err := resolveDrawTarget(a, opts)
 	if err != nil {

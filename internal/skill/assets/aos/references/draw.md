@@ -67,6 +67,46 @@ aos subtitle stop
 - For arrow / ring / box, `--position` is the side the sign sits on (alias of
   `--from`).
 
+## Speech bubbles (a callout with a tail)
+
+`aos draw bubble "<text>"` shows a rounded card with a tail touching the target:
+a window, text found in it, a point or a rect. The card sits on the side with
+room (top first, then bottom, right, left) or on the side you ask for with
+`--position=top|bottom|left|right`. Use it to explain, `draw` (arrow) to say
+"click here".
+
+```bash
+aos draw bubble "Click Save to keep your changes" --app=Notepad --find=Save --detach
+aos draw bubble "This is your cart" --at=1500,90 --position=bottom --detach
+aos draw bubble "Your files live here" --app=Finder --position=right --color=#fef3c7
+aos draw stop            # remove every detached drawing before the next step
+```
+
+`--color` is the bubble's fill (default white; text colour follows for contrast,
+override with `--text-color`), `--size=S|M|L|XL`, `--max-width=<px|N%>` wraps long
+text. Exit 3 when `--find` does not find the window or the text.
+
+## Pictures and SVG on screen
+
+`aos draw image <file | ->` shows a PNG, JPEG, GIF, WebP or SVG on screen,
+click-through and on top, like every drawing. The format is read from the bytes,
+not the file name. Place it like a text label (`--app`, `--title`, `--monitor`,
+`--rect`, `--at`, `--mouse`, `--position`, `--margin`, `--offset`) and size it with
+`--width` / `--height` (px or N% of the place; one alone keeps the aspect). The
+default is its natural size, shrunk to fit. `--opacity=0.5` fades it.
+
+```bash
+aos draw image logo.svg --position=top-right --width=160 --duration=10
+aos draw image diagram.png --app=Keynote --width=60% --detach
+aos draw image - --monitor=2 --position=center < chart.png    # stdin (not with --detach)
+```
+
+SVG is drawn from shapes, paths, gradients and strokes, crisp at any size. It has
+no text, filters, masks, patterns or rounded `<rect rx>`: aos refuses an SVG that
+uses them with a message naming the element, rather than draw it half. Convert
+text to outlines, or put the words in a `draw bubble`. Under WSL, the path is
+translated for the Windows host; over an SSH socket host, pipe the file with `-`.
+
 ## Look
 
 `--style=arrow|ring|box` · `--shape=bend|straight|zigzag|spiral` · `--size=S|M|L|XL` ·

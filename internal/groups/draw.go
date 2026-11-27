@@ -20,7 +20,7 @@ var drawValueFlags = []string{
 	"at", "rect", "app", "title", "monitor", "find", "source", "role", "nth", "text",
 	"style", "shape", "size", "color", "text-color", "border", "corners", "from", "font",
 	"duration", "preview", "position", "margin", "offset", "bg", "align", "max-width", "weight",
-	"font-scale", "animate",
+	"font-scale", "animate", "width", "height", "opacity",
 }
 
 var drawBoolFlags = []string{"mouse", "exact", "detach", "json", "no-config"}
@@ -59,6 +59,36 @@ func init() {
 					"# default: bottom-center of the focused monitor (the recording's monitor while `capture video` runs), subtitle safe area (8% bottom, 5% sides)",
 				},
 				Run: runDrawText,
+			},
+			&cli.Command{
+				Group: "draw", Name: "bubble",
+				Summary: "Show a speech bubble with a tail pointing at a window, found text, a point or a rect",
+				Args: "<text...> (--app=<name> | --title=<s> | --at=<x,y> | --rect=<x,y,w,h> | --mouse) [--find=<text> [--role=<r>] [--source=<s>] [--exact] [--nth=<n>]] " +
+					"[--position=top|bottom|left|right] [--size=S|M|L|XL] [--color=<bubble colour>] [--text-color=<c>] [--font=<name>] [--font-scale=<k>] [--weight=regular|bold] " +
+					"[--max-width=<px|N%>] [--monitor=<n>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]",
+				Examples: []string{
+					`aos draw bubble "Click Save" --app=Notepad --find=Save`,
+					`aos draw bubble "This is the cart" --at=1500,90 --position=bottom --detach`,
+					`aos draw bubble "Your files live here" --app=Finder --position=right --color=#fef3c7`,
+					"# the card sits on the side with room (top first), the tail touches the target; exit 3 when --find does not find the window or the text",
+				},
+				Run: runDrawBubble,
+			},
+			&cli.Command{
+				Group: "draw", Name: "image",
+				Summary: "Show a PNG, JPEG, GIF, WebP or SVG on screen, click-through, inside a window, a monitor, a rect, or beside a point",
+				Args: "<file | -> [--width=<px|N%>] [--height=<px|N%>] [--opacity=<0-1>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] " +
+					"[--position=center|top-center|bottom-center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] " +
+					"[--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]",
+				Examples: []string{
+					"aos draw image logo.svg --position=top-right --width=160 --duration=10",
+					"aos draw image diagram.png --app=Keynote --width=60% --detach",
+					"aos draw image badge.png --at=640,400 --position=top --width=96",
+					"aos draw image - --monitor=2 < chart.png",
+					"# SVG: shapes, paths, gradients and strokes. Text, filters, masks and rounded <rect rx> are refused with a message, not drawn half. Format is sniffed from the content.",
+					"# `-` reads the image from stdin (not with --detach); the image always shows click-through, on top, and capture / recording sees it",
+				},
+				Run: runDrawImage,
 			},
 			&cli.Command{
 				Group: "draw", Name: "stop",
@@ -229,6 +259,69 @@ func runDrawText(c *cli.Ctx, args []string) error {
 	}
 	opts.Style = engine.DrawText
 	return showDraw(c, []string{"draw", "text"}, args, opts, set)
+}
+
+// runDrawBubble is `draw bubble <text...>`: the words are the text; the
+// target comes from the flags (--app/--title/--find, --at, --rect, --mouse).
+func runDrawBubble(c *cli.Ctx, args []string) error {
+	opts, set, err := drawOptionsFrom(args)
+	if err != nil {
+		return err
+	}
+	if opts.Match != nil && set.String("app", "") == "" && set.String("title", "") == "" {
+		opts.Match = nil // the words were the text, not an app
+	}
+	if opts.Text == "" {
+		opts.Text = strings.Join(set.Rest, " ")
+	}
+	opts.Text = strings.ReplaceAll(opts.Text, `\n`, "\n")
+	if strings.TrimSpace(opts.Text) == "" {
+		return fmt.Errorf("`draw bubble` needs the text to show")
+	}
+	opts.Style = engine.DrawBubble
+	return showDraw(c, []string{"draw", "bubble"}, args, opts, set)
+}
+
+// runDrawImage is `draw image <file | ->`: the first word is the picture, not
+// an app name. The format is sniffed from the bytes.
+func runDrawImage(c *cli.Ctx, args []string) error {
+	opts, set, err := drawOptionsFrom(args)
+	if err != nil {
+		return err
+	}
+	if opts.Match != nil && set.String("app", "") == "" && set.String("title", "") == "" {
+		opts.Match = nil // the word was the file, not an app
+	}
+	if len(set.Rest) != 1 {
+		return fmt.Errorf("`draw image` needs one image: a file, or - for stdin")
+	}
+	src := set.Rest[0]
+	var data []byte
+	if src == "-" {
+		if set.Has("detach") {
+			return fmt.Errorf("`draw image -` reads stdin, which a detached drawing cannot; give a file path with --detach")
+		}
+		data, err = engine.ReadDrawImage(c.Stdin)
+	} else {
+		var f *os.File
+		if f, err = os.Open(expandHome(src)); err == nil {
+			data, err = engine.ReadDrawImage(f)
+			f.Close()
+		}
+	}
+	if err != nil {
+		return err
+	}
+	opts.Image = data
+	opts.Width = set.String("width", "")
+	opts.Height = set.String("height", "")
+	if raw := set.String("opacity", ""); raw != "" {
+		if opts.Opacity, err = strconv.ParseFloat(raw, 64); err != nil || opts.Opacity <= 0 || opts.Opacity > 1 {
+			return fmt.Errorf("--opacity must be above 0 and at most 1, got %q", raw)
+		}
+	}
+	opts.Style = engine.DrawImage
+	return showDraw(c, []string{"draw", "image"}, args, opts, set)
 }
 
 // showDraw previews, detaches or shows a drawing; prefix is the command

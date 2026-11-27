@@ -74,8 +74,8 @@ catch (e) { ({ focused: false, why: e.message }) }
 ```
 
 Do independent calls with `Promise.all`; dependent ones with `await` in order.
-The last expression is the result. The language is a small subset of
-JavaScript (no `new`, no classes): `aos code docs` lists what it supports.
+The last expression is the result. The language is a subset of
+JavaScript: `aos code docs` lists what it supports.
 
 ## Inside Claude Code's Code Mode
 
