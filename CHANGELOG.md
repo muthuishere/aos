@@ -2,6 +2,10 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.19.0 - 2026-11-28
+
+- New public Go package `github.com/muthuishere/aos/ocr`: OCR an image file or `image.Image` with the OS's own engine, no cgo (builds with `CGO_ENABLED=0`). macOS uses Apple Vision through purego, Windows uses WinRT `Windows.Media.Ocr`, Linux returns `ErrUnsupported`. Lines in reading order with pixel boxes, words and confidence (macOS). See docs/adr/0003-public-ocr-package.md.
+
 ## v0.18.0 - 2026-11-28
 
 - `aos update`: update aos itself. Downloads the latest release for this OS and CPU (or `--version`), verifies it against `checksums.txt`, swaps the binary and keeps the previous one as `aos.old` / `aos.exe.old`. Works on Windows while `aos.exe` is running; inside WSL it updates the Windows `aos.exe` too. `--check` only reports. Install docs and README now cover update and uninstall.

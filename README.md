@@ -388,6 +388,17 @@ aos completion fish > ~/.config/fish/completions/aos.fish
 Completes group names, multi-token routes (`audio output set default`) and the
 flags each command documents. Hidden commands are left out.
 
+## OCR as a Go library
+
+`github.com/muthuishere/aos/ocr` reads the text in an image file or `image.Image` with the OS's own engine (Apple Vision on macOS, Windows.Media.Ocr on Windows) and builds with `CGO_ENABLED=0`. Linux returns `ocr.ErrUnsupported`.
+
+```go
+lines, err := ocr.RecognizeFile("shot.png", ocr.Options{})
+for _, l := range lines {
+	fmt.Println(l.Text, l.X, l.Y, l.W, l.H, l.Confidence)
+}
+```
+
 ## How it is put together
 
 | Layer | Where | What it does |
