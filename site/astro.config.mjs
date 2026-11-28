@@ -70,6 +70,7 @@ export default defineConfig({
 						{ label: 'Serving files', slug: 'serve-files' },
 						{ label: 'Watching a machine', slug: 'remote-share' },
 						{ label: 'Recording a demo', slug: 'capture-video' },
+						{ label: 'Characters and stories', slug: 'characters' },
 						{ label: 'Observability', slug: 'observability' },
 						{
 							label: 'Scenarios: desktop',

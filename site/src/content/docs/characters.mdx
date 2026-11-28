@@ -1,0 +1,60 @@
+---
+title: Characters and stories
+description: Cartoon people on screen for explainer videos. 25 presets, 21 role templates (shopkeeper, customer, programmer, lawyer, doctor, chef, ...), any skin, hair and outfit, with blink and talk frames.
+---
+import Shot from '../../components/Shot.astro';
+
+`aos draw character` puts a cartoon person on screen, click-through like any aos drawing, and `capture video` records it. Use characters to tell a short story around a real app: a shopkeeper with a problem, a programmer with the fix, a happy customer at the end.
+
+<Shot name="characters" alt="The 25 preset characters side by side" caption="aos draw character --list" />
+
+## Presets and roles
+
+```sh
+aos draw character priya                       # a preset: shopkeeper
+aos draw character --role=lawyer --gender=woman --skin=dark --hair-style=bun --glasses
+aos draw character --role=programmer --gender=man --beard --outfit=#1f2a44
+aos draw character --list                      # every preset, role and hair style
+```
+
+| | |
+|---|---|
+| roles | casual, customer, developer (programmer), founder (ceo), office, lawyer, doctor, nurse, scientist, chef, shopkeeper, teacher, student, police, firefighter, pilot, mechanic, builder, farmer, artist, singer |
+| gender | man, woman |
+| skin | light, medium, tan, brown, dark, or `#hex` |
+| hair | black, brown, auburn, blonde, grey, white, or `#hex` |
+| hair style | short, side, curly, long, bun, ponytail, bald |
+| face | `--beard`, `--moustache`, `--glasses` |
+| outfit | `--outfit=#hex`, the role's main colour |
+
+Every character is drawn by aos itself in one flat style; nothing is downloaded.
+
+## Place it, make it talk
+
+A character takes every `draw image` placement flag (`--position`, `--height`, `--app`, `--monitor`, `--at`, `--duration`, `--detach`, `--preview`). The default is bottom-left at 45% of the screen height.
+
+```sh
+aos draw character priya --position=bottom-left --height=40% --frame=talk --duration=3
+aos draw bubble "My stock sheet is a mess!" --at=380,620 --duration=3
+aos draw character arjun --position=bottom-right --height=40% --detach
+```
+
+`--frame=talk` opens the mouth and `--frame=blink` closes the eyes. Alternate rest and talk while a bubble is up for a speaking look. Keep each person on their own side, and put the bubble beside the face, never over it.
+
+## A story in four beats
+
+1. **Intro:** two characters, left and right; a caption names the problem.
+2. **Problem:** the first one talks.
+3. **Solution:** the second one answers, then arrows and `--find` point at the real app.
+4. **Outro:** a happy line and the call to action.
+
+Record with `aos capture video start smart` (see [Recording a demo](../capture-video/)); `aos draw stop` clears detached drawings.
+
+## Your own characters
+
+`--save=priya.svg` writes the rigged SVG. `draw image` drives any SVG rigged the same way: frame groups `eyes-open` / `eyes-closed` and `mouth-closed` / `mouth-open` (the closed ones `opacity="0"`), colour groups named `<part>-<tone>`.
+
+```sh
+aos draw image priya.svg --show=mouth-open --hide=mouth-closed
+aos draw image priya.svg --recolor=shirt=#10b981,hair=#6b3e26
+```

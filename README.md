@@ -388,6 +388,17 @@ aos completion fish > ~/.config/fish/completions/aos.fish
 Completes group names, multi-token routes (`audio output set default`) and the
 flags each command documents. Hidden commands are left out.
 
+## Characters for explainers
+
+`aos draw character` puts a cartoon person on screen for explainer videos and stories: 25 presets and 21 role templates (shopkeeper, customer, programmer, lawyer, doctor, chef, police, ...) with any skin, hair and outfit, plus blink and talk frames.
+
+```sh
+aos draw character priya --position=bottom-left --height=40%
+aos draw character --role=lawyer --gender=woman --skin=dark --hair-style=bun --frame=talk
+```
+
+![The preset cast](site/public/shots/full/characters.webp)
+
 ## OCR as a Go library
 
 `github.com/muthuishere/aos/ocr` reads the text in an image file or `image.Image` with the OS's own engine (Apple Vision on macOS, Windows.Media.Ocr on Windows) and builds with `CGO_ENABLED=0`. Inside WSL a Linux build runs the Windows OCR through `aos.exe` (set `Options.NoWSLHop` to stop that); elsewhere on Linux it returns `ocr.ErrUnsupported`. The same engine is a command: `aos ocr shot.png` (or `--json`).
