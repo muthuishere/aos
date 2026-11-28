@@ -57,6 +57,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `system` | `lock`, `sleep` | `load`, `uptime`, `memory`, `restart`, `shutdown`, `logout`, `info`, `thermal` |
 | `tab` | `list`, `focus`, `open`, `send`, `close`, `read`, `type`, `click` |  |
 | `trash` |  | `size`, `empty` |
+| `update` |  | `aos update` |
 | `version` |  | `aos version` |
 | `watch` | `tab`, `clipboard`, `window`, `battery`, `device`, `display`, `idle`, `lock`, `network`, `camera`, `mic` | `file`, `process`, `url` |
 | `webapp` | `open` |  |

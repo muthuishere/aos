@@ -2,6 +2,10 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.18.0 - 2026-11-28
+
+- `aos update`: update aos itself. Downloads the latest release for this OS and CPU (or `--version`), verifies it against `checksums.txt`, swaps the binary and keeps the previous one as `aos.old` / `aos.exe.old`. Works on Windows while `aos.exe` is running; inside WSL it updates the Windows `aos.exe` too. `--check` only reports. Install docs and README now cover update and uninstall.
+
 ## v0.17.0 - 2026-11-27
 
 - `aos draw bubble <text>`: a speech bubble with a tail that points at a window, text found in it (`--find`), a point or a rect. It sits on the side with room, or the side you ask for.

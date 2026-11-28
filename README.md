@@ -98,6 +98,18 @@ Environment equivalents: `AOS_FROM`, `AOS_VERSION`, `AOS_INSTALL_DIR`. A folder
 or URL without `checksums.txt` installs with a loud warning; a checksum mismatch
 refuses to install.
 
+## Update and uninstall
+
+```sh
+aos update              # latest release for this OS and CPU
+aos update --check      # only say whether a newer one exists
+aos update --version=v0.16.0   # a specific release (also a downgrade)
+```
+
+`aos update` downloads the release archive, verifies it against `checksums.txt`, and swaps the binary. The previous one is kept next to it as `aos.old` (`aos.exe.old` on Windows), so going back is one rename. It works on Windows while `aos.exe` is running, and inside WSL it also updates the Windows `aos.exe`. The next command refreshes the agent skill. `AOS_UPDATE_BASE` points it at a mirror with the GitHub release layout.
+
+To uninstall: `aos skill uninstall` removes the agent skill, then delete the binary (`rm ~/.local/bin/aos`, or `%LOCALAPPDATA%\Programs\aos\aos.exe` on Windows). An npm install is removed with `npm uninstall -g @muthuishere/aos`.
+
 Build from source instead (Go 1.26+; on macOS cgo, i.e. Xcode command line tools):
 
 ```sh

@@ -214,6 +214,7 @@ that rect is how image coordinates become click coordinates: global = origin + p
 ```bash
 aos doctor          # clipboard round trip, real screenshot, window backend,
                            # permissions, package manager — each with a fix
+aos update --check  # is a newer aos out? `aos update` installs it (old binary kept as aos.old)
 ```
 
 On macOS, denied permissions are the usual cause of blank screenshots or failing

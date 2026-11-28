@@ -1,0 +1,34 @@
+---
+title: aos update
+description: Update aos itself to the latest release
+sidebar:
+  label: update
+  order: 1
+---
+
+<p class="cmd-lead">Update aos itself to the latest release</p>
+
+1 command. Run `aos update --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos update
+
+<p class="cmd-lead">Download the latest aos release for this OS and CPU, verify it, and replace this binary (the old one is kept as aos.old)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos update [--version=vX.Y.Z] [--check] [--force] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--version` | `<vX.Y.Z>` | Optional |
+| `--check` |  | Optional |
+| `--force` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos update
+aos update --check
+aos update --version=v0.16.0
+```
