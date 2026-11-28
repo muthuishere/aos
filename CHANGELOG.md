@@ -2,6 +2,11 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.20.0 - 2026-11-28
+
+- `aos ocr <image|->`: read the text in a PNG, JPEG or GIF file (or stdin) with the OS's own OCR. Text output, or `--json` with lines, boxes, words and confidence. `--lang` and `--fast` on macOS.
+- The `ocr` Go package now works inside WSL: a Linux build hands the image to the Windows `aos.exe` (`aos ocr --json`) and returns its result. `Options.NoWSLHop` turns that off; without a usable `aos.exe` the error wraps `ErrUnsupported` and says how to fix it. `Line` and `Word` gained JSON tags. See docs/adr/0004-ocr-command-and-wsl-hop.md.
+
 ## v0.19.0 - 2026-11-28
 
 - New public Go package `github.com/muthuishere/aos/ocr`: OCR an image file or `image.Image` with the OS's own engine, no cgo (builds with `CGO_ENABLED=0`). macOS uses Apple Vision through purego, Windows uses WinRT `Windows.Media.Ocr`, Linux returns `ErrUnsupported`. Lines in reading order with pixel boxes, words and confidence (macOS). See docs/adr/0003-public-ocr-package.md.

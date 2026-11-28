@@ -1,8 +1,9 @@
 // Package ocr reads the text in an image with the operating system's own
 // on-device OCR engine: Apple Vision on macOS, Windows.Media.Ocr on Windows.
 // No cgo, no external engine, no network: it builds with CGO_ENABLED=0 and
-// cross-compiles. On Linux and other systems every call returns
-// ErrUnsupported.
+// cross-compiles. Inside WSL a Linux build runs the Windows OCR through
+// aos.exe (Options.NoWSLHop turns that off); elsewhere on Linux, and on other
+// systems, every call returns ErrUnsupported.
 //
 // Coordinates are image pixels, origin at the top left. Lines come back in
 // reading order: top to bottom, and left to right within a row.
@@ -32,25 +33,39 @@ type Options struct {
 	Languages []string
 	// Fast trades accuracy for speed (Vision's fast level). macOS only.
 	Fast bool
+	// NoWSLHop keeps a Linux build inside WSL from starting the Windows
+	// aos.exe to do the recognition; it returns ErrUnsupported instead.
+	NoWSLHop bool
 }
 
 // Word is one word of a Line, boxed in image pixels.
 type Word struct {
-	Text       string
-	X, Y, W, H float64
+	Text string  `json:"text"`
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+	W    float64 `json:"w"`
+	H    float64 `json:"h"`
 }
 
 // Line is one line of recognized text. Confidence is 0..1 on macOS; Windows
 // does not report one, so it is 0 there.
 type Line struct {
-	Text       string
-	X, Y, W, H float64
-	Confidence float64
-	Words      []Word
+	Text       string  `json:"text"`
+	X          float64 `json:"x"`
+	Y          float64 `json:"y"`
+	W          float64 `json:"w"`
+	H          float64 `json:"h"`
+	Confidence float64 `json:"confidence"`
+	Words      []Word  `json:"words"`
 }
 
-// RecognizeFile decodes a PNG, JPEG or GIF file and reads its text.
+// RecognizeFile decodes a PNG, JPEG or GIF file and reads its text. Inside
+// WSL a Linux build hands the file to the Windows aos.exe (aos ocr), unless
+// opts.NoWSLHop is set.
 func RecognizeFile(path string, opts Options) ([]Line, error) {
+	if lines, err, handled := wslFile(path, opts); handled {
+		return lines, err
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
