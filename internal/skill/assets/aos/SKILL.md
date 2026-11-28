@@ -120,6 +120,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 
 | you want to | run |
 |---|---|
+| read text in an image file | `ocr shot.png` (`--json` for boxes) |
 | see the machine | `system info`, `doctor`, `display list`, `network status`, `battery status` |
 | find a window | `window list`, `window list --app=Chrome`, `window list --json` |
 | place a window | `window move Chrome --zone=1B` · `--at=x,y,w,h` · `--monitor=2` · `window resize Chrome --w=900 --h=500` |

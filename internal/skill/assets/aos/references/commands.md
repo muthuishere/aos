@@ -1596,6 +1596,22 @@ aos obs path
 ```
 
 
+## ocr
+
+Read the text in an image file with the OS's own OCR
+
+### `aos ocr`
+
+Read the text in a PNG, JPEG or GIF file (or - for stdin): lines in reading order with boxes in image pixels
+
+```bash
+aos ocr <image|-> [--lang=en-US,de-DE] [--fast] [--json]
+aos ocr receipt.png
+aos ocr shot.png --json
+aos capture screenshot --out=- | aos ocr -
+```
+
+
 ## open
 
 Hand a file, folder, or URL to its default application

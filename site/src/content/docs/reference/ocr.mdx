@@ -1,0 +1,34 @@
+---
+title: aos ocr
+description: Read the text in an image file with the OS's own OCR
+sidebar:
+  label: ocr
+  order: 1
+---
+
+<p class="cmd-lead">Read the text in an image file with the OS's own OCR</p>
+
+1 command. Run `aos ocr --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos ocr
+
+<p class="cmd-lead">Read the text in a PNG, JPEG or GIF file (or - for stdin): lines in reading order with boxes in image pixels</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos ocr <image|-> [--lang=en-US,de-DE] [--fast] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<image\|->` | | Required positional argument |
+| `--lang` | `<en-US,de-DE>` | Optional. comma-separated |
+| `--fast` |  | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos ocr receipt.png
+aos ocr shot.png --json
+aos capture screenshot --out=- | aos ocr -
+```

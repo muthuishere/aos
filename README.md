@@ -390,7 +390,7 @@ flags each command documents. Hidden commands are left out.
 
 ## OCR as a Go library
 
-`github.com/muthuishere/aos/ocr` reads the text in an image file or `image.Image` with the OS's own engine (Apple Vision on macOS, Windows.Media.Ocr on Windows) and builds with `CGO_ENABLED=0`. Linux returns `ocr.ErrUnsupported`.
+`github.com/muthuishere/aos/ocr` reads the text in an image file or `image.Image` with the OS's own engine (Apple Vision on macOS, Windows.Media.Ocr on Windows) and builds with `CGO_ENABLED=0`. Inside WSL a Linux build runs the Windows OCR through `aos.exe` (set `Options.NoWSLHop` to stop that); elsewhere on Linux it returns `ocr.ErrUnsupported`. The same engine is a command: `aos ocr shot.png` (or `--json`).
 
 ```go
 lines, err := ocr.RecognizeFile("shot.png", ocr.Options{})

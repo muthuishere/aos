@@ -42,6 +42,7 @@ per command as `"host": "windows-host"` or `"host": "local"`.
 | `network` |  | `captive-portal`, `public-ip`, `vpn status`, `vpn on`, `vpn off`, `speed`, `status`, `ip`, `wifi`, `ports`, `wifi on`, `wifi off`, `wifi join`, `wifi-qr` |
 | `notify` | `aos notify` |  |
 | `obs` |  | `stats`, `tail`, `export`, `audit`, `summary`, `focus`, `path` |
+| `ocr` |  | `aos ocr` |
 | `open` | `aos open` |  |
 | `permission` | `check`, `request` |  |
 | `pkg` |  | `install`, `remove`, `search`, `list`, `refresh`, `upgrade`, `manager` |

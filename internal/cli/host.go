@@ -2,7 +2,9 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"github.com/muthuishere/aos/internal/wslhost"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,7 +52,7 @@ var hostTable = map[string]bool{
 	"watch file": false, "watch process": false, "watch url": false, "network": false, "trash": false, "battery": true, "power": true, "disk": true,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
-	"version": false, "update": false, "doctor": false, "install": false, "uninstall": false,
+	"version": false, "update": false, "ocr": false, "doctor": false, "install": false, "uninstall": false,
 }
 
 // HostSide looks a route up in the table: follows reports the side, known
@@ -132,10 +134,7 @@ func (c *Ctx) hostDeps() *HostDeps {
 
 // IsWSL reports whether this process runs inside WSL.
 func IsWSL(env func(string) string, exists func(string) bool) bool {
-	if env("WSL_DISTRO_NAME") != "" || env("WSL_INTEROP") != "" {
-		return true
-	}
-	return exists != nil && exists("/proc/sys/fs/binfmt_misc/WSLInterop")
+	return wslhost.IsWSL(env, exists)
 }
 
 // stripHostFlag removes --host=<v> and --host <v> from args. With anywhere
@@ -302,41 +301,30 @@ func expandHome(env func(string) string, p string) string {
 	return p
 }
 
-// findWindowsAOS locates aos.exe from inside WSL: the cached path in the
-// config, then %LOCALAPPDATA%\aos (where install.sh puts it),
-// %LOCALAPPDATA%\Programs\aos (install.cmd's default), then PATH.
+// findWindowsAOS locates aos.exe from inside WSL (see wslhost.FindAOS) and
+// caches the answer in the config.
 func (c *Ctx) findWindowsAOS() (string, error) {
-	deps := c.hostDeps()
-	if cached := ReadConfig(c.Env)["windows-exe"]; cached != "" && deps.Exists(cached) {
-		return cached, nil
-	}
-	var tried []string
-	// cmd.exe complains about a UNC working directory, so run it from C:.
-	local, err := deps.Output("/mnt/c", "cmd.exe", "/c", "echo %LOCALAPPDATA%")
-	if err != nil || local == "" || strings.Contains(local, "%") {
-		return "", fmt.Errorf("aos is running in WSL, so screen commands go to Windows, but Windows programs cannot be started from here (cmd.exe: %v)\n"+
+	cached := ReadConfig(c.Env)["windows-exe"]
+	found, tried, err := wslhost.FindAOS(c.wslDeps(), cached)
+	if errors.Is(err, wslhost.ErrNoInterop) {
+		return "", fmt.Errorf("aos is running in WSL, so screen commands go to Windows, but %v\n"+
 			"Fix: enable interop in /etc/wsl.conf ([interop] enabled=true), then `wsl.exe --shutdown`; or pass --host=local to act on WSL itself", err)
 	}
-	if dir, err := deps.Output("", "wslpath", "-u", local); err == nil && dir != "" {
-		for _, candidate := range []string{
-			filepath.Join(dir, "aos", "aos.exe"),
-			filepath.Join(dir, "Programs", "aos", "aos.exe"),
-		} {
-			tried = append(tried, candidate)
-			if deps.Exists(candidate) {
-				_ = WriteConfigValue(c.Env, "windows-exe", candidate)
-				return candidate, nil
-			}
-		}
+	if err != nil {
+		return "", fmt.Errorf("aos is running in WSL, so screen commands go to Windows, but aos.exe was not found (tried %s)\n"+
+			"Fix: re-run install.sh inside WSL (it installs the Windows build into %%LOCALAPPDATA%%\\aos), "+
+			"or run install.cmd on Windows; or pass --host=local to act on WSL itself", strings.Join(tried, ", "))
 	}
-	if found, err := deps.LookPath("aos.exe"); err == nil {
+	if found != cached {
 		_ = WriteConfigValue(c.Env, "windows-exe", found)
-		return found, nil
 	}
-	tried = append(tried, "aos.exe on PATH")
-	return "", fmt.Errorf("aos is running in WSL, so screen commands go to Windows, but aos.exe was not found (tried %s)\n"+
-		"Fix: re-run install.sh inside WSL (it installs the Windows build into %%LOCALAPPDATA%%\\aos), "+
-		"or run install.cmd on Windows; or pass --host=local to act on WSL itself", strings.Join(tried, ", "))
+	return found, nil
+}
+
+// wslDeps adapts the host deps for wslhost.
+func (c *Ctx) wslDeps() wslhost.Deps {
+	deps := c.hostDeps()
+	return wslhost.Deps{Env: c.Env, Exists: deps.Exists, Output: deps.Output, LookPath: deps.LookPath}
 }
 
 // Path-valued flags, and the routes whose positional arguments are paths. These
@@ -382,25 +370,8 @@ func (c *Ctx) toWindowsArgs(cmd *Command, args []string) ([]string, error) {
 }
 
 // wslToWindows converts a WSL path, which may not exist yet, to a Windows path.
-// wslpath only converts paths that exist, so the parent is converted and the
-// file name appended.
 func (c *Ctx) wslToWindows(p string) (string, error) {
-	p = expandHome(c.Env, p)
-	if abs, err := filepath.Abs(p); err == nil {
-		p = abs
-	}
-	deps := c.hostDeps()
-	if deps.Exists(p) {
-		if win, err := deps.Output("", "wslpath", "-w", p); err == nil && win != "" {
-			return win, nil
-		}
-	}
-	dir, base := filepath.Split(p)
-	win, err := deps.Output("", "wslpath", "-w", filepath.Clean(dir))
-	if err != nil || win == "" {
-		return "", fmt.Errorf("cannot translate %s for Windows (wslpath: %v); does the folder exist?", p, err)
-	}
-	return strings.TrimRight(win, `\`) + `\` + base, nil
+	return wslhost.ToWindows(c.wslDeps(), expandHome(c.Env, p))
 }
 
 // runOnHost sends a screen command to a host that is not this machine.
