@@ -2321,6 +2321,22 @@ aos trash empty --yes    # no question; required when not at a terminal
 ```
 
 
+## update
+
+Update aos itself to the latest release
+
+### `aos update`
+
+Download the latest aos release for this OS and CPU, verify it, and replace this binary (the old one is kept as aos.old)
+
+```bash
+aos update [--version=vX.Y.Z] [--check] [--force] [--json]
+aos update
+aos update --check
+aos update --version=v0.16.0
+```
+
+
 ## version
 
 Version information

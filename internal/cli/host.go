@@ -50,7 +50,7 @@ var hostTable = map[string]bool{
 	"watch file": false, "watch process": false, "watch url": false, "network": false, "trash": false, "battery": true, "power": true, "disk": true,
 	"system": false, "skill": false, "adapters": false, "obs": false,
 	"serve": false, "headless": false, "debug": false, "completion": false,
-	"version": false, "doctor": false, "install": false, "uninstall": false,
+	"version": false, "update": false, "doctor": false, "install": false, "uninstall": false,
 }
 
 // HostSide looks a route up in the table: follows reports the side, known
@@ -440,4 +440,13 @@ func execPassthrough(c *Ctx, name string, args []string) (int, error) {
 		return 0, err
 	}
 	return 0, nil
+}
+
+// WindowsAOS is the Windows aos.exe (as a WSL path) when this process runs
+// inside WSL, else "". aos update keeps it on the same release.
+func (c *Ctx) WindowsAOS() (string, error) {
+	if c.GOOS != "linux" || !IsWSL(c.Env, c.hostDeps().Exists) {
+		return "", nil
+	}
+	return c.findWindowsAOS()
 }
