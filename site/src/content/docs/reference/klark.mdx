@@ -1,0 +1,278 @@
+---
+title: aos klark
+description: Klark - agents, panes, messages and feeds
+sidebar:
+  label: klark
+  order: 1
+---
+
+<p class="cmd-lead">Klark: agents, panes, messages and feeds</p>
+
+15 commands. Run `aos klark --help` for the same list from the binary, or [see every group](../commands/).
+
+### aos klark agents
+
+<p class="cmd-lead">List agents in every klark session</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark agents [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos klark agents
+```
+
+### aos klark feed
+
+<p class="cmd-lead">Add a feed: send new output of a command, file or poll to an agent</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark feed <agent> <instruction> --stream|--follow|--poll <source> [options]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<agent>` | | Required positional argument |
+| `<instruction>` | | Required positional argument |
+| `<source>` | | Required positional argument |
+| `--stream` |  | One of these is required |
+| `--follow` |  | One of these is required |
+| `--poll` |  | One of these is required |
+
+```sh
+aos klark feed work/rev "Look at new errors" --follow app.log
+```
+
+### aos klark feeds
+
+<p class="cmd-lead">List feeds</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark feeds [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos klark feeds
+aos klark feeds --json
+```
+
+### aos klark hub
+
+<p class="cmd-lead">Hub connection status of this machine</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark hub
+```
+
+```sh
+aos klark hub
+```
+
+### aos klark msg
+
+<p class="cmd-lead">Send a klark message to another agent</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark msg <address> <text>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<address>` | | Required positional argument |
+| `<text>` | | Required positional argument |
+
+```sh
+aos klark msg work/rev "PR is ready"
+```
+
+### aos klark open
+
+<p class="cmd-lead">Open a terminal tab in a folder running klark -c (that folder's session)</p>
+
+<p class="cmd-badges"><span class="cmd-badge">darwin only</span></p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark open <folder>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<folder>` | | Required positional argument |
+
+```sh
+aos klark open ~/src/api
+```
+
+### aos klark panes
+
+<p class="cmd-lead">List panes</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark panes [options]
+```
+
+```sh
+aos klark panes
+```
+
+### aos klark prompt
+
+<p class="cmd-lead">Submit a prompt to an agent</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark prompt <agent> <text>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<agent>` | | Required positional argument |
+| `<text>` | | Required positional argument |
+
+```sh
+aos klark prompt rev "run the tests"
+```
+
+### aos klark read
+
+<p class="cmd-lead">Read an agent's recent terminal output</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark read <agent> [options]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<agent>` | | Required positional argument |
+
+```sh
+aos klark read rev
+aos klark read work/rev --lines 80
+```
+
+### aos klark send
+
+<p class="cmd-lead">Type literal text into a pane (no Enter)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark send <pane> <text>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<pane>` | | Required positional argument |
+| `<text>` | | Required positional argument |
+
+```sh
+aos klark send w1:p2 "git status"
+```
+
+### aos klark stats
+
+<p class="cmd-lead">Memory and CPU of the klark server and each agent pane</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark stats [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `--json` |  | Optional |
+
+```sh
+aos klark stats
+aos klark stats --json
+```
+
+### aos klark status
+
+<p class="cmd-lead">Is a klark server running, and which version</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark status
+```
+
+```sh
+aos klark status
+```
+
+### aos klark unfeed
+
+<p class="cmd-lead">Stop and remove a feed</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark unfeed <id-or-name>
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<id-or-name>` | | Required positional argument |
+
+```sh
+aos klark unfeed flw
+```
+
+### aos klark version
+
+<p class="cmd-lead">klark version</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark version
+```
+
+```sh
+aos klark version
+```
+
+### aos klark wait
+
+<p class="cmd-lead">Wait until an agent reaches a state (idle, done, blocked...)</p>
+
+Under WSL / SSH: runs inside WSL (where aos was started). [How the host works](../../host/)
+
+```sh
+aos klark wait <agent> [options]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<agent>` | | Required positional argument |
+
+```sh
+aos klark wait rev --help
+```

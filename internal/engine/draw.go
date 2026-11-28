@@ -36,6 +36,8 @@ type DrawOptions struct {
 	Image         []byte
 	Width, Height string
 	Opacity       float64
+	// Parts picks frames and colours of a rigged character SVG.
+	Parts SVGParts
 
 	Point   *Point
 	Region  *Rect

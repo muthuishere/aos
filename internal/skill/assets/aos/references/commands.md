@@ -833,13 +833,32 @@ Show a PNG, JPEG, GIF, WebP or SVG on screen, click-through, inside a window, a 
 *display*
 
 ```bash
-aos draw image <file | -> [--width=<px|N%>] [--height=<px|N%>] [--opacity=<0-1>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=center|top-center|bottom-center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
+aos draw image <file | -> [--width=<px|N%>] [--height=<px|N%>] [--opacity=<0-1>] [--show=<ids>] [--hide=<ids>] [--recolor=<part>=<#hex>,...] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=center|top-center|bottom-center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
 aos draw image logo.svg --position=top-right --width=160 --duration=10
 aos draw image diagram.png --app=Keynote --width=60% --detach
 aos draw image badge.png --at=640,400 --position=top --width=96
 aos draw image - --monitor=2 < chart.png
+aos draw image priya.svg --show=mouth-open --hide=mouth-closed --recolor=shirt=#10b981
 # SVG: shapes, paths, gradients and strokes. Text, filters, masks and rounded <rect rx> are refused with a message, not drawn half. Format is sniffed from the content.
 # `-` reads the image from stdin (not with --detach); the image always shows click-through, on top, and capture / recording sees it
+```
+
+### `aos draw character`
+
+Show a cartoon person for explainers and stories: a preset or a role (lawyer, doctor, chef, shopkeeper, programmer, ...) with looks you pick, blinking or talking
+
+*display*
+
+```bash
+aos draw character [<preset>] [--role=<role>] [--gender=man|woman] [--skin=<tone|#hex>] [--hair=<colour|#hex>] [--hair-style=<style>] [--outfit=<#hex>] [--beard] [--moustache] [--glasses] [--frame=rest|blink|talk] [--save=<file.svg>] [--list] [--height=<px|N%>] [--app=<name> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y>] [--position=<side>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]
+aos draw character priya --position=bottom-left --height=40% --duration=10
+aos draw character --role=lawyer --gender=woman --skin=dark --hair-style=bun --position=bottom-right --height=50%
+aos draw character ravi --frame=talk --detach
+aos draw character --list --json
+aos draw character arjun --save=arjun.svg   # the rigged SVG, for draw image --show/--hide/--recolor
+# Roles: casual customer developer(programmer) founder(ceo) office lawyer doctor nurse scientist chef shopkeeper teacher student police firefighter pilot mechanic builder farmer artist singer
+# Skin: light medium tan brown dark or #hex. Hair: black brown auburn blonde grey white or #hex. Hair styles: short side curly long bun ponytail bald
+# Talking: alternate --frame=rest and --frame=talk (or draw image --show=mouth-open --hide=mouth-closed); blink: --frame=blink
 ```
 
 ### `aos draw stop`

@@ -8,7 +8,7 @@ sidebar:
 
 <p class="cmd-lead">Point at something on screen with a big arrow and a sign</p>
 
-11 commands. Run `aos draw --help` for the same list from the binary, or [see every group](../commands/).
+12 commands. Run `aos draw --help` for the same list from the binary, or [see every group](../commands/).
 
 Click-through drawings on the real screen for a person to follow: an arrow, ring or box with a sign at a point, a region, a window or a control found by its label, and `draw text` for a label with no arrow. Nothing takes focus and clicks pass through to the app underneath. `draw cover` is the opposite: an opaque box that hides a window, part of it or a token, and follows the window. See [arrows & pointers](/aos/drawing/arrows/), [text labels](/aos/drawing/text/) and [covers](/aos/drawing/covers/).
 
@@ -107,6 +107,55 @@ aos draw bubble "Click Save" --app=Notepad --find=Save
 aos draw bubble "This is the cart" --at=1500,90 --position=bottom --detach
 aos draw bubble "Your files live here" --app=Finder --position=right --color=#fef3c7
 # the card sits on the side with room (top first), the tail touches the target; exit 3 when --find does not find the window or the text
+```
+
+### aos draw character
+
+<p class="cmd-lead">Show a cartoon person for explainers and stories: a preset or a role (lawyer, doctor, chef, shopkeeper, programmer, ...) with looks you pick, blinking or talking</p>
+
+<p class="cmd-badges"><span class="cmd-badge gui">needs a display</span></p>
+
+Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
+
+```sh
+aos draw character [<preset>] [--role=<role>] [--gender=man|woman] [--skin=<tone|#hex>] [--hair=<colour|#hex>] [--hair-style=<style>] [--outfit=<#hex>] [--beard] [--moustache] [--glasses] [--frame=rest|blink|talk] [--save=<file.svg>] [--list] [--height=<px|N%>] [--app=<name> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y>] [--position=<side>] [--duration=<seconds>] [--detach] [--preview=<out.png>] [--json]
+```
+
+| flag | values | meaning |
+|---|---|---|
+| `<preset>` | | Optional positional argument |
+| `--role` | `<role>` | Optional |
+| `--gender` | `man`, `woman` | Optional |
+| `--skin` | `tone`, `#hex` | Optional |
+| `--hair` | `colour`, `#hex` | Optional |
+| `--hair-style` | `<style>` | Optional |
+| `--outfit` | `<#hex>` | Optional |
+| `--beard` |  | Optional |
+| `--moustache` |  | Optional |
+| `--glasses` |  | Optional |
+| `--frame` | `rest`, `blink`, `talk` | Optional |
+| `--save` | `<file.svg>` | Optional |
+| `--list` |  | Optional |
+| `--height` | `px`, `N%` | Optional |
+| `--app` | `<name>` | Optional |
+| `--monitor` | `<n>` | Optional |
+| `--rect` | `<x,y,w,h>` | Optional. comma-separated |
+| `--at` | `<x,y>` | Optional. comma-separated |
+| `--position` | `<side>` | Optional |
+| `--duration` | `<seconds>` | Optional |
+| `--detach` |  | Optional |
+| `--preview` | `<out.png>` | Optional |
+| `--json` |  | Optional |
+
+```sh
+aos draw character priya --position=bottom-left --height=40% --duration=10
+aos draw character --role=lawyer --gender=woman --skin=dark --hair-style=bun --position=bottom-right --height=50%
+aos draw character ravi --frame=talk --detach
+aos draw character --list --json
+aos draw character arjun --save=arjun.svg   # the rigged SVG, for draw image --show/--hide/--recolor
+# Roles: casual customer developer(programmer) founder(ceo) office lawyer doctor nurse scientist chef shopkeeper teacher student police firefighter pilot mechanic builder farmer artist singer
+# Skin: light medium tan brown dark or #hex. Hair: black brown auburn blonde grey white or #hex. Hair styles: short side curly long bun ponytail bald
+# Talking: alternate --frame=rest and --frame=talk (or draw image --show=mouth-open --hide=mouth-closed); blink: --frame=blink
 ```
 
 ### aos draw config
@@ -290,15 +339,19 @@ aos draw fonts
 Under WSL / SSH: runs on the Windows host (the machine with the screen). [How the host works](../../host/)
 
 ```sh
-aos draw image <file | -> [--width=<px|N%>] [--height=<px|N%>] [--opacity=<0-1>] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=center|top-center|bottom-center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
+aos draw image <file | -> [--width=<px|N%>] [--height=<px|N%>] [--opacity=<0-1>] [--show=<ids>] [--hide=<ids>] [--recolor=<part>=<#hex>,...] [--app=<name> | --title=<s> | --monitor=<n> | --rect=<x,y,w,h> | --at=<x,y> | --mouse] [--position=center|top-center|bottom-center|left|right|top-left|top-right|bottom-left|bottom-right] [--margin=<px|N%>] [--offset=<dx,dy>] [--duration=<seconds>] [--detach] [--animate=on|off] [--preview=<out.png>] [--json]
 ```
 
 | flag | values | meaning |
 |---|---|---|
 | `<file \| ->` | | Required positional argument |
+| `<#hex>` | | Optional positional argument |
 | `--width` | `px`, `N%` | Optional |
 | `--height` | `px`, `N%` | Optional |
 | `--opacity` | `<0-1>` | Optional. default 0-1 |
+| `--show` | `<ids>` | Optional |
+| `--hide` | `<ids>` | Optional |
+| `--recolor` | `<part>` | Optional |
 | `--app` | `<name>` | Optional |
 | `--title` | `<s>` | Optional |
 | `--monitor` | `<n>` | Optional |
@@ -319,6 +372,7 @@ aos draw image logo.svg --position=top-right --width=160 --duration=10
 aos draw image diagram.png --app=Keynote --width=60% --detach
 aos draw image badge.png --at=640,400 --position=top --width=96
 aos draw image - --monitor=2 < chart.png
+aos draw image priya.svg --show=mouth-open --hide=mouth-closed --recolor=shirt=#10b981
 # SVG: shapes, paths, gradients and strokes. Text, filters, masks and rounded <rect rx> are refused with a message, not drawn half. Format is sniffed from the content.
 # `-` reads the image from stdin (not with --detach); the image always shows click-through, on top, and capture / recording sees it
 ```

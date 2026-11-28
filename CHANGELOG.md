@@ -2,6 +2,12 @@
 
 Releases before v0.11.0 are described in their tag messages (`git show v0.10.0`).
 
+## v0.21.0 - 2026-11-28
+
+- `aos draw character`: cartoon people for explainer videos and stories, drawn by aos in one original flat style. 25 presets (`--list`) and 21 role templates: casual, customer, developer (programmer), founder, office, lawyer, doctor, nurse, scientist, chef, shopkeeper, teacher, student, police, firefighter, pilot, mechanic, builder, farmer, artist, singer. Looks: `--gender`, `--skin`, `--hair`, `--hair-style`, `--beard`, `--moustache`, `--glasses`, `--outfit`. `--frame=blink|talk`, `--save` for the rigged SVG, and every `draw image` placement flag.
+- `aos draw image --show / --hide / --recolor`: drive a rigged SVG's frame groups (opacity-0 groups are cut unless shown) and recolour `<part>-<tone>` groups.
+- Skill: references/storytelling.md (cast, placement, talking, a four-beat story). Docs: a Characters and stories page with the cast gallery.
+
 ## v0.20.0 - 2026-11-28
 
 - `aos ocr <image|->`: read the text in a PNG, JPEG or GIF file (or stdin) with the OS's own OCR. Text output, or `--json` with lines, boxes, words and confidence. `--lang` and `--fast` on macOS.

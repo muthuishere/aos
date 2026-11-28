@@ -176,6 +176,16 @@ func planImageScene(a Adapter, opts DrawOptions) (*drawScene, error) {
 	if opts.Position == "" {
 		opts.Position = "center"
 	}
+	if !opts.Parts.empty() || (isSVG(opts.Image) && svgOpac0Re.Match(opts.Image)) {
+		if !isSVG(opts.Image) {
+			return nil, errors.New("draw: --show, --hide and --recolor work on an SVG only")
+		}
+		data, err := ApplySVGParts(opts.Image, opts.Parts)
+		if err != nil {
+			return nil, err
+		}
+		opts.Image = data
+	}
 	pl, err := planPlace(a, opts, "image")
 	if err != nil {
 		return nil, err

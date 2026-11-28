@@ -19,6 +19,7 @@ description: >
   is this machine set up correctly, expose this machine to an agent over MCP,
   record my screen, capture video, record a demo, screen recording with zoom,
   product demo / explainer video with captions, bubbles, callouts, pointers and zoom,
+  cartoon characters, a story with people (shopkeeper, customer, programmer, lawyer, doctor, chef...), make a character talk,
   annotate the screen, speech bubble, callout, overlay a label, an image or an SVG on the screen,
   list tabs, find tab, switch tab, open tab, close tab, which terminal tab is in
   this folder, type into a terminal tab, watch a tab, wait for text in a tab,
@@ -120,6 +121,7 @@ there is no logged-in session and the desktop commands cannot work at all.
 
 | you want to | run |
 |---|---|
+| tell a story with characters | `draw character priya`, `draw character --role=lawyer --gender=woman`, `--frame=talk`; see references/storytelling.md |
 | read text in an image file | `ocr shot.png` (`--json` for boxes) |
 | see the machine | `system info`, `doctor`, `display list`, `network status`, `battery status` |
 | find a window | `window list`, `window list --app=Chrome`, `window list --json` |
